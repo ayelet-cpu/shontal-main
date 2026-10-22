@@ -51,7 +51,7 @@
   label{display:block;text-align:right;font-size:14px;margin:0 0 6px;font-weight:700;color:var(--ink)}
   input{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:14px;font-size:16px;background:#fff;color:var(--ink);direction:ltr;text-align:left;transition:border-color .2s,box-shadow .2s}
   input:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 4px rgba(116,97,200,.18)}
-  button{margin-top:14px;width:100%;padding:13px;border:0;border-radius:14px;background:linear-gradient(135deg,#8a76e0,#6a55c4);color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(106,85,196,.35);transition:transform .15s,box-shadow .15s}
+  button{margin-top:14px;width:100%;padding:13px;border:0;border-radius:14px;background:linear-gradient(135deg,#7660d4,#5f4bb8);color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(106,85,196,.35);transition:transform .15s,box-shadow .15s}
   button:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(106,85,196,.42)} button:disabled{opacity:.6;cursor:default}
   .link{background:none;color:var(--acc2);font-size:13px;margin-top:10px;padding:4px;width:auto;text-decoration:underline;box-shadow:none}
   .link:hover{background:none;box-shadow:none;transform:none}
@@ -190,7 +190,7 @@
   .card{max-width:none !important;width:100% !important;background:rgba(253,252,255,.9) !important;backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.9) !important;border-radius:26px !important;padding:30px 30px 26px !important;box-shadow:0 24px 70px rgba(91,74,168,.22) !important}
   .lg{width:190px;height:auto;display:block;margin:0 auto 4px;border-radius:50%;box-shadow:0 0 0 14px #fdfcff,0 0 30px 14px #fdfcff;animation:lgf 4.5s ease-in-out infinite}
   @keyframes lgf{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-  .sub2{display:flex;align-items:center;gap:10px;color:#8a82a8;font-size:13px;margin:8px 0 20px}
+  .sub2{display:flex;align-items:center;gap:10px;color:#6f6a8c;font-size:13px;margin:8px 0 20px}
   .sub2:before,.sub2:after{content:"";flex:1;height:1px;background:#d9d2ee}
   .card label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
   .card input{padding:12px 44px 12px 14px;border-radius:12px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%237461c8' stroke-width='1.8'%3E%3Crect x='2' y='4' width='14' height='10' rx='2'/%3E%3Cpath d='m3 5 6 5 6-5'/%3E%3C/svg%3E") no-repeat right 14px center;direction:rtl;text-align:right;font-size:15px}
@@ -198,6 +198,8 @@
   .card button{border-radius:999px;margin-top:16px}
   .stage{animation:cin .9s cubic-bezier(.2,.9,.3,1.1) both}
   @keyframes cin{from{opacity:0;transform:translate(-50%,-46%) scale(.96)}to{opacity:1;transform:translate(-50%,-50%)}}
+  /* 22.10.2026: מסך נמוך (טלפון קטן עם מקלדת פתוחה) — הכרטיס נגלל, כדי שהודעת שגיאה מתחת לכפתור לא תיחתך */
+  @media (max-height:540px){html,body{overflow-x:hidden;overflow-y:auto}.stage{position:relative !important;left:auto;top:auto;transform:none;margin:12px auto;animation:none}}
 </style>
 </head>
 <body>
@@ -234,7 +236,7 @@
     <div id="loadTxt">טוענת את שונטל…</div>
   </div>
 
-  <div id="msg" class="msg"></div>
+  <div id="msg" class="msg" role="status" aria-live="polite"></div>
 </div></div>
 
 <script>
@@ -260,7 +262,7 @@
   var CB='https://shontal.cloud';           /* כתובת-דמה: כל פנייה אליה מנותבת למסד הנתונים */
   var SK='shontal-cloud-session';
   var $=function(i){return document.getElementById(i);};
-  function msg(t,err){ var m=$('msg'); m.textContent=t||''; m.className='msg'+(err?' err':''); }
+  function msg(t,err){ var m=$('msg'); m.textContent=t||''; m.className='msg'+(err?' err':''); if(t){ try{ m.scrollIntoView({block:'nearest'}); }catch(_){} } }
   function show(id){ ['stEmail','stCode','stLoad'].forEach(function(x){ $(x).classList.toggle('hid',x!==id); }); }
 
   var S=null; try{ S=JSON.parse(localStorage.getItem(SK)||'null'); }catch(_){ S=null; }
