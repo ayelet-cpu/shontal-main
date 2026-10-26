@@ -236,7 +236,7 @@
   function localKeys(){ var a=[]; for(var i=0;i<RLS.length;i++){ var k=RLS.key(i); if(k&&k.indexOf(LP)===0) a.push(k.slice(LP.length)); } return a; }
   var VLS={
     getItem:function(k){ k=String(k); if(isLocalOnly(k)) return RLS.getItem(LP+k); return Object.prototype.hasOwnProperty.call(MEM,k)?MEM[k]:null; },
-    setItem:function(k,v){ k=String(k); v=String(v); if(isLocalOnly(k)){ RLS.setItem(LP+k,v); return; } if(MEM[k]===v) return; MEM[k]=v; queue('ls',k); },
+    setItem:function(k,v){ k=String(k); v=String(v); if(/^tazrim-cinc-BAK-autover-/.test(k)){ MEM[k]=v; return; } if(isLocalOnly(k)){ RLS.setItem(LP+k,v); return; } if(MEM[k]===v) return; MEM[k]=v; queue('ls',k); },
     removeItem:function(k){ k=String(k); if(isLocalOnly(k)){ RLS.removeItem(LP+k); return; } if(!Object.prototype.hasOwnProperty.call(MEM,k)) return;
       delete MEM[k]; delete PEND['ls\u0001'+k]; queue('rm',k); },
     clear:function(){ localKeys().forEach(function(k){ RLS.removeItem(LP+k); }); },
@@ -304,6 +304,30 @@
     return h;
   }
 
+  /* ---- בלוקי הבוקר (שלב 3): ריצות הבוקר כותבות אותם לענן (taz_inbox). משתמשים בגרסה החדשה מבין
+     זו שמוטמעת בקוד לבין זו שבענן — והתזרים מחיל אותם בדיוק כמו היום (VER, פעם אחת). ---- */
+  var BLOCKS={bank:['bankInbox','__BANK_INBOX','__BANK_INBOX_VER','bankInbox'], cashdep:['cashdepInbox','__CASHDEP_INBOX','__CASHDEP_INBOX_VER','cashdepInbox'],
+    petty:['pettyInbox','__PETTY_INBOX','__PETTY_INBOX_VER','pettyInbox'], set:['setInbox','__SET_INBOX',null,null],
+    liab_history:['liabHistory','__LIAB_HISTORY','__LIAB_HISTORY_VER','liabHistory'], cinc_corrected:['cincCorrectedData','__CINC_CORRECTED','__CINC_CORRECTED_VER','cincAutoLoad']};
+  function scriptRange(h,id){ var open='<script id="'+id+'">', a=h.indexOf(open); if(a<0) return null; var b=h.indexOf('<\/script>',a); if(b<0) return null; return [a+open.length,b]; }
+  function js(v){ return JSON.stringify(v).replace(/<\//g,'<\\/').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029'); }
+  var INBOX_USED={};
+  function applyInbox(h, IN){
+    Object.keys(BLOCKS).forEach(function(name){ var c=IN&&IN[name]; if(!c) return; var d=BLOCKS[name], r=scriptRange(h,d[0]); if(!r) return;
+      if(d[2]){ var vr=scriptRange(h,d[3]); if(!vr) return; var vb=h.slice(vr[0],vr[1]); var m=vb.match(new RegExp('window\\.'+d[2]+'\\s*=\\s*"([^"]*)"')); var ev=m?m[1]:'';
+        if(!(String(c.ver)>ev)) return;
+        if(d[3]===d[0]){ h=h.slice(0,r[0])+'window.'+d[2]+'='+JSON.stringify(String(c.ver))+';window.'+d[1]+'='+js(c.data)+';'+h.slice(r[1]); }
+        else { h=h.slice(0,r[0])+'window.'+d[1]+'='+js(c.data)+';'+h.slice(r[1]); var vr2=scriptRange(h,d[3]), vb2=h.slice(vr2[0],vr2[1]);
+          h=h.slice(0,vr2[0])+vb2.replace(new RegExp('window\\.'+d[2]+'\\s*=\\s*"[^"]*"'),'window.'+d[2]+'='+JSON.stringify(String(c.ver)))+h.slice(vr2[1]); }
+        INBOX_USED[name]=c.ver; }
+      else { /* set: איחוד לפי id (הפריטים מוחלים פעם אחת לפי setApplied) */
+        var body=h.slice(r[0],r[1]), mm=body.match(/window\.__SET_INBOX\s*=\s*/), cur=[]; if(mm){ try{ cur=JSON.parse(body.slice(mm.index+mm[0].length).trim().replace(/;\s*$/,'')); }catch(_){ cur=[]; } }
+        var seen={}, all=[]; (c.data||[]).concat(cur||[]).forEach(function(x){ var k=String(x&&x.id); if(seen[k]) return; seen[k]=1; all.push(x); });
+        h=h.slice(0,r[0])+'window.__SET_INBOX='+js(all)+';'+h.slice(r[1]); INBOX_USED[name]=c.ver; }
+    });
+    return h;
+  }
+
   /* מטמון מקומי של קוד התזרים — מורידים מחדש רק כשיש גרסה חדשה */
   function idb(){ return new Promise(function(res,rej){ setTimeout(function(){ rej(new Error('idb-timeout')); },2500); try{ var q=indexedDB.open('tazrim-cloud',1);
     q.onupgradeneeded=function(){ q.result.createObjectStore('f'); }; q.onsuccess=function(){ res(q.result); }; q.onerror=function(){ rej(q.error); }; }catch(e){ rej(e); } }); }
@@ -350,9 +374,11 @@
       return getCode();
     }).then(function(html){
       html=patch(html);
-      window.__TAZ={stateGet:stateGet, stateSet:stateSet, pending:pending, flush:flush, who:who,
+      return rpc('taz_inbox_load',{}).then(function(IN){ return applyInbox(html, IN||{}); }, function(){ return html; });
+    }).then(function(html){
+      window.__TAZ={stateGet:stateGet, stateSet:stateSet, pending:pending, flush:flush, who:who, inbox:INBOX_USED,
         _view:function(){ return VIEW; }, _mem:function(){ return MEM; },
-        _dirty:function(){ var n=0; Object.keys(MEM).forEach(function(k){ var ns=nsOf(k); try{ n+=diff(ns, ns==='ls'?lsVal(MEM[k]):JSON.parse(MEM[k]), k).length; }catch(_){ n++; } }); return n; }};
+        _dirty:function(){ var n=0; Object.keys(MEM).forEach(function(k){ if(/^tazrim-cinc-BAK-autover-/.test(k)) return; var ns=nsOf(k); try{ n+=diff(ns, ns==='ls'?lsVal(MEM[k]):JSON.parse(MEM[k]), k).length; }catch(_){ n++; } }); return n; }};
       try{ Object.defineProperty(window,'localStorage',{configurable:true,get:function(){ return VLS; }}); }catch(e){ throw new Error('הדפדפן לא מאפשר את שכבת השמירה: '+e.message); }
       VLS.__tzLogout=function(){ clearS(); location.reload(); };
       window.addEventListener('beforeunload',function(e){ if(pending()){ try{ flush(); }catch(_){} e.preventDefault(); e.returnValue=''; return ''; } });
