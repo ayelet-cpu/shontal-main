@@ -49,6 +49,7 @@
     <label for="cd">הקוד שקיבלת במייל</label>
     <input id="cd" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" maxlength="10">
     <button id="bVerify">כניסה</button>
+    <button id="bResend" class="link">שליחת קוד חדש</button>
     <button id="bBack" class="link">שליחה למייל אחר</button>
   </div>
 
@@ -114,7 +115,8 @@
     auth('otp',{email:em, create_user:false}).then(function(){
       try{ RLS.setItem(EK,em); }catch(_){}
       show('stCode'); msg('שלחנו קוד ל-'+em+'. הוא מגיע תוך דקה (כדאי לבדוק גם בספאם).'); $('cd').focus();
-    }).catch(function(e){ msg((e.status===429)?'נשלחו יותר מדי קודים. נסי שוב בעוד כמה דקות.':'לא הצלחתי לשלוח קוד: '+e.message,true); })
+    }).catch(function(e){ if(e.status===429){ show('stCode'); msg('כבר נשלח קוד לפני רגע — הקלידי אותו כאן (אפשר לבקש קוד חדש בעוד דקה).',true); return; }
+      msg('לא הצלחתי לשלוח קוד: '+e.message,true); })
       .then(function(){ b.disabled=false; });
   };
   $('bVerify').onclick=function(){
@@ -128,6 +130,7 @@
   $('cd').addEventListener('keydown',function(e){ if(e.key==='Enter') $('bVerify').click(); });
   $('em').addEventListener('keydown',function(e){ if(e.key==='Enter') $('bSend').click(); });
   $('bBack').onclick=function(){ show('stEmail'); msg(''); };
+  $('bResend').onclick=function(){ $('bSend').click(); };
   try{ $('em').value=RLS.getItem(EK)||''; }catch(_){}
 
   /* =====================================================================
@@ -357,7 +360,13 @@
       document.open(); document.write(html); document.close();
       var em=(S&&S.email)||'';
       var t=setInterval(function(){ if(document.body){ clearInterval(t); dot(em); } },200);
-    }).catch(function(e){ show('stEmail'); msg(e.message||String(e),true); });
+    }).catch(function(e){
+      /* מחוברת אבל הטעינה נכשלה — לא מחזירים למסך הכניסה (מבלבל), אלא מציעים לנסות שוב */
+      if(S && S.refresh_token && !/הרשאה|נא להיכנס/.test(String(e&&e.message))){
+        show('stLoad'); $('loadTxt').textContent='הטעינה לא הצליחה.'; msg((e.message||String(e))+'',true);
+        var b=document.createElement('button'); b.textContent='לנסות שוב'; b.onclick=function(){ b.remove(); start(); }; $('msg').appendChild(document.createElement('br')); $('msg').appendChild(b);
+        return; }
+      show('stEmail'); msg(e.message||String(e),true); });
   }
 
   if(S && S.refresh_token){ start(); } else { show('stEmail'); }
