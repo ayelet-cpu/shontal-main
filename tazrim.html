@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>תזרים</title>
+<style>
+  :root{--ink:#4a3423;--muted:#8a7360;--acc:#b5713f;--acc2:#97582c;--line:#ead9c6;--err:#b0472f;--card:#fffaf3}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;min-height:100vh;color:var(--ink);font-family:Assistant,Arial,"Segoe UI",sans-serif;display:flex;align-items:center;justify-content:center;padding:16px;
+    background:radial-gradient(900px 600px at 15% 10%,#fbe9d5 0,transparent 60%),radial-gradient(800px 600px at 90% 95%,#f6dcc2 0,transparent 60%),linear-gradient(160deg,#fbf3e8,#f5e6d4)}
+  .card{width:min(92vw,400px);background:var(--card);border:1px solid #f1e2cf;border-radius:24px;box-shadow:0 20px 60px rgba(120,72,30,.18);padding:30px 28px 26px;text-align:center}
+  .ic{font-size:44px;line-height:1}
+  h1{margin:8px 0 4px;font-size:30px;font-weight:800;color:var(--ink)}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:20px}
+  label{display:block;text-align:right;font-size:14px;margin:0 0 6px;font-weight:700}
+  input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;font-size:16px;background:#fffdf9;color:var(--ink);direction:ltr;text-align:left}
+  input:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 4px rgba(181,113,63,.16)}
+  button{margin-top:14px;width:100%;padding:12px;border:0;border-radius:999px;background:linear-gradient(135deg,#c07b47,#a2612f);color:#fffaf3;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit}
+  button:disabled{opacity:.6;cursor:default}
+  .link{background:none;color:var(--acc2);font-size:13px;margin-top:10px;padding:4px;width:auto;text-decoration:underline}
+  .msg{margin-top:14px;font-size:14px;min-height:20px;line-height:1.5;color:var(--acc2)}
+  .msg.err{color:var(--err)}
+  .hid{display:none}
+  .bar{height:7px;border-radius:99px;background:#f1e2cf;overflow:hidden;margin:16px 10px 12px}
+  .bar b{display:block;height:100%;width:40%;border-radius:99px;background:linear-gradient(90deg,#e0b48c,#b5713f,#e0b48c);animation:bar 1.6s ease-in-out infinite}
+  @keyframes bar{0%{margin-inline-start:-40%}100%{margin-inline-start:100%}}
+  #loadTxt{font-weight:700;color:var(--acc2);font-size:15px}
+  .ldone{font-size:13px;color:var(--muted);line-height:1.9}
+  .ldone div:before{content:"✓ ";color:#4f8a5b;font-weight:800}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="ic">📈</div>
+  <h1>תזרים</h1>
+  <div class="sub">אותו תזרים — שמור בענן, זמין מכל מחשב</div>
+
+  <div id="stEmail">
+    <label for="em">המייל שלך</label>
+    <input id="em" type="email" autocomplete="email" placeholder="name@gmail.com">
+    <button id="bSend">שלחי לי קוד כניסה</button>
+  </div>
+
+  <div id="stCode" class="hid">
+    <label for="cd">הקוד שקיבלת במייל</label>
+    <input id="cd" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" maxlength="10">
+    <button id="bVerify">כניסה</button>
+    <button id="bBack" class="link">שליחה למייל אחר</button>
+  </div>
+
+  <div id="stLoad" class="hid">
+    <div class="bar"><b></b></div>
+    <div id="loadDone" class="ldone"></div>
+    <div id="loadTxt">טוענת את התזרים…</div>
+  </div>
+
+  <div id="msg" class="msg" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+/* תזרים בענן — 26.10.2026.
+   הקוד של התזרים נשאר כמו שהוא (אותם מסכים, חישובים וטקסטים). מתחלפת רק השמירה:
+   במקום localStorage / IndexedDB בדפדפן — שורה לכל מפתח בטבלה taz_kv בענן (פרויקט shontal).
+   כל לשונית שולחת רק מה שהיא עצמה שינתה (השוואה מול מה שהיא טענה), עם הגרסה שראתה —
+   שורה ששונתה בינתיים במקום אחר לא נדרסת (taz_save מחזיר אותה כ«התנגשות»).
+   התזרים קורא משונטל בלבד (taz_payments_get, כמו היום). לא כותב לשונטל. */
+(function(){
+  var SB='https://mjhywoiwdvuxymuyhhdc.supabase.co';
+  var KEY='sb_publishable_c7Y5hKxAqpzIFhhbuhNS2g_u55YKB90';
+  /* אותה התחברות כמו שונטל בענן. באתר (github.io) שונטל שומרת את מפתחות הדפדפן עם הקידומת 'shontal-main::'
+     (ראו index.html) — אז גם כאן, כדי שההתחברות תהיה משותפת באמת. מקובץ במחשב (file://) — בלי קידומת. */
+  var GP=/\.github\.io$/.test(location.hostname||'')?'shontal-main::':'';
+  var SK=GP+'shontal-cloud-session', EK=GP+'shontal-cloud-email';
+  var LP='tazrim-cloud::';                    /* מפתחות שנשארים רק במחשב הזה */
+  var $=function(i){return document.getElementById(i);};
+  function msg(t,err){ var m=$('msg'); m.textContent=t||''; m.className='msg'+(err?' err':''); }
+  function show(id){ ['stEmail','stCode','stLoad'].forEach(function(x){ $(x).classList.toggle('hid',x!==id); }); }
+  function loadStep(t){ var c=$('loadTxt'), d=c.textContent; if(d&&d!==t){ var x=document.createElement('div'); x.textContent=d.replace(/…$/,''); $('loadDone').appendChild(x); } c.textContent=t; }
+
+  var RLS=window.localStorage;                /* האחסון האמיתי של הדפדפן */
+  var S=null; try{ S=JSON.parse(RLS.getItem(SK)||'null'); }catch(_){ S=null; }
+  function saveS(o){ S=o; try{ RLS.setItem(SK, JSON.stringify(o)); }catch(_){} }
+  function clearS(){ S=null; try{ RLS.removeItem(SK); }catch(_){} }
+  function auth(path, body){
+    return fetch(SB+'/auth/v1/'+path,{method:'POST',headers:{'apikey':KEY,'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){ return r.text().then(function(t){ var j={}; try{ j=JSON.parse(t||'{}'); }catch(_){}
+        if(!r.ok){ var e=new Error(j.msg||j.error_description||j.message||('שגיאה '+r.status)); e.status=r.status; throw e; } return j; }); });
+  }
+  function keep(j){ saveS({access_token:j.access_token, refresh_token:j.refresh_token, expires_at:(j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600)), email:(j.user&&j.user.email)||(S&&S.email)||''}); }
+  var _refreshing=null;
+  function refresh(){ if(!S||!S.refresh_token) return Promise.reject(new Error('אין חיבור'));
+    if(_refreshing) return _refreshing;
+    _refreshing=auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token}).then(function(j){ keep(j); _refreshing=null; return S; },function(e){ _refreshing=null; throw e; });
+    return _refreshing; }
+  function fresh(){ if(!S) return Promise.reject(new Error('אין חיבור')); if((S.expires_at||0)-Date.now()/1000 < 120) return refresh(); return Promise.resolve(S); }
+  function hdr(){ return {'apikey':KEY,'Authorization':'Bearer '+(S&&S.access_token||''),'Content-Type':'application/json'}; }
+  function rpc(fn, body, retried){
+    return fresh().then(function(){ return fetch(SB+'/rest/v1/rpc/'+fn,{method:'POST',headers:hdr(),body:JSON.stringify(body||{})}); })
+      .then(function(r){
+        if(r.status===401 && !retried) return refresh().then(function(){ return rpc(fn, body, true); });
+        return r.text().then(function(t){ if(!r.ok){ var e=new Error('שגיאה '+r.status+': '+t.slice(0,200)); e.status=r.status; throw e; } return t?JSON.parse(t):null; });
+      });
+  }
+
+  /* ---- כניסה בקוד מהמייל (כמו בשונטל בענן) ---- */
+  $('bSend').onclick=function(){
+    var em=($('em').value||'').trim().toLowerCase();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ msg('נא להקליד מייל תקין',true); return; }
+    this.disabled=true; msg('שולחת קוד…'); var b=this;
+    auth('otp',{email:em, create_user:false}).then(function(){
+      try{ RLS.setItem(EK,em); }catch(_){}
+      show('stCode'); msg('שלחנו קוד ל-'+em+'. הוא מגיע תוך דקה (כדאי לבדוק גם בספאם).'); $('cd').focus();
+    }).catch(function(e){ msg((e.status===429)?'נשלחו יותר מדי קודים. נסי שוב בעוד כמה דקות.':'לא הצלחתי לשלוח קוד: '+e.message,true); })
+      .then(function(){ b.disabled=false; });
+  };
+  $('bVerify').onclick=function(){
+    var em=($('em').value||'').trim().toLowerCase(), cd=($('cd').value||'').replace(/\s/g,'');
+    if(!cd){ msg('נא להקליד את הקוד',true); return; }
+    this.disabled=true; msg('בודקת…'); var b=this;
+    auth('verify',{type:'email', email:em, token:cd}).then(function(j){ keep(j); start(); })
+      .catch(function(){ msg('הקוד לא נכון או שפג תוקפו. אפשר לבקש קוד חדש.',true); })
+      .then(function(){ b.disabled=false; });
+  };
+  $('cd').addEventListener('keydown',function(e){ if(e.key==='Enter') $('bVerify').click(); });
+  $('em').addEventListener('keydown',function(e){ if(e.key==='Enter') $('bSend').click(); });
+  $('bBack').onclick=function(){ show('stEmail'); msg(''); };
+  try{ $('em').value=RLS.getItem(EK)||''; }catch(_){}
+
+  /* =====================================================================
+     שכבת השמירה
+     ns: manual (tazrim-manual-v1 / state.manual), cinc (tazrim-cinc-v1), pos (tazrim-pos-v1 / state.POS),
+         db (state.DB), ls (שאר מפתחות tazrim-*: k = שם המפתח).
+     אובייקט מפוצל: שורת סימון sub='' עם {"__obj":1} + שורה לכל תת-מפתח. ord = סדר.
+     ===================================================================== */
+  var MKEY='tazrim-manual-v1', CKEY='tazrim-cinc-v1', PKEY='tazrim-pos-v1';
+  var MANUAL_SKIP={invSync:1};               /* עותק של «לתשלום» משונטל — נשאר במחשב, לא בענן */
+  var OBJ_T='{"__obj":1}';
+  function isLocalOnly(n){ return n.indexOf('tazrim-')!==0 || /^(tazrim-data-v1|tazrim-backup-last|tazrim-active-rest|tazrim-rest-index)$/.test(n) || /^tazrim-(data|manual)-v1::/.test(n); }
+  function nsOf(n){ return n===MKEY?'manual':n===CKEY?'cinc':n===PKEY?'pos':'ls'; }
+  function rid(ns,k,sub){ return ns+'\u0001'+k+'\u0001'+sub; }
+  function isObj(v){ return v && typeof v==='object' && !Array.isArray(v); }
+
+  /* VIEW = מה שהלשונית הזו טענה/שמרה: id → {ns,k,sub,t (טקסט JSON), ver, ord, del} */
+  var VIEW={}, MEM={}, PEND={}, CONFL={}, _remote=0, _savedOk=true;
+
+  function splitRows(out, ns, k, val, top){
+    if(isObj(val)){
+      out.push({ns:ns,k:k,sub:'',t:OBJ_T,ord:top});
+      var i=0; for(var s in val){ if(!Object.prototype.hasOwnProperty.call(val,s)) continue; i++; out.push({ns:ns,k:k,sub:s,t:JSON.stringify(val[s]),ord:i}); }
+    } else out.push({ns:ns,k:k,sub:'',t:JSON.stringify(val),ord:top});
+  }
+  function rowsOf(ns, obj, lsName){
+    var out=[], t=0, k;
+    if(ns==='manual'){ for(k in obj){ if(MANUAL_SKIP[k]||obj[k]===undefined) continue; splitRows(out,'manual',k,obj[k],t++); } }
+    else if(ns==='cinc'){ for(k in obj){ out.push({ns:'cinc',k:k,sub:'',t:OBJ_T,ord:t++}); var i=0, brs=obj[k]||{};
+        for(var br in brs){ var days=brs[br]||{}; for(var d in days){ i++; out.push({ns:'cinc',k:k,sub:br+'|'+d,t:JSON.stringify(days[d]),ord:i}); } } } }
+    else if(ns==='pos'||ns==='db'){ for(k in obj){ if(obj[k]===undefined) continue; out.push({ns:ns,k:k,sub:'',t:JSON.stringify(obj[k]),ord:t++}); } }
+    else { var top=(VIEW[rid('ls',lsName,'')]||{}).ord||0; splitRows(out,'ls',lsName,obj,top); }
+    return out;
+  }
+  function build(ns){ /* VIEW → {k: value} לפי הסדר */
+    var rows=[], top={}, id, r;
+    for(id in VIEW){ r=VIEW[id]; if(r.ns!==ns||r.del) continue; rows.push(r); if(r.sub==='') top[r.k]=r.ord; }
+    rows.sort(function(a,b){ return ((top[a.k]||0)-(top[b.k]||0)) || (a.k<b.k?-1:a.k>b.k?1:0) || ((a.sub!=='')-(b.sub!=='')) || (a.ord-b.ord) || (a.sub<b.sub?-1:a.sub>b.sub?1:0); });
+    var out={}, objs={};
+    rows.forEach(function(r){ if(r.sub===''&&r.t===OBJ_T) objs[r.k]=1; });
+    rows.forEach(function(r){
+      if(ns==='cinc'){ if(!r.sub) { out[r.k]=out[r.k]||{}; return; } var p=r.sub.indexOf('|'), br=r.sub.slice(0,p), d=r.sub.slice(p+1);
+        var o=out[r.k]=out[r.k]||{}; (o[br]=o[br]||{})[d]=JSON.parse(r.t); return; }
+      if(objs[r.k]){ var x=out[r.k]=out[r.k]||{}; if(r.sub) x[r.sub]=JSON.parse(r.t); }
+      else out[r.k]=JSON.parse(r.t);
+    });
+    return out;
+  }
+  function lsVal(s){ try{ return JSON.parse(s); }catch(_){ return {__raw:s}; } }
+  function lsText(v){ return (isObj(v)&&typeof v.__raw==='string'&&Object.keys(v).length===1)?v.__raw:JSON.stringify(v); }
+  function localSync(){ try{ return JSON.parse(RLS.getItem(LP+'chakoli_inv_sync')||'null'); }catch(_){ return null; } }
+  function buildMem(){
+    MEM={};
+    var m=build('manual'); var sy=localSync(); if(sy) m.invSync=sy;
+    MEM[MKEY]=JSON.stringify(m);
+    var c=build('cinc'); if(Object.keys(c).length) MEM[CKEY]=JSON.stringify(c);
+    var p=build('pos'); if(Object.keys(p).length) MEM[PKEY]=JSON.stringify(p);
+    var l=build('ls'); for(var n in l) MEM[n]=lsText(l[n]);
+  }
+
+  /* השוואה: מה הלשונית שינתה מאז שטענה/שמרה. scope = כל ה-ns, או מפתח אחד ב-ls */
+  function diff(ns, obj, lsName, remove){
+    var want=remove?[]:rowsOf(ns,obj,lsName), seen={}, ch=[];
+    want.forEach(function(w){ var id=rid(w.ns,w.k,w.sub); seen[id]=1; if(CONFL[id]) return; var v=VIEW[id];
+      if(!v||v.del||v.t!==w.t||v.ord!==w.ord) ch.push({id:id,ns:w.ns,k:w.k,sub:w.sub,t:w.t,ord:w.ord,del:false,base:v?v.ver:null}); });
+    for(var id in VIEW){ var v=VIEW[id]; if(v.ns!==ns||v.del||seen[id]||CONFL[id]) continue; if(ns==='ls'&&v.k!==lsName) continue;
+      if(ns==='manual'&&MANUAL_SKIP[v.k]) continue;
+      ch.push({id:id,ns:v.ns,k:v.k,sub:v.sub,t:v.t,ord:v.ord,del:true,base:v.ver}); }
+    return ch;
+  }
+
+  /* תור שמירה: אוסף שינויים, שולח פעם אחת בכל פעם (כדי שהגרסאות יתעדכנו לפני השליחה הבאה) */
+  var _qT=null, _busy=false, _again=false, _lastErr='';
+  function queue(kind, name, obj){ if(kind==='ls') delete PEND['rm\u0001'+name]; PEND[kind+'\u0001'+(name||'')]={kind:kind,name:name,obj:obj}; if(_qT) clearTimeout(_qT); _qT=setTimeout(flush,350); }
+  function flush(){
+    _qT=null; if(_busy){ _again=true; return; }
+    var jobs=PEND; PEND={}; var ch=[], byId={};
+    Object.keys(jobs).forEach(function(j){ var o=jobs[j], list;
+      try{ if(o.kind==='rm'){ list=diff(nsOf(o.name), null, o.name, true); }
+           else if(o.kind==='ls'){ var n=o.name, ns=nsOf(n); if(!Object.prototype.hasOwnProperty.call(MEM,n)) list=[]; else list=diff(ns, ns==='ls'?lsVal(MEM[n]):JSON.parse(MEM[n]), n); }
+           else list=diff(o.kind, o.obj, null); }catch(e){ list=[]; }
+      list.forEach(function(c){ byId[c.id]=c; }); });
+    for(var id in byId) ch.push(byId[id]);
+    if(!ch.length){ badge(); return; }
+    _busy=true; badge('saving');
+    var body=ch.map(function(c){ return {ns:c.ns,k:c.k,sub:c.sub,v:c.del?null:JSON.parse(c.t),deleted:c.del,ord:c.ord,base:c.base}; });
+    rpc('taz_save',{p_rows:body}).then(function(res){
+      (res.saved||[]).forEach(function(s){ var id=rid(s.ns,s.k,s.sub), c=byId[id]; if(!c) return;
+        VIEW[id]={ns:c.ns,k:c.k,sub:c.sub,t:c.t,ord:c.ord,ver:s.ver,del:c.del}; });
+      (res.conflicts||[]).forEach(function(s){ var id=rid(s.ns,s.k,s.sub); CONFL[id]=1; });
+      if((res.conflicts||[]).length) note('confl');
+      _savedOk=true; _lastErr='';
+    }).catch(function(e){
+      /* לא נשמר — מחזירים לתור וננסה שוב */
+      _savedOk=false; _lastErr=String(e&&e.message||e);
+      Object.keys(jobs).forEach(function(j){ if(!PEND[j]) PEND[j]=jobs[j]; });
+      setTimeout(flush, 5000);
+    }).then(function(){ _busy=false; badge(); if(_again){ _again=false; flush(); } });
+  }
+  function pending(){ return _busy || !!_qT || Object.keys(PEND).length>0 || !_savedOk; }
+
+  /* localStorage מדומה: מפתחות tazrim-* מהזיכרון (שנטען מהענן); השאר — במחשב, עם קידומת */
+  function localKeys(){ var a=[]; for(var i=0;i<RLS.length;i++){ var k=RLS.key(i); if(k&&k.indexOf(LP)===0) a.push(k.slice(LP.length)); } return a; }
+  var VLS={
+    getItem:function(k){ k=String(k); if(isLocalOnly(k)) return RLS.getItem(LP+k); return Object.prototype.hasOwnProperty.call(MEM,k)?MEM[k]:null; },
+    setItem:function(k,v){ k=String(k); v=String(v); if(isLocalOnly(k)){ RLS.setItem(LP+k,v); return; } if(MEM[k]===v) return; MEM[k]=v; queue('ls',k); },
+    removeItem:function(k){ k=String(k); if(isLocalOnly(k)){ RLS.removeItem(LP+k); return; } if(!Object.prototype.hasOwnProperty.call(MEM,k)) return;
+      delete MEM[k]; delete PEND['ls\u0001'+k]; queue('rm',k); },
+    clear:function(){ localKeys().forEach(function(k){ RLS.removeItem(LP+k); }); },
+    key:function(i){ var a=Object.keys(MEM).concat(localKeys()); return a[i]==null?null:a[i]; }
+  };
+  Object.defineProperty(VLS,'length',{get:function(){ return Object.keys(MEM).length+localKeys().length; }});
+  /* מצב מלא (מה שהתזרים שומר ב-IndexedDB בשם state): DB + manual + POS */
+  function stateGet(){
+    var db=build('db'); if(!Object.keys(db).length) return Promise.resolve(undefined);
+    var m=JSON.parse(MEM[MKEY]||'{}'), p=build('pos');
+    var st={_tazrimState:1, savedAt:new Date().toISOString(), DB:db, manual:m, POS:Object.keys(p).length?p:null, sync:localSync()};
+    /* כמו IndexedDB האמיתי: התשובה מגיעה רק אחרי שכל הדף נקרא (כולל בלוקי הייבוא בסוף הקובץ) */
+    return new Promise(function(res){ (function w(){ if(document.readyState==='loading') return setTimeout(w,20); setTimeout(function(){ res(st); },0); })(); });
+  }
+  function stateSet(st){
+    try{ if(st&&st.DB) queue('db',null,st.DB); if(st&&isObj(st.manual)) queue('manual',null,st.manual); if(st&&isObj(st.POS)) queue('pos',null,st.POS); }catch(_){}
+    return Promise.resolve(true);
+  }
+
+  /* מה השתנה במכשיר/לשונית אחרת — לא דורסים, רק מודיעים ומציעים רענון */
+  var _since=null;
+  function poll(){
+    if(!_since||pending()) return;
+    rpc('taz_changes',{p_since:new Date(new Date(_since).getTime()-3000).toISOString()}).then(function(res){
+      _since=res.now;
+      var n=0; (res.rows||[]).forEach(function(r){ var v=VIEW[rid(r.ns,r.k,r.sub)]; if(!v||r.ver>v.ver) n++; });
+      if(n){ _remote+=n; note('remote'); }
+    }).catch(function(){});
+  }
+
+  /* ---- חיווי קטן (פינה שמאלית למעלה) ---- */
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function badge(st){
+    var b=document.getElementById('tzCloudDot'); if(!b) return;
+    var s=st||(!_savedOk?'err':(pending()?'saving':'ok'));
+    var m={ok:['☁️','#e9d6bf','נשמר בענן'], saving:['☁️','#f3c98f','שומרת בענן…'], err:['⚠️','#f2b8a8','לא נשמר בענן — מנסה שוב. '+_lastErr]}[s];
+    b.firstChild.textContent=m[0]; b.firstChild.style.background=m[1]; b.firstChild.title=m[2];
+    var t=document.getElementById('tzCloudSt'); if(t) t.textContent=m[2];
+  }
+  function note(kind){
+    var id='tzCloudNote', d=document.getElementById(id); if(!d){ d=document.createElement('div'); d.id=id;
+      d.style.cssText='position:fixed;bottom:14px;left:14px;z-index:2147483646;max-width:360px;direction:rtl;background:#fff6ea;color:#6b3f1d;border:1px solid #efc89c;border-radius:12px;padding:10px 14px;font:600 13.5px Assistant,Arial,sans-serif;box-shadow:0 6px 20px rgba(120,72,30,.18);line-height:1.55';
+      document.body.appendChild(d); }
+    var txt=(Object.keys(CONFL).length?'⚠️ שינוי שעשית לא נשמר, כי אותו נתון עודכן בינתיים במחשב או לשונית אחרת. לחצי «רענון» כדי לראות את העדכני, ואז להזין שוב.':
+      '🔄 התזרים עודכן במחשב או לשונית אחרת.');
+    d.innerHTML=esc(txt)+' <button onclick="location.reload()" style="margin-inline-start:6px;border:0;border-radius:8px;padding:4px 12px;background:#b5713f;color:#fffaf3;font:700 13px Assistant,Arial;cursor:pointer">רענון</button>';
+  }
+  function dot(email){
+    var w=document.createElement('div'); w.id='tzCloudDot';
+    w.style.cssText='position:fixed;top:10px;left:10px;z-index:2147483646;direction:rtl;font:13px Assistant,Arial,sans-serif';
+    w.innerHTML='<div style="width:30px;height:30px;border-radius:50%;background:#e9d6bf;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;box-shadow:0 2px 8px rgba(120,72,30,.18)" onclick="var m=this.nextSibling;m.style.display=(m.style.display===\'block\'?\'none\':\'block\')">☁️</div>'+
+      '<div style="display:none;position:absolute;top:36px;left:0;min-width:230px;background:#fffaf3;border:1px solid #ead9c6;border-radius:12px;box-shadow:0 8px 24px rgba(120,72,30,.18);padding:10px 12px;color:#4a3423;line-height:1.7">'+
+      '<b>☁️ תזרים</b><br><span id="tzCloudSt">נשמר בענן</span><br><span style="color:#8a7360">מחוברת: '+esc(email)+'</span><br>'+
+      '<a href="#" onclick="try{localStorage.__tzLogout()}catch(_){};return false" style="color:#97582c;font-weight:700">יציאה</a></div>';
+    (document.body||document.documentElement).appendChild(w); badge();
+  }
+
+  /* ---- התאמות קטנות לקוד התזרים: מצב מלא נשמר בענן במקום IndexedDB ---- */
+  function patch(h){
+    var reps=[
+      ['function idbSet(k,v){', "function idbSet(k,v){ if(k==='state'&&window.__TAZ) return window.__TAZ.stateSet(v); return __tazIdbSet0(k,v); }\nfunction __tazIdbSet0(k,v){"],
+      ['function idbGet(k){', "function idbGet(k){ if(k==='state'&&window.__TAZ) return window.__TAZ.stateGet(); return __tazIdbGet0(k); }\nfunction __tazIdbGet0(k){"]
+    ];
+    for(var i=0;i<reps.length;i++){ var n=h.split(reps[i][0]).length-1; if(n!==1) throw new Error('התאמה '+(i+1)+' לא נמצאה ('+n+')'); h=h.split(reps[i][0]).join(reps[i][1]); }
+    return h;
+  }
+
+  /* מטמון מקומי של קוד התזרים — מורידים מחדש רק כשיש גרסה חדשה */
+  function idb(){ return new Promise(function(res,rej){ setTimeout(function(){ rej(new Error('idb-timeout')); },2500); try{ var q=indexedDB.open('tazrim-cloud',1);
+    q.onupgradeneeded=function(){ q.result.createObjectStore('f'); }; q.onsuccess=function(){ res(q.result); }; q.onerror=function(){ rej(q.error); }; }catch(e){ rej(e); } }); }
+  function cget(k){ return idb().then(function(db){ return new Promise(function(res){ var t=db.transaction('f','readonly').objectStore('f').get(k); t.onsuccess=function(){ res(t.result||null); }; t.onerror=function(){ res(null); }; }); }).catch(function(){ return null; }); }
+  function cput(k,v){ return idb().then(function(db){ return new Promise(function(res){ var t=db.transaction('f','readwrite'); t.objectStore('f').put(v,k); t.oncomplete=function(){ res(true); }; t.onerror=function(){ res(false); }; }); }).catch(function(){ return false; }); }
+  function gunzipB64(b64){ var bin=atob(b64), u=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+    return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text(); }
+  function rest(q){ return fresh().then(function(){ return fetch(SB+'/rest/v1/'+q,{headers:hdr()}); }).then(function(r){
+      if(r.status===401){ clearS(); throw new Error('ההתחברות פגה — נא להיכנס שוב'); }
+      if(!r.ok) throw new Error('שגיאה בטעינה ('+r.status+')'); return r.json(); }); }
+  function getCode(){
+    return rest('taz_files?name=eq.tazrim.gz&select=md5,updated_at').then(function(rows){
+      if(!rows||!rows.length) throw new Error('קוד התזרים עוד לא הועלה לענן.');
+      var md5=rows[0].md5;
+      return cget('app').then(function(c){
+        if(c&&c.md5===md5&&c.html) return c.html;
+        loadStep('מורידה את גרסת התזרים העדכנית…');
+        return rest('taz_files?name=eq.tazrim.gz&select=content').then(function(r2){ return gunzipB64(r2[0].content); })
+          .then(function(html){ return cput('app',{md5:md5,html:html}).then(function(){ return html; }); });
+      });
+    });
+  }
+  function loadNs(ns){
+    var all=[];
+    function page(ak,as){ return rpc('taz_load',{p_ns:ns,p_after_k:ak,p_after_sub:as,p_limit:2000}).then(function(rows){
+      rows=rows||[]; all=all.concat(rows); if(rows.length<2000) return all; var l=rows[rows.length-1]; return page(l.k,l.sub); }); }
+    return page('','');
+  }
+
+  function start(){
+    show('stLoad'); msg(''); $('loadDone').textContent=''; $('loadTxt').textContent='מתחברת לענן…';
+    var who='';
+    fresh().then(function(){ return rpc('taz_me',{}); }).then(function(n){
+      if(!n) throw new Error('למייל הזה אין הרשאה לתזרים. אם זו טעות — לפנות לאיילת.');
+      who=n; loadStep('טוענת את הנתונים…');
+      return rpc('taz_changes',{p_since:new Date(Date.now()+86400000).toISOString()}).then(function(r){ _since=r.now; });
+    }).then(function(){
+      return Promise.all(['manual','cinc','pos','db','ls'].map(function(ns){ return loadNs(ns).then(function(rows){
+        rows.forEach(function(r){ var t; try{ t=JSON.stringify(r.v); }catch(_){ t='null'; }
+          VIEW[rid(ns,r.k,r.sub)]={ns:ns,k:r.k,sub:r.sub,t:t,ver:r.ver,ord:r.ord||0,del:!!r.deleted}; }); }); }));
+    }).then(function(){
+      buildMem();
+      loadStep('טוענת את התזרים…');
+      return getCode();
+    }).then(function(html){
+      html=patch(html);
+      window.__TAZ={stateGet:stateGet, stateSet:stateSet, pending:pending, flush:flush, who:who,
+        _view:function(){ return VIEW; }, _mem:function(){ return MEM; },
+        _dirty:function(){ var n=0; Object.keys(MEM).forEach(function(k){ var ns=nsOf(k); try{ n+=diff(ns, ns==='ls'?lsVal(MEM[k]):JSON.parse(MEM[k]), k).length; }catch(_){ n++; } }); return n; }};
+      try{ Object.defineProperty(window,'localStorage',{configurable:true,get:function(){ return VLS; }}); }catch(e){ throw new Error('הדפדפן לא מאפשר את שכבת השמירה: '+e.message); }
+      VLS.__tzLogout=function(){ clearS(); location.reload(); };
+      window.addEventListener('beforeunload',function(e){ if(pending()){ try{ flush(); }catch(_){} e.preventDefault(); e.returnValue=''; return ''; } });
+      setInterval(poll, 5000);
+      document.open(); document.write(html); document.close();
+      var em=(S&&S.email)||'';
+      var t=setInterval(function(){ if(document.body){ clearInterval(t); dot(em); } },200);
+    }).catch(function(e){ show('stEmail'); msg(e.message||String(e),true); });
+  }
+
+  if(S && S.refresh_token){ start(); } else { show('stEmail'); }
+})();
+</script>
+</body>
+</html>
