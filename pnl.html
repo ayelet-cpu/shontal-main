@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>רווח והפסד</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%236a57de'/%3E%3Cpath d='M16 46V30M28 46V20M40 46V34M52 46V14' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+/* רווח והפסד בענן — 29.10.2026. העמוד הזה רק טוען: הקוד של כל מסעדה (pl_code) + הנתונים (pl_docs) מהענן,
+   ומריץ אותם כמו שהם בתוך מסגרת. «שמירה אוטומטית» של המערכת שומרת לענן (pl_save) במקום לקובץ. */
+:root{--bg:#f4f3fb;--bar:rgba(255,255,255,.86);--line:rgba(80,70,150,.16);--ink:#1d1a33;--ink2:#5b5776;--acc:#6a57de;--ok:#1f9d6a;--warn:#c27a12;--bad:#d6455a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f0d22;--bar:rgba(30,26,60,.9);--line:rgba(255,255,255,.12);--ink:#f1efff;--ink2:#c3bfe0;--acc:#9b8cff;--ok:#4fd39b;--warn:#f0b452;--bad:#ff7688}}
+:root[data-theme="dark"]{--bg:#0f0d22;--bar:rgba(30,26,60,.9);--line:rgba(255,255,255,.12);--ink:#f1efff;--ink2:#c3bfe0;--acc:#9b8cff;--ok:#4fd39b;--warn:#f0b452;--bad:#ff7688}
+*{box-sizing:border-box}
+.hid{display:none!important}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Heebo","Segoe UI",system-ui,sans-serif}
+.bar{position:fixed;top:0;inset-inline:0;height:46px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--bar);border-bottom:1px solid var(--line);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);z-index:5;font-size:14px}
+.bar b{font-size:15px}
+.bar select{height:32px;border-radius:9px;border:1px solid var(--line);background:transparent;color:inherit;padding:0 8px;font:inherit}
+.bar a{color:var(--acc);text-decoration:none;font-weight:600;margin-inline-start:auto;white-space:nowrap}
+.st{font-size:12.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st.ok{color:var(--ok)}.st.warn{color:var(--warn);font-weight:600}.st.bad{color:var(--bad);font-weight:600}
+.st button{border:0;background:var(--acc);color:#fff;border-radius:8px;padding:3px 10px;font:inherit;font-weight:600;cursor:pointer;margin-inline-start:6px}
+#fr{position:fixed;top:46px;inset-inline:0;bottom:0;width:100%;height:calc(100% - 46px);border:0;background:#fff}
+.msg{max-width:440px;margin:18vh auto 0;padding:26px;border-radius:18px;background:var(--bar);border:1px solid var(--line);text-align:center;line-height:1.6}
+.msg h1{font-size:20px;margin:0 0 8px}
+.msg input{width:100%;height:44px;border-radius:11px;border:1px solid var(--line);background:transparent;color:inherit;padding:0 12px;font:inherit;margin:6px 0;direction:ltr}
+.msg button,.msg a.btn{display:inline-block;width:100%;height:44px;border:0;border-radius:11px;background:var(--acc);color:#fff;font:inherit;font-weight:700;cursor:pointer;margin-top:6px;text-decoration:none;line-height:44px}
+.msg .err{color:var(--bad);font-size:13px;min-height:18px}
+.list a{display:block;padding:12px;border-radius:12px;border:1px solid var(--line);margin:8px 0;color:inherit;text-decoration:none;font-weight:600}
+.list a:hover{border-color:var(--acc)}
+.list small{display:block;font-weight:400;color:var(--ink2);font-size:12px}
+@media (max-width:600px){.bar .st{max-width:40vw}}
+</style>
+</head>
+<body>
+<div class="bar hid" id="bar"><b>רווח והפסד</b><select id="rsel" aria-label="מסעדה"></select><span class="st" id="st">טוען…</span><a href="mission.html" id="back">מרכז הבקרה ←</a></div>
+<div id="view"></div>
+<script>
+(function(){
+'use strict';
+var SB='https://mjhywoiwdvuxymuyhhdc.supabase.co', KEY='sb_publishable_c7Y5hKxAqpzIFhhbuhNS2g_u55YKB90';
+var SK='mc-session';   /* אותה כניסה כמו במרכז הבקרה */
+var NAMES={pastel:'פאסטל',ariela:'אריאלה',topol:'טופול',asa:'אסא',chakoli:"צ'אקולי"};
+var $=function(i){return document.getElementById(i);};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+try{ var th=localStorage.getItem('mc-theme'); if(th) document.documentElement.setAttribute('data-theme',th); }catch(_){}
+
+/* ---------- כניסה (כמו במרכז הבקרה) ---------- */
+var S=null;
+function loadS(){ try{ S=JSON.parse(localStorage.getItem(SK)||'null'); }catch(_){ S=null; } }
+function saveS(o){ S=o; try{ localStorage.setItem(SK,JSON.stringify(o)); }catch(_){} }
+function clearS(){ S=null; try{ localStorage.removeItem(SK); }catch(_){} }
+loadS();
+function auth(path,body){
+  return fetch(SB+'/auth/v1/'+path,{method:'POST',headers:{'apikey':KEY,'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){ return r.text().then(function(t){ var j={}; try{ j=JSON.parse(t||'{}'); }catch(_){}
+      if(!r.ok){ var e=new Error(j.msg||j.error_description||j.message||('שגיאה '+r.status)); e.status=r.status; throw e; } return j; }); });
+}
+function keep(j){ saveS({access_token:j.access_token,refresh_token:j.refresh_token,expires_at:(j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600)),email:(j.user&&j.user.email)||(S&&S.email)||''}); }
+var _ref=null;
+function fresh(){
+  var mine=S; loadS(); if(!S) S=mine;
+  if(!S) return Promise.reject(Object.assign(new Error('אין חיבור'),{login:1}));
+  if((S.expires_at||0)-Date.now()/1000>120) return Promise.resolve(S);
+  if(!_ref) _ref=auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token})
+    .then(function(j){ keep(j); _ref=null; return S; },function(e){ _ref=null; if(e.status===400||e.status===401){ clearS(); e.login=1; } throw e; });
+  return _ref;
+}
+function rpc(fn,body){
+  return fresh().then(function(){ return fetch(SB+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+S.access_token,'Content-Type':'application/json'},body:JSON.stringify(body||{})}); })
+    .then(function(r){ return r.text().then(function(t){
+      if(r.status===401){ clearS(); throw Object.assign(new Error('נותקת'),{login:1}); }
+      if(!r.ok){ var m=t; try{ m=JSON.parse(t).message||t; }catch(_){} throw new Error(m||('שגיאה '+r.status)); }
+      return t?JSON.parse(t):null; }); });
+}
+function loginView(){
+  $('bar').classList.add('hid');
+  $('view').innerHTML='<div class="msg"><h1>רווח והפסד</h1><p>כניסה עם קוד שנשלח למייל</p><div id="s1"><input id="em" type="email" placeholder="bills.ayelet@gmail.com"><button id="b1">שלחי לי קוד</button></div>'+
+    '<div id="s2" style="display:none"><input id="cd" inputmode="numeric" placeholder="הקוד מהמייל"><button id="b2">כניסה</button></div><div class="err" id="er"></div></div>';
+  try{ $('em').value=localStorage.getItem('mc-email')||''; }catch(_){}
+  $('b1').onclick=function(){ var em=$('em').value.trim().toLowerCase(); if(!em) return; $('er').textContent='שולחת…';
+    auth('otp',{email:em,create_user:false}).then(function(){ try{ localStorage.setItem('mc-email',em); }catch(_){} $('s1').style.display='none'; $('s2').style.display=''; $('er').textContent='הקוד נשלח למייל'; $('cd').focus(); },
+      function(e){ $('er').textContent=e.status===429?'נשלחו יותר מדי קודים. נסי שוב בעוד כמה דקות.':'לא נשלח: '+e.message; }); };
+  $('b2').onclick=function(){ var em=$('em').value.trim().toLowerCase(), cd=$('cd').value.replace(/\s/g,''); $('er').textContent='בודקת…';
+    auth('verify',{type:'email',email:em,token:cd}).then(function(j){ keep(j); start(); },function(){ $('er').textContent='הקוד לא נכון או שפג תוקפו'; }); };
+}
+function fail(e){
+  if(e&&e.login) return loginView();
+  $('bar').classList.add('hid');
+  $('view').innerHTML='<div class="msg"><h1>לא נטען</h1><p>'+esc(e&&e.message||e)+'</p><button onclick="location.reload()">לנסות שוב</button></div>';
+}
+
+/* ---------- טעינת המערכת ---------- */
+var REST=null, BASE=null, PEEK=null, FILE_NAME='';
+var OPEN=function(k){ return '<script id="pl-'+k+'" type="application/json">'; }, CLOSE='</'+'script>';
+function js(o){ return JSON.stringify(o).replace(/</g,'\\u003c'); }
+function build(code,docs){
+  /* כמו merge ב-tools/pl_cloud.py: ממלאים את ארבעת הבלוקים הריקים שבראש הדף */
+  var out=code;
+  ['data','refs','cc','ext'].forEach(function(k){
+    var o=OPEN(k), i=out.indexOf(o+CLOSE);
+    if(i<0) throw new Error('הקוד בענן לא תקין (בלוק pl-'+k+')');
+    out=out.slice(0,i+o.length)+js((docs[k]||{}).data)+out.slice(i+o.length);
+  });
+  return out;
+}
+/* ההתאמות לענן — כל אחת חייבת להימצא בדיוק פעם אחת, אחרת לא פותחים לעריכה (כדי שלא «תישמר» עבודה לשום מקום) */
+var PATCHES=[
+  ['async function asGet() {','async function asGet() { if (window.__PLC) return window.__PLC.handle;'],
+  ['async function asPut(h) {','async function asPut(h) { if (window.__PLC) return;'],
+  ["const _saveFileAS = saveFile;","const _saveFileAS = saveFile;"]
+];
+var SOFT=[["💾 שמירה לקובץ","💾 שמירה"],["🔄 הקובץ עודכן מבחוץ","🔄 הענן עודכן מבחוץ"],["'נשמר בקובץ · '","'נשמר בענן · '"],["toast('✅ נשמר לקובץ · שמירה אוטומטית פעילה')","toast('✅ נשמר בענן')"],["🟢 שמירה אוטומטית פעילה","🟢 נשמר בענן אוטומטית"]];
+function patch(html){
+  PATCHES.forEach(function(p){ var n=html.split(p[0]).length-1; if(n!==1) throw new Error('הקוד של המערכת השתנה ולא מתאים לענן ('+p[0].slice(0,30)+'…, '+n+'). לא נפתח לעריכה כדי לא לאבד שינויים.'); html=html.replace(p[0],p[1]); });
+  SOFT.forEach(function(p){ html=html.split(p[0]).join(p[1]); });
+  var pre='<script>/* ענן */ try{ if(parent!==window && parent.__PLC_BRIDGE){ window.__PLC=parent.__PLC_BRIDGE;'+
+    ' if(!window.showSaveFilePicker){ window.showSaveFilePicker=async function(){ return window.__PLC.handle; }; window.showOpenFilePicker=async function(){ return [window.__PLC.handle]; }; } } }catch(e){}<\/script>';
+  var h=html.indexOf('<head>'); if(h<0) throw new Error('הקוד בענן לא תקין (head)');
+  return html.slice(0,h+6)+pre+html.slice(h+6);
+}
+/* «קובץ» מדומה: מה שהמערכת קוראת וכותבת — הולך לענן */
+function makeHandle(){
+  var AS_OPEN=OPEN('data');
+  return {
+    kind:'file', get name(){ return FILE_NAME; },
+    queryPermission:function(){ return Promise.resolve('granted'); },
+    requestPermission:function(){ return Promise.resolve('granted'); },
+    getFile:function(){ return rpc('pl_data',{p_rest:REST}).then(function(r){
+      BASE=r.stamp; var t=AS_OPEN+js(r.data)+CLOSE; return {size:t.length,text:function(){ return Promise.resolve(t); }}; }); },
+    createWritable:function(){ var buf='';
+      return Promise.resolve({ write:function(x){ buf+=x; return Promise.resolve(); },
+        close:function(){
+          var i=buf.indexOf(AS_OPEN), j=buf.indexOf(CLOSE,i);
+          if(i<0||j<0) return Promise.reject(new Error('שמירה לא תקינה'));
+          var data=JSON.parse(buf.slice(i+AS_OPEN.length,j));
+          setSt('שומרת בענן…','');
+          return rpc('pl_save',{p_rest:REST,p_base:BASE,p_data:data,p_force:false}).then(function(r){
+            if(!r||!r.ok){ var e=new Error('changed'); e.changed=true; setSt('⚠ מישהו עדכן בענן בינתיים — השמירה נעצרה. רענני (F5).','warn'); throw e; }
+            BASE=r.stamp; if(PEEK&&PEEK.data) PEEK.data.stamp=r.stamp; setSt('☁ נשמר בענן · '+new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}),'ok');
+          },function(e){ setSt('⚠ לא נשמר בענן: '+e.message,'bad'); throw e; });
+        } }); }
+  };
+}
+function setSt(t,c,btn){ var s=$('st'); s.className='st '+(c||''); s.textContent=t; if(btn){ var b=document.createElement('button'); b.textContent=btn; b.onclick=function(){ location.reload(); }; s.appendChild(b); } }
+
+function list(){
+  return rpc('pl_list').then(function(a){
+    $('bar').classList.add('hid');
+    if(!a||!a.length){ $('view').innerHTML='<div class="msg"><h1>אין גישה</h1><p>למשתמש הזה אין הרשאה לרווח והפסד.</p></div>'; return; }
+    $('view').innerHTML='<div class="msg list"><h1>רווח והפסד</h1>'+a.map(function(x){ return '<a href="?r='+esc(x.rest)+'">'+esc(NAMES[x.rest]||x.title)+'<small>'+esc(x.title)+'</small></a>'; }).join('')+'</div>';
+  });
+}
+function open(rest){
+  REST=rest;
+  return Promise.all([rpc('pl_get',{p_rest:rest}),rpc('pl_list')]).then(function(res){
+    var g=res[0], a=res[1]||[];
+    if(!g||!g.code) throw new Error('אין במערכת מסעדה כזו: '+rest);
+    var docs=g.docs||{}; BASE=(docs.data||{}).stamp; FILE_NAME=(((docs.data||{}).data||{}).meta||{}).fileName||'';
+    PEEK={}; Object.keys(docs).forEach(function(k){ PEEK[k]={stamp:docs[k].stamp}; });
+    var html=patch(build(g.code,docs));
+    window.__PLC_BRIDGE={handle:makeHandle(),rest:rest};
+    document.title=(g.title||'רווח והפסד')+' · ענן';
+    $('rsel').innerHTML=a.map(function(x){ return '<option value="'+esc(x.rest)+'"'+(x.rest===rest?' selected':'')+'>'+esc(NAMES[x.rest]||x.rest)+'</option>'; }).join('');
+    $('rsel').onchange=function(){ location.search='?r='+encodeURIComponent(this.value); };
+    $('bar').classList.remove('hid');
+    var u=(docs.data||{}).updated_by, at=(docs.data||{}).updated_at;
+    setSt('☁ בענן'+(at?' · עודכן '+new Date(at).toLocaleString('he-IL',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})+(u?' ('+u+')':''):''),'ok');
+    var fr=document.createElement('iframe'); fr.id='fr'; fr.title=g.title||'רווח והפסד';
+    $('view').innerHTML=''; $('view').appendChild(fr); fr.srcdoc=html;
+    setInterval(watch,60000);
+  });
+}
+/* שינוי מבחוץ (קלוד עדכן השוואה לשונטל / נתונים) — מודיעים, לא מרעננים לבד */
+function watch(){
+  if(document.hidden) return;
+  rpc('pl_peek',{p_rest:REST}).then(function(p){
+    if(!p||!PEEK) return; var ch=[];
+    ['ext','cc','refs'].forEach(function(k){ if(p[k]&&(!PEEK[k]||p[k].stamp!==PEEK[k].stamp)) ch.push(k); });
+    var dataCh=p.data&&p.data.stamp!==BASE;
+    if(dataCh) setSt('⚠ הנתונים עודכנו בענן ('+(p.data.updated_by||'')+') — לרענן לפני שממשיכים','warn','רענון');
+    else if(ch.length) setSt('נתוני ההשוואה (שונטל / אשראי) התעדכנו בענן','', 'רענון');
+  },function(){});
+}
+function start(){
+  var r=new URLSearchParams(location.search).get('r');
+  (r?open(r):list()).catch(fail);
+}
+if(S&&S.refresh_token) start(); else loginView();
+})();
+</script>
+</body>
+</html>

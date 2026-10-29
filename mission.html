@@ -106,7 +106,7 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .rest-h .ibtn{width:32px;height:32px;border-radius:10px}
 .rest-h .ibtn svg{width:16px;height:16px}
 .sys-row{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
-.sys{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1px solid var(--line);background:var(--glass2);text-align:start;transition:transform .15s,background .15s,border-color .15s;min-width:0}
+.sys{text-decoration:none;color:inherit;display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1px solid var(--line);background:var(--glass2);text-align:start;transition:transform .15s,background .15s,border-color .15s;min-width:0}
 .sys:hover{background:var(--glass-hi);border-color:color-mix(in srgb,var(--rc) 55%,transparent);transform:translateY(-1px)}
 .sys:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .sys.off{opacity:.55}
@@ -512,6 +512,8 @@ var PNL_RE=/^רווח והפסד (.+?) - קלוד\.html$/;
 var SAL_OF={'פאסטל':['פאסטל'],'אריאלה וטופול':['אריאלה','טופול'],'אסא':['אסא'],'פינצוס':["צ'אקולי"],"צ'אקולי":["צ'אקולי"],'צאקולי':["צ'אקולי"]};
 var PNL_OF={'פאסטל':'פאסטל','אריאלה':'אריאלה','טופול':'טופול','סינמה':'טופול','אסא':'אסא','צאקולי':"צ'אקולי","צ'אקולי":"צ'אקולי"};
 var CLOUD_SAL={'אסא':1,"צ'אקולי":1};
+/* רווח והפסד עבר לענן (29.10.2026) — נפתח מכל מקום, בלי המחשב */
+var PNL_KEY={'פאסטל':'pastel','אריאלה':'ariela','טופול':'topol','אסא':'asa',"צ'אקולי":'chakoli'};
 var HEB_M=['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 function systems(){
   var sal={}, pnl={};
@@ -541,7 +543,8 @@ function renderRests(){
       (CLOUD_SAL[r.nm]?'<a class="chip" href="https://ayelet-cpu.github.io/" target="_blank" rel="noopener" title="בקרת שכר בענן — נפתחת מכל מקום">☁ שכר בענן</a>':'')+'</div>';
     h+='<div class="sys-row">'+
       sysBtn('sal',cur,'שכר',cur?(HEB_M[cur.mon]+' '+cur.yr+' · '+ago(cur.mtime)):'')+
-      sysBtn('pnl',s.pnl,'רווח והפסד',s.pnl?'עודכן '+ago(s.pnl.mtime):'')+'</div>';
+      (PNL_KEY[r.nm]?'<a class="sys" href="pnl.html?r='+PNL_KEY[r.nm]+'" target="_blank" rel="noopener"><span class="sys-i">📊</span><span class="sys-t"><b>רווח והפסד</b><small>☁ בענן · נפתח מכל מקום</small></span></a>'
+        :sysBtn('pnl',s.pnl,'רווח והפסד',s.pnl?'עודכן '+ago(s.pnl.mtime):''))+'</div>';
     if(sal.length>1) h+='<button class="prev" data-prev="'+esc(r.nm)+'">חודשים קודמים בשכר ('+(sal.length-1)+') ›</button>';
     h+='</article>';
   });
@@ -551,7 +554,7 @@ function renderRests(){
     h+='<article class="rest glass" style="--rc:'+r.c+'"><div class="rest-h"><span class="badge">'+esc(r.nm.charAt(0))+'</span><b>'+esc(r.nm)+'</b></div><div class="files">';
     pins.forEach(function(p,i){ h+=fileRow(p,{rm:r.nm+'\u0001'+i}); }); h+='</div></article>'; });
   $('rests').innerHTML=h;
-  $('restsHint').textContent=PC?'נפתח ישר במחשב — תמיד החודש העדכני, בלי עותקי גיבוי':'שכר ורווח והפסד נפתחים במחשב שבו הפורטל פועל';
+  $('restsHint').textContent='רווח והפסד — בענן. שכר — '+(PC?'נפתח במחשב, תמיד החודש העדכני':'עדיין במחשב (נעביר לענן בשלב הבא)');
 }
 function prevDialog(nm){
   var sal=(systems()[nm]||{}).sal||[];
