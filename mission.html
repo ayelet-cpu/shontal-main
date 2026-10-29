@@ -198,6 +198,24 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .tab{border:1px solid var(--line);background:var(--glass);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--ink2)}
 .tab.on{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
 .row{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line)}
+/* הערות שכר פאסטל */
+.sn{padding:14px;margin-bottom:22px}
+.sn-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.sn-bar .tabs{padding:0;flex:1;flex-wrap:wrap}
+.sn-sel{height:38px;border-radius:11px;border:1px solid var(--line2);background:var(--glass);padding:0 10px;color:var(--ink)}
+.sn-list{max-height:560px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.sn-item{padding:12px 14px;border:1px solid var(--line);border-radius:var(--r2);background:var(--glass2)}
+.sn-top{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:var(--ink3)}
+.sn-main{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 4px;font-size:15px}
+.sn-main b{font-weight:700}
+.sn-tag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--acc-soft);color:var(--acc)}
+.sn-amt{font-weight:700}
+.sn-det{color:var(--ink2);font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.sn-orig summary{cursor:pointer;color:var(--ink3);font-size:12.5px;margin-top:6px}
+.sn-orig div{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:var(--ink2);padding:6px 0 0}
+.sn-act{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.sn-act .btn{height:32px;padding:0 12px;font-size:13px}
+.sn-empty{color:var(--ink3);padding:18px;text-align:center}
 .row:last-child{border-bottom:0}
 .row .grow{flex:1;min-width:0}
 .note{font-size:13px;color:var(--ink2);background:var(--acc-soft);border-radius:12px;padding:10px 12px;margin-bottom:12px}
@@ -268,6 +286,16 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 
   <div class="sec-h"><h2>מסעדות</h2><small id="restsHint"></small></div>
   <section class="rests" id="rests"></section>
+
+  <div class="sec-h"><h2>הערות שכר פאסטל</h2><small id="snHint">נקלטות לבד מהוואטסאפ עם רועי</small></div>
+  <section class="sn glass" id="sn">
+    <div class="sn-bar">
+      <div class="tabs" id="snTabs"></div>
+      <select class="sn-sel" id="snMonth" aria-label="חודש"></select>
+      <button class="btn ghost" id="snCopy" title="מעתיק את ההערות שמוצגות, לשליחה לחשבת השכר">העתקה לחשבת השכר</button>
+    </div>
+    <div class="sn-list" id="snList"><div class="sn-empty">טוענת…</div></div>
+  </section>
 
   <div class="sec-h"><h2>מחברת</h2><small id="nbHint">נשמר לבד, ומסתנכרן בין המחשב לטלפון</small></div>
   <section class="nb glass" id="nb">
@@ -856,10 +884,101 @@ function toast(t,undo){
   toastT=setTimeout(function(){ d.remove(); },undo?7000:3500);
 }
 
+/* ---------- הערות שכר פאסטל (mc_salary_notes) — הבוט כותב, איילת מטפלת ---------- */
+var SN=[], snTab='pending', snMon='', snSig='';
+var SN_TOPICS=['בונוס','מקדמה','קיזוז','תוספת','העלאת שכר','חופש','מחלה','מילואים','עובד חדש','עזיבה','טיפים','מסמך','אחר'];
+var SN_TABS=[['pending','ממתינות'],['done','הועבר לשכר'],['dismissed','לא רלוונטי'],['all','הכל']];
+function snMonthOf(n){ if(n.month) return n.month; var d=new Date(n.ts); return d.getMonth()+1; }
+function snAmt(a){ return a==null||a===''?'':Number(a).toLocaleString('he-IL')+' ₪'; }
+function loadSN(){
+  return api('GET','mc_salary_notes?select=id,ts,sender,from_me,msg_text,emp,topic,amount,month,detail,file_id,file_name,status&order=ts.desc&limit=500')
+    .then(function(rows){ SN=rows||[]; var sig=JSON.stringify(SN); if(sig!==snSig){ snSig=sig; renderSN(); } });
+}
+function snShown(){
+  return SN.filter(function(n){ return (snTab==='all'||n.status===snTab) && (!snMon||String(snMonthOf(n))===snMon); });
+}
+function renderSN(){
+  var cnt={pending:0,done:0,dismissed:0,all:SN.length};
+  SN.forEach(function(n){ cnt[n.status]=(cnt[n.status]||0)+1; });
+  $('snTabs').innerHTML=SN_TABS.map(function(t){ return '<button class="tab'+(snTab===t[0]?' on':'')+'" data-snt="'+t[0]+'">'+t[1]+' ('+(cnt[t[0]]||0)+')</button>'; }).join('');
+  var mons={}; SN.forEach(function(n){ mons[snMonthOf(n)]=1; });
+  $('snMonth').innerHTML='<option value="">כל החודשים</option>'+Object.keys(mons).sort(function(a,b){ return b-a; })
+    .map(function(m){ return '<option value="'+m+'"'+(snMon===m?' selected':'')+'>'+HEB_M[m]+'</option>'; }).join('');
+  var list=snShown();
+  if(!list.length){ $('snList').innerHTML='<div class="sn-empty">'+(snTab==='pending'?'אין הערות שממתינות לטיפול 🎉':'אין כאן הערות')+'</div>'; return; }
+  $('snList').innerHTML=list.map(function(n){
+    var d=new Date(n.ts), when=d.toLocaleDateString('he-IL',{day:'numeric',month:'numeric'})+' '+d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+    var who=n.from_me?'את':(n.sender||'רועי'), st=n.status==='done'?' · ✓ הועבר לשכר':n.status==='dismissed'?' · לא רלוונטי':'';
+    var h='<article class="sn-item" data-sn="'+n.id+'">';
+    h+='<div class="sn-top"><span>'+esc(when)+'</span><span>'+esc(who)+'</span><span>חודש '+esc(HEB_M[snMonthOf(n)])+'</span><span>'+st.replace(/^ · /,'')+'</span></div>';
+    h+='<div class="sn-main"><b>'+esc(n.emp||'לא צוין עובד')+'</b><span class="sn-tag">'+esc(n.topic||'אחר')+'</span>'+(n.amount!=null?'<span class="sn-amt">'+esc(snAmt(n.amount))+'</span>':'')+'</div>';
+    if(n.detail) h+='<div class="sn-det">'+esc(n.detail)+'</div>';
+    if(n.msg_text && n.msg_text!==n.detail) h+='<details class="sn-orig"><summary>ההודעה המקורית</summary><div>'+esc(n.msg_text)+'</div></details>';
+    h+='<div class="sn-act">';
+    if(n.file_id) h+='<button class="btn ghost" data-sna="file">📎 '+esc(n.file_name||'קובץ')+'</button>';
+    if(n.status==='pending') h+='<button class="btn" data-sna="done">✓ הועבר לשכר</button><button class="btn ghost" data-sna="edit">עריכה</button><button class="btn ghost" data-sna="dismissed">לא רלוונטי</button>';
+    else h+='<button class="btn ghost" data-sna="pending">↩ החזרה לממתינות</button><button class="btn ghost" data-sna="edit">עריכה</button>';
+    return h+'</div></article>';
+  }).join('');
+}
+function snFind(id){ return SN.find(function(n){ return String(n.id)===String(id); }); }
+function snPatch(n,fields,undoMsg){
+  var old={}; for(var k in fields){ old[k]=n[k]; n[k]=fields[k]; } renderSN();
+  return api('PATCH','mc_salary_notes?id=eq.'+n.id,fields,{'Prefer':'return=minimal'}).then(function(){
+    snSig=JSON.stringify(SN);
+    if(undoMsg) toast(undoMsg,function(){ snPatch(n,old); });
+  },function(e){ for(var k in old) n[k]=old[k]; renderSN(); toast('לא נשמר: '+e.message); });
+}
+function snEdit(n){
+  var m=dialog('<div class="dlg glass" role="dialog" aria-label="עריכת הערת שכר"><div class="dlg-h"><b>עריכת הערת שכר</b><button class="ibtn" id="snX" aria-label="סגירה">'+xSvg+'</button></div>'+
+    '<div class="dlg-b" style="padding:16px">'+
+    '<label class="fld"><span>עובד/ת</span><input id="snE" value="'+esc(n.emp)+'"></label>'+
+    '<label class="fld"><span>נושא</span><select id="snT">'+SN_TOPICS.map(function(t){ return '<option'+(t===n.topic?' selected':'')+'>'+t+'</option>'; }).join('')+'</select></label>'+
+    '<label class="fld"><span>סכום (₪)</span><input id="snA" inputmode="decimal" value="'+esc(n.amount==null?'':n.amount)+'"></label>'+
+    '<label class="fld"><span>חודש</span><select id="snM">'+HEB_M.map(function(h,i){ return i?'<option value="'+i+'"'+(i===snMonthOf(n)?' selected':'')+'>'+h+'</option>':''; }).join('')+'</select></label>'+
+    '<label class="fld"><span>פירוט</span><input id="snD" value="'+esc(n.detail)+'"></label>'+
+    '</div><div class="dlg-f"><button class="btn" id="snS">שמירה</button><button class="btn ghost" id="snC">ביטול</button></div></div>');
+  $('snX').onclick=$('snC').onclick=closeLayer;
+  $('snS').onclick=function(){
+    var a=$('snA').value.replace(/[^\d.\-]/g,'');
+    snPatch(n,{emp:$('snE').value.trim(),topic:$('snT').value,amount:a===''?null:Number(a),month:Number($('snM').value),detail:$('snD').value.trim()});
+    closeLayer();
+  };
+}
+function snFile(n){
+  toast('פותחת את הקובץ…');
+  api('GET','mc_salary_files?id=eq.'+n.file_id+'&select=name,mime,content').then(function(r){
+    var f=r&&r[0]; if(!f){ toast('הקובץ לא נמצא'); return; }
+    var bin=atob(f.content), u=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+    var url=URL.createObjectURL(new Blob([u],{type:f.mime||'application/octet-stream'}));
+    if(/^(image\/|application\/pdf)/.test(f.mime||'')) window.open(url,'_blank');
+    else { var a=document.createElement('a'); a.href=url; a.download=f.name||'קובץ'; document.body.appendChild(a); a.click(); a.remove(); }
+    setTimeout(function(){ URL.revokeObjectURL(url); },60000);
+  },function(e){ toast('לא נפתח: '+e.message); });
+}
+function snCopy(){
+  var list=snShown(); if(!list.length){ toast('אין הערות להעתקה'); return; }
+  var t='הערות שכר פאסטל'+(snMon?' — '+HEB_M[snMon]:'')+'\n'+list.map(function(n){
+    return '• '+[n.emp||'לא צוין עובד',n.topic,snAmt(n.amount),n.detail].filter(Boolean).join(' – ');
+  }).join('\n');
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){ toast('הועתק — אפשר להדביק בוואטסאפ או במייל'); },function(){ toast('ההעתקה לא הצליחה'); });
+}
+$('snTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-snt]'); if(!b) return; snTab=b.getAttribute('data-snt'); renderSN(); });
+$('snMonth').addEventListener('change',function(){ snMon=this.value; renderSN(); });
+$('snCopy').addEventListener('click',snCopy);
+$('snList').addEventListener('click',function(e){
+  var b=e.target.closest('[data-sna]'); if(!b) return; var n=snFind(b.closest('[data-sn]').getAttribute('data-sn')); if(!n) return;
+  var a=b.getAttribute('data-sna');
+  if(a==='file') snFile(n);
+  else if(a==='edit') snEdit(n);
+  else snPatch(n,{status:a},a==='done'?'סומן «הועבר לשכר»':a==='dismissed'?'סומן «לא רלוונטי»':'הוחזר לממתינות');
+});
+
 /* ---------- רענון לבד ---------- */
 var pollT=null, lastSig='';
 function refreshAll(){
   if(document.hidden) return Promise.resolve();
+  loadSN().catch(function(){});
   return Promise.all([loadKV(),loadFiles(),loadNotes(false),pingPc()]).then(function(){
     var sig=JSON.stringify([KV.sites,KV.rest_files,KV.general,KV.extra_folders])+'|'+FILES.length+'|'+(FILES[0]&&FILES[0].mtime)+'|'+SYNCED+'|'+PC;
     if(sig!==lastSig&&!$('mask')){ lastSig=sig; renderLinks(); renderRests(); } tick(); },function(){});
@@ -869,6 +988,7 @@ function start(){
   Promise.all([loadKV(),loadFiles(),pingPc()]).then(function(){ renderLinks(); renderRests(); tick(); })
     .catch(function(e){ toast('בעיה בטעינה: '+e.message); });
   loadNotes(true).catch(function(e){ toast('הפתקים לא נטענו: '+e.message); });
+  loadSN().catch(function(e){ $('snList').innerHTML='<div class="sn-empty">הערות השכר לא נטענו: '+esc(e.message)+'</div>'; });
   clearInterval(pollT); pollT=setInterval(refreshAll,30000);
   setInterval(tick,20000);
   window.addEventListener('focus',refreshAll);
