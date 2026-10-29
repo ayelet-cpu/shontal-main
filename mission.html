@@ -115,20 +115,6 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .prev{margin-top:10px;border:0;background:none;color:var(--ink2);font-size:13px;font-weight:500;padding:4px 2px;text-align:start}
 .prev:hover{color:var(--acc)}
 .rest-h .chip{height:28px;font-size:12px;text-decoration:none}
-.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:26px}
-.col{padding:14px;display:flex;flex-direction:column;gap:8px;min-height:120px}
-.col-h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;margin:2px 2px 4px}
-.col-h .n{font-size:12px;font-weight:700;min-width:22px;height:22px;padding:0 7px;border-radius:999px;display:grid;place-items:center;background:var(--glass2);border:1px solid var(--line);color:var(--ink2)}
-.col.wait .col-h .n.on{background:var(--warn);border-color:var(--warn);color:#1d1a33}
-.wk{padding:10px 12px;border-radius:13px;background:var(--glass);border:1px solid var(--line)}
-.wk b{display:block;font-size:14px;font-weight:600}
-.wk p{margin:3px 0 0;font-size:12.5px;color:var(--ink2);white-space:pre-line}
-.wk .meta{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11.5px;color:var(--ink3)}
-.wk .meta .tag{padding:1px 8px;border-radius:999px;background:var(--glass2);border:1px solid var(--line)}
-.wk .meta button,.wk .meta a{margin-inline-start:auto;border:0;background:var(--acc-soft);color:var(--acc);font-weight:700;border-radius:8px;padding:4px 10px;font-size:12px;text-decoration:none}
-.wk .meta a+button{margin-inline-start:6px}
-.col .empty{padding:10px;font-size:12.5px}
-@media (max-width:860px){.board{grid-template-columns:minmax(0,1fr)}}
 .sub-h{font-size:11.5px;font-weight:600;color:var(--ink3);letter-spacing:.2px;margin:10px 2px 6px}
 .files{display:flex;flex-direction:column;gap:6px}
 .file{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid transparent;background:var(--glass);cursor:pointer;transition:background .12s,border-color .12s;min-width:0;text-align:start;width:100%}
@@ -280,9 +266,6 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 
   <nav class="links" id="links" aria-label="קיצורים"></nav>
 
-  <div class="sec-h"><h2>לוח עבודה</h2><small>מה שממתין לך, מה בעבודה ומה הוכן לך — מתעדכן לבד</small></div>
-  <section class="board" id="board"></section>
-
   <div class="sec-h"><h2>מסעדות</h2><small id="restsHint"></small></div>
   <section class="rests" id="rests"></section>
 
@@ -414,7 +397,7 @@ $('em').addEventListener('keydown',function(e){ if(e.key==='Enter') $('bSend').c
 $('bBack').onclick=function(){ $('stCode').classList.add('hid'); $('stEmail').classList.remove('hid'); msg(''); };
 
 /* ---------- מצב ---------- */
-var KV={rest_files:{},general:[],sites:[],extra_folders:[],recent:[],seen_dev:[]};
+var KV={rest_files:{},general:[],sites:[],extra_folders:[],recent:[]};
 var FILES=[];          /* מהענן: {path,root,rel,name,ext,mtime} */
 var NOTES=[];
 var PC=false;          /* הפורטל במחשב הזה עונה */
@@ -425,7 +408,7 @@ function loadKV(){
   return api('GET','mc_kv?select=k,v').then(function(rows){
     (rows||[]).forEach(function(r){ if(r.k==='files_synced_at') SYNCED=r.v; else KV[r.k]=r.v; });
     if(!KV.rest_files||typeof KV.rest_files!=='object') KV.rest_files={};
-    ['general','sites','extra_folders','recent','seen_dev'].forEach(function(k){ if(!Array.isArray(KV[k])) KV[k]=[]; });
+    ['general','sites','extra_folders','recent'].forEach(function(k){ if(!Array.isArray(KV[k])) KV[k]=[]; });
   });
 }
 function loadFiles(){
@@ -522,53 +505,6 @@ function restKey(nm){ return nm==='כללי'?'general':nm; }
 function pinsOf(nm){ return nm==='כללי'?(KV.general||[]):((KV.rest_files||{})[nm]||[]); }
 function setPins(nm,a){ if(nm==='כללי'){ KV.general=a; kvSave('general'); } else { KV.rest_files[nm]=a; kvSave('rest_files'); } }
 function rootPath(nm){ var f=null; for(var i=0;i<FILES.length;i++){ if(FILES[i].root===nm){ f=FILES[i]; break; } } if(!f) return ''; var p=f.path; var rel=f.rel?f.rel.length+1:0; return p.slice(0,p.length-f.name.length-1-rel).replace(/[\\/]$/,''); }
-/* ---------- לוח עבודה ----------
-   mc_work — Claude כותב בסוף כל עבודה. dev_requests — בקשות מהצ'אט «שונטל» (של איילת ושל שוהם). */
-var WORK=[], DEVQ=[];
-function loadWork(){
-  var since=new Date(Date.now()-14*864e5).toISOString();
-  return Promise.all([
-    api('GET','mc_work?state=neq.closed&order=updated_at.desc&limit=60').then(function(r){ WORK=r||[]; }),
-    api('GET','dev_requests?kind=eq.request&or=(status.neq.done,done_at.gt.'+since+')&select=id,by_email,question,status,claude_reply,created_at,done_at,auto_state&order=created_at.desc&limit=200')
-      .then(function(r){ DEVQ=r||[]; },function(){ DEVQ=[]; })
-  ]);
-}
-function who(em){ em=(em||'').toLowerCase(); return em.indexOf('shoham')===0?'שוהם':em.indexOf('bills.ayelet')===0?'את':(em.split('@')[0]||''); }
-function cut(t,n){ t=String(t||'').replace(/\s+/g,' ').trim(); return t.length>n?t.slice(0,n-1)+'…':t; }
-function wkCard(o){
-  return '<div class="wk"><b>'+esc(o.title)+'</b>'+(o.detail?'<p>'+esc(o.detail)+'</p>':'')+
-    '<div class="meta">'+(o.tag?'<span class="tag">'+esc(o.tag)+'</span>':'')+'<span>'+esc(o.when)+'</span>'+
-    (o.link?'<a href="'+esc(o.link)+'" target="_blank" rel="noopener">פתיחה</a>':'')+(o.act?'<button data-wk="'+o.id+'" data-st="closed">'+o.act+'</button>':'')+'</div></div>';
-}
-function renderBoard(){
-  var seen={}; (KV.seen_dev||[]).forEach(function(i){ seen[i]=1; });
-  var cols={waiting:[],doing:[],ready:[]};
-  WORK.forEach(function(w){ if(!cols[w.state]) return;
-    cols[w.state].push(wkCard({id:w.id,title:w.title,detail:w.detail,link:w.link,tag:w.area,when:ago(w.updated_at),act:w.state==='waiting'?'✓ עשיתי':w.state==='ready'?'ראיתי':''})); });
-  var others={};   /* בקשות של אחרים (שוהם) שהושלמו — כרטיס אחד מסכם לכל אחד, לא עשרות כרטיסים */
-  DEVQ.forEach(function(d){
-    var w=who(d.by_email), t='בקשה של '+w;
-    if(d.status!=='done') cols.doing.push(wkCard({title:cut(d.question,110),tag:t,when:ago(d.created_at)}));
-    else if(seen[d.id]) return;
-    else if(w!=='את') (others[w]=others[w]||[]).push(d);
-    else cols.ready.push('<div class="wk"><b>'+esc(cut(d.question,110))+'</b>'+(d.claude_reply?'<p>'+esc(cut(d.claude_reply,220))+'</p>':'')+
-      '<div class="meta"><span class="tag">'+esc(t)+'</span><span>'+esc(ago(d.done_at))+'</span><button data-dev="'+d.id+'">ראיתי</button></div></div>');
-  });
-  Object.keys(others).forEach(function(w){ var a=others[w];
-    cols.ready.push('<div class="wk"><b>'+esc(w)+': '+a.length+' תיקונים הושלמו בשבועיים האחרונים</b><p>'+a.slice(0,4).map(function(d){ return '• '+esc(cut(d.question,70)); }).join('\n')+(a.length>4?'\nועוד '+(a.length-4)+'…':'')+'</p>'+
-      '<div class="meta"><span class="tag">צ׳אט «שונטל»</span><span>האחרון '+esc(ago(a[0].done_at))+'</span><button data-dev="'+a.map(function(d){ return d.id; }).join(',')+'">ראיתי</button></div></div>'); });
-  var defs=[['waiting','wait','⏳ ממתין לך','אין כרגע משהו שמחכה לך'],['doing','','🛠 בעבודה','שום דבר לא בעבודה'],['ready','','✅ מוכן לך','אין חדש']];
-  $('board').innerHTML=defs.map(function(c){ var a=cols[c[0]];
-    return '<div class="col glass '+c[1]+'"><div class="col-h">'+c[2]+'<span class="n'+(a.length?' on':'')+'">'+a.length+'</span></div>'+(a.join('')||'<div class="empty">'+c[3]+'</div>')+'</div>'; }).join('');
-}
-document.addEventListener('click',function(e){
-  var b=e.target.closest('[data-wk]'); if(b){ var id=+b.getAttribute('data-wk'), w=WORK.find(function(x){ return x.id===id; }); if(!w) return;
-    var prev=w.state; w.state='closed'; WORK=WORK.filter(function(x){ return x!==w; }); renderBoard();
-    api('PATCH','mc_work?id=eq.'+id,{state:'closed'},{'Prefer':'return=minimal'}).catch(function(err){ toast('לא נשמר: '+err.message); });
-    toast('הוסר מהלוח',function(){ w.state=prev; WORK.unshift(w); renderBoard(); api('PATCH','mc_work?id=eq.'+id,{state:prev},{'Prefer':'return=minimal'}); }); return; }
-  var d=e.target.closest('[data-dev]'); if(d){ var ids=d.getAttribute('data-dev').split(',').map(Number); KV.seen_dev=(KV.seen_dev||[]).concat(ids).slice(-600); kvSave('seen_dev'); renderBoard(); }
-});
-
 /* ---------- מערכות: שכר + רווח והפסד לכל מסעדה ----------
    הקבצים מגיעים מהפורטל (סריקת «האחסון שלי»). רק שם מדויק נחשב — עותקי גיבוי («לפני…», «שבור», bak, (1)) לא. */
 var SAL_RE=/^בקרת שכר (.+?) (\d{2})\.(\d{4})\.html$/;
@@ -921,13 +857,13 @@ function toast(t,undo){
 var pollT=null, lastSig='';
 function refreshAll(){
   if(document.hidden) return Promise.resolve();
-  return Promise.all([loadKV(),loadFiles(),loadNotes(false),pingPc(),loadWork()]).then(function(){
-    var sig=JSON.stringify([KV.sites,KV.rest_files,KV.general,KV.extra_folders,KV.seen_dev,WORK,DEVQ.map(function(d){ return d.id+d.status; })])+'|'+FILES.length+'|'+(FILES[0]&&FILES[0].mtime)+'|'+SYNCED+'|'+PC;
-    if(sig!==lastSig&&!$('mask')){ lastSig=sig; renderLinks(); renderRests(); renderBoard(); } tick(); },function(){});
+  return Promise.all([loadKV(),loadFiles(),loadNotes(false),pingPc()]).then(function(){
+    var sig=JSON.stringify([KV.sites,KV.rest_files,KV.general,KV.extra_folders])+'|'+FILES.length+'|'+(FILES[0]&&FILES[0].mtime)+'|'+SYNCED+'|'+PC;
+    if(sig!==lastSig&&!$('mask')){ lastSig=sig; renderLinks(); renderRests(); } tick(); },function(){});
 }
 function start(){
   $('vLogin').classList.add('hid'); $('vApp').classList.remove('hid'); tick();
-  Promise.all([loadKV(),loadFiles(),pingPc(),loadWork()]).then(function(){ renderLinks(); renderRests(); renderBoard(); tick(); })
+  Promise.all([loadKV(),loadFiles(),pingPc()]).then(function(){ renderLinks(); renderRests(); tick(); })
     .catch(function(e){ toast('בעיה בטעינה: '+e.message); });
   loadNotes(true).catch(function(e){ toast('הפתקים לא נטענו: '+e.message); });
   clearInterval(pollT); pollT=setInterval(refreshAll,30000);
