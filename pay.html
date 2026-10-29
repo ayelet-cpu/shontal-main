@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>בקרת שכר</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f9d95'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='white' font-family='Arial'%3E%E2%82%AA%3C/text%3E%3C/svg%3E">
+<style>
+/* בקרת שכר בענן — 29.10.2026. העמוד רק טוען: את החודש שנבחר בדיוק כמו שהוא (pay_file), ומריץ אותו בתוך מסגרת.
+   מה שהמערכת שומרת «בדפדפן» (הערות, סימונים, בדיקות) נשמר בענן (pay_kv) — לכן זה זמין מכל מחשב וטלפון, ועובר בין החודשים כמו קודם. */
+:root{--bg:#f4f3fb;--bar:rgba(255,255,255,.88);--line:rgba(80,70,150,.16);--ink:#1d1a33;--ink2:#5b5776;--acc:#0f9d95;--ok:#1f9d6a;--warn:#c27a12;--bad:#d6455a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f0d22;--bar:rgba(30,26,60,.9);--line:rgba(255,255,255,.12);--ink:#f1efff;--ink2:#c3bfe0;--acc:#4fd3c8;--ok:#4fd39b;--warn:#f0b452;--bad:#ff7688}}
+:root[data-theme="dark"]{--bg:#0f0d22;--bar:rgba(30,26,60,.9);--line:rgba(255,255,255,.12);--ink:#f1efff;--ink2:#c3bfe0;--acc:#4fd3c8;--ok:#4fd39b;--warn:#f0b452;--bad:#ff7688}
+*{box-sizing:border-box}
+.hid{display:none!important}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Heebo","Segoe UI",system-ui,sans-serif}
+.bar{position:fixed;top:0;inset-inline:0;height:46px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--bar);border-bottom:1px solid var(--line);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);z-index:5;font-size:14px}
+.bar b{font-size:15px;white-space:nowrap}
+.bar select{height:32px;border-radius:9px;border:1px solid var(--line);background:transparent;color:inherit;padding:0 8px;font:inherit}
+.bar a{color:var(--acc);text-decoration:none;font-weight:600;margin-inline-start:auto;white-space:nowrap}
+.st{font-size:12.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st.ok{color:var(--ok)}.st.warn{color:var(--warn);font-weight:600}.st.bad{color:var(--bad);font-weight:600}
+#fr{position:fixed;top:46px;inset-inline:0;bottom:0;width:100%;height:calc(100% - 46px);border:0;background:#fff}
+.msg{max-width:440px;margin:18vh auto 0;padding:26px;border-radius:18px;background:var(--bar);border:1px solid var(--line);text-align:center;line-height:1.6}
+.msg h1{font-size:20px;margin:0 0 8px}
+.msg input{width:100%;height:44px;border-radius:11px;border:1px solid var(--line);background:transparent;color:inherit;padding:0 12px;font:inherit;margin:6px 0;direction:ltr}
+.msg button{display:inline-block;width:100%;height:44px;border:0;border-radius:11px;background:var(--acc);color:#fff;font:inherit;font-weight:700;cursor:pointer;margin-top:6px}
+.msg .err{color:var(--bad);font-size:13px;min-height:18px}
+.list a{display:block;padding:12px;border-radius:12px;border:1px solid var(--line);margin:8px 0;color:inherit;text-decoration:none;font-weight:600}
+.list a:hover{border-color:var(--acc)}
+.list small{display:block;font-weight:400;color:var(--ink2);font-size:12px}
+@media (max-width:600px){.bar .st{max-width:30vw}.bar b{display:none}}
+</style>
+</head>
+<body>
+<div class="bar hid" id="bar"><b>בקרת שכר</b><select id="ssel" aria-label="מסעדה"></select><select id="msel" aria-label="חודש"></select><span class="st" id="st">טוען…</span><a href="mission.html">מרכז הבקרה ←</a></div>
+<div id="view"></div>
+<script>
+(function(){
+'use strict';
+var SB='https://mjhywoiwdvuxymuyhhdc.supabase.co', KEY='sb_publishable_c7Y5hKxAqpzIFhhbuhNS2g_u55YKB90';
+var SK='mc-session';   /* אותה כניסה כמו במרכז הבקרה */
+var NAMES={pastel:'פאסטל',cafe:'אריאלה וטופול',asa:'אסא',pincus:'פינצוס (צ׳אקולי)'};
+var HEB_M=['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+var $=function(i){return document.getElementById(i);};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function monLbl(m){ var a=String(m).split('-'); return (HEB_M[+a[1]]||a[1])+' '+a[0]; }
+try{ var th=localStorage.getItem('mc-theme'); if(th) document.documentElement.setAttribute('data-theme',th); }catch(_){}
+
+/* ---------- כניסה ---------- */
+var S=null;
+function loadS(){ try{ S=JSON.parse(localStorage.getItem(SK)||'null'); }catch(_){ S=null; } }
+function saveS(o){ S=o; try{ localStorage.setItem(SK,JSON.stringify(o)); }catch(_){} }
+function clearS(){ S=null; try{ localStorage.removeItem(SK); }catch(_){} }
+loadS();
+function auth(path,body){
+  return fetch(SB+'/auth/v1/'+path,{method:'POST',headers:{'apikey':KEY,'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){ return r.text().then(function(t){ var j={}; try{ j=JSON.parse(t||'{}'); }catch(_){}
+      if(!r.ok){ var e=new Error(j.msg||j.error_description||j.message||('שגיאה '+r.status)); e.status=r.status; throw e; } return j; }); });
+}
+function keep(j){ saveS({access_token:j.access_token,refresh_token:j.refresh_token,expires_at:(j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600)),email:(j.user&&j.user.email)||(S&&S.email)||''}); }
+var _ref=null;
+function fresh(){
+  var mine=S; loadS(); if(!S) S=mine;
+  if(!S) return Promise.reject(Object.assign(new Error('אין חיבור'),{login:1}));
+  if((S.expires_at||0)-Date.now()/1000>120) return Promise.resolve(S);
+  if(!_ref) _ref=auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token})
+    .then(function(j){ keep(j); _ref=null; return S; },function(e){ _ref=null; if(e.status===400||e.status===401){ clearS(); e.login=1; } throw e; });
+  return _ref;
+}
+function rpc(fn,body,opt){
+  return fresh().then(function(){ return fetch(SB+'/rest/v1/rpc/'+fn,{method:'POST',keepalive:!!(opt&&opt.keepalive),headers:{'apikey':KEY,'Authorization':'Bearer '+S.access_token,'Content-Type':'application/json'},body:JSON.stringify(body||{})}); })
+    .then(function(r){ return r.text().then(function(t){
+      if(r.status===401){ clearS(); throw Object.assign(new Error('נותקת'),{login:1}); }
+      if(!r.ok){ var m=t; try{ m=JSON.parse(t).message||t; }catch(_){} throw new Error(m||('שגיאה '+r.status)); }
+      return t?JSON.parse(t):null; }); });
+}
+function loginView(){
+  $('bar').classList.add('hid');
+  $('view').innerHTML='<div class="msg"><h1>בקרת שכר</h1><p>כניסה עם קוד שנשלח למייל</p><div id="s1"><input id="em" type="email" placeholder="bills.ayelet@gmail.com"><button id="b1">שלחי לי קוד</button></div>'+
+    '<div id="s2" style="display:none"><input id="cd" inputmode="numeric" placeholder="הקוד מהמייל"><button id="b2">כניסה</button></div><div class="err" id="er"></div></div>';
+  try{ $('em').value=localStorage.getItem('mc-email')||''; }catch(_){}
+  $('b1').onclick=function(){ var em=$('em').value.trim().toLowerCase(); if(!em) return; $('er').textContent='שולחת…';
+    auth('otp',{email:em,create_user:false}).then(function(){ try{ localStorage.setItem('mc-email',em); }catch(_){} $('s1').style.display='none'; $('s2').style.display=''; $('er').textContent='הקוד נשלח למייל'; $('cd').focus(); },
+      function(e){ $('er').textContent=e.status===429?'נשלחו יותר מדי קודים. נסי שוב בעוד כמה דקות.':'לא נשלח: '+e.message; }); };
+  $('b2').onclick=function(){ var em=$('em').value.trim().toLowerCase(), cd=$('cd').value.replace(/\s/g,''); $('er').textContent='בודקת…';
+    auth('verify',{type:'email',email:em,token:cd}).then(function(j){ keep(j); start(); },function(){ $('er').textContent='הקוד לא נכון או שפג תוקפו'; }); };
+}
+function fail(e){
+  if(e&&e.login) return loginView();
+  $('bar').classList.add('hid');
+  $('view').innerHTML='<div class="msg"><h1>לא נטען</h1><p>'+esc(e&&e.message||e)+'</p><button onclick="location.reload()">לנסות שוב</button></div>';
+}
+function setSt(t,c){ var s=$('st'); s.className='st '+(c||''); s.textContent=t; }
+
+/* ---------- «הדפדפן» של המערכת = הענן ----------
+   כל setItem/removeItem של המערכת נכנס לתור, ונשלח לענן תוך שנייה. ערכים שלא השתנו — לא נשלחים. */
+var KV={}, Q={}, qT=null, sending=false, lastPull=null;
+function queue(k,v,del){ Q[k]=del?{k:k,del:true}:{k:k,v:v}; setSt('שומרת בענן…',''); clearTimeout(qT); qT=setTimeout(flush,700); }
+function flush(keepalive){
+  if(sending&&!keepalive){ clearTimeout(qT); qT=setTimeout(flush,500); return; }
+  var rows=Object.keys(Q).map(function(k){ return Q[k]; }); if(!rows.length) return;
+  Q={}; sending=true;
+  return rpc('pay_kv_put',{p_rows:rows},{keepalive:keepalive}).then(function(r){
+    sending=false; if(r&&r.at) lastPull=lastPull&&lastPull>r.at?lastPull:r.at;
+    setSt('☁ נשמר בענן · '+new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}),'ok');
+  },function(e){
+    sending=false; rows.forEach(function(r){ if(!Q[r.k]) Q[r.k]=r; });
+    setSt('⚠ לא נשמר בענן ('+e.message+') — מנסה שוב','bad'); clearTimeout(qT); qT=setTimeout(flush,5000);
+  });
+}
+window.addEventListener('pagehide',function(){ flush(true); });
+document.addEventListener('visibilitychange',function(){ if(document.hidden) flush(true); });
+window.addEventListener('beforeunload',function(e){ if(Object.keys(Q).length){ flush(true); e.preventDefault(); e.returnValue=''; } });
+window.__PAY_BRIDGE={
+  get:function(k){ return Object.prototype.hasOwnProperty.call(KV,k)?KV[k]:null; },
+  set:function(k,v){ k=String(k); v=String(v); if(KV[k]===v) return; KV[k]=v; queue(k,v,false); },
+  del:function(k){ k=String(k); if(!Object.prototype.hasOwnProperty.call(KV,k)) return; delete KV[k]; queue(k,null,true); },
+  keys:function(){ return Object.keys(KV); }
+};
+var PRE='<script>/* ענן: הזיכרון של הדפדפן = הענן */(function(){try{var B=parent!==window&&parent.__PAY_BRIDGE;if(!B)return;'+
+  'var ls={getItem:function(k){return B.get(String(k));},setItem:function(k,v){B.set(k,v);},removeItem:function(k){B.del(k);},'+
+  'clear:function(){B.keys().forEach(function(k){B.del(k);});},key:function(i){var a=B.keys();return i<a.length?a[i]:null;}};'+
+  'Object.defineProperty(ls,"length",{get:function(){return B.keys().length;}});'+
+  'Object.defineProperty(window,"localStorage",{value:ls,configurable:true});window.__PAY_CLOUD=1;}catch(e){window.__PAY_FAIL=String(e);}})();<\/script>';
+function inject(html){
+  var i=html.search(/<script[\s>]/i); if(i<0) throw new Error('החודש בענן לא תקין');
+  return html.slice(0,i)+PRE+html.slice(i);
+}
+
+/* ---------- טעינה ---------- */
+var FILES=[], SYS=null, MON=null;
+function list(){
+  $('bar').classList.add('hid');
+  var by={}; FILES.forEach(function(f){ (by[f.sys]=by[f.sys]||[]).push(f); });
+  var ks=Object.keys(by);
+  if(!ks.length){ $('view').innerHTML='<div class="msg"><h1>אין גישה</h1><p>למשתמש הזה אין הרשאה לבקרת שכר.</p></div>'; return; }
+  $('view').innerHTML='<div class="msg list"><h1>בקרת שכר</h1>'+ks.map(function(s){ return '<a href="?s='+esc(s)+'">'+esc(NAMES[s]||s)+'<small>'+esc(monLbl(by[s][0].month))+'</small></a>'; }).join('')+'</div>';
+}
+function open(){
+  var mine=FILES.filter(function(f){ return f.sys===SYS; });
+  if(!mine.length) throw new Error('אין במערכת: '+SYS);
+  if(!MON||!mine.some(function(f){ return f.month===MON; })) MON=mine[0].month;   /* ברירת מחדל: החודש האחרון */
+  var sysList=[]; FILES.forEach(function(f){ if(sysList.indexOf(f.sys)<0) sysList.push(f.sys); });
+  $('ssel').innerHTML=sysList.map(function(s){ return '<option value="'+esc(s)+'"'+(s===SYS?' selected':'')+'>'+esc(NAMES[s]||s)+'</option>'; }).join('');
+  $('msel').innerHTML=mine.map(function(f){ return '<option value="'+esc(f.month)+'"'+(f.month===MON?' selected':'')+'>'+esc(monLbl(f.month))+'</option>'; }).join('');
+  $('ssel').onchange=function(){ go(this.value,null); };
+  $('msel').onchange=function(){ go(SYS,this.value); };
+  $('bar').classList.remove('hid'); setSt('טוען '+monLbl(MON)+'…','');
+  return rpc('pay_file',{p_sys:SYS,p_month:MON}).then(function(f){
+    if(!f||!f.html) throw new Error('החודש לא נמצא בענן');
+    var html=inject(f.html);
+    document.title=(f.title||'בקרת שכר')+' · ענן';
+    var fr=document.createElement('iframe'); fr.id='fr'; fr.title=f.title||'בקרת שכר';
+    $('view').innerHTML=''; $('view').appendChild(fr); fr.srcdoc=html;
+    fr.onload=function(){ var w=fr.contentWindow; if(w&&w.__PAY_FAIL){ setSt('⚠ לא הצלחתי לחבר את השמירה לענן — לא לעבוד כאן ('+w.__PAY_FAIL+')','bad'); }
+      else setSt('☁ בענן · '+monLbl(MON),'ok'); };
+  });
+}
+function go(s,m){ flush(); var q='?s='+encodeURIComponent(s)+(m?'&m='+encodeURIComponent(m):''); history.replaceState(null,'',q); SYS=s; MON=m; open().catch(fail); }
+/* שינוי ממכשיר אחר — מעדכנים את הזיכרון (המסך עצמו מתעדכן בפתיחה הבאה של החודש) */
+function pull(){
+  if(document.hidden||!lastPull) return;
+  rpc('pay_kv_since',{p_since:lastPull}).then(function(a){
+    (a||[]).forEach(function(r){ if(!Q[r.k]){ if(KV[r.k]!==r.v){ KV[r.k]=r.v; if(r.by&&r.by!=='איילת') setSt('עודכן ממקום אחר ('+r.by+') — לרענון: לבחור שוב את החודש',''); } } if(!lastPull||r.at>lastPull) lastPull=r.at; });
+  },function(){});
+}
+function start(){
+  var p=new URLSearchParams(location.search); SYS=p.get('s'); MON=p.get('m');
+  Promise.all([rpc('pay_list'),rpc('pay_kv_load')]).then(function(res){
+    FILES=res[0]||[]; KV=res[1]||{}; lastPull=new Date().toISOString();
+    setInterval(pull,60000);
+    if(!SYS) return list();
+    return open();
+  }).catch(fail);
+}
+if(S&&S.refresh_token) start(); else loginView();
+})();
+</script>
+</body>
+</html>
