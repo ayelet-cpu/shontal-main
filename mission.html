@@ -92,12 +92,6 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .lk .em{font-size:18px;line-height:1}
 .lk.add{color:var(--ink3);font-weight:500;border-style:dashed}
 
-.tip{display:flex;align-items:center;gap:12px;padding:12px 14px;margin:-8px 0 22px;border-radius:16px}
-.tip-i{font-size:20px;flex:none}
-.tip-t{flex:1;min-width:0;font-size:13.5px;color:var(--ink2);line-height:1.5}
-.tip-t b{color:var(--ink);font-weight:600;display:block}
-.tip-t span{font-weight:600;color:var(--acc)}
-@media (max-width:600px){.tip{flex-wrap:wrap}.tip .btn{width:100%}}
 .sec-h{display:flex;align-items:baseline;gap:12px;margin:6px 4px 12px}
 .sec-h h2{margin:0;font-size:17px;font-weight:700;letter-spacing:-.1px}
 .sec-h small{color:var(--ink3);font-size:12.5px}
@@ -291,13 +285,6 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
   </header>
 
   <nav class="links" id="links" aria-label="קיצורים"></nav>
-
-  <div class="tip glass" id="tipMonthly">
-    <span class="tip-i">📌</span>
-    <div class="tip-t"><b>עדכון חודשי (רווח והפסד / שכר / התקזזויות) — לכתוב לקלוד במחשב:</b>
-      <span id="tipText">רווח והפסד, שכר והתקזזויות עברו לענן — תעבוד לפי shontal-app</span></div>
-    <button class="btn ghost" id="bTipCopy">העתקה</button>
-  </div>
 
   <div class="sec-h"><h2>מסעדות</h2><small id="restsHint"></small></div>
   <section class="rests" id="rests"></section>
@@ -700,9 +687,6 @@ function searchDialog(){
   $('sq').focus(); draw();
 }
 $('bSearch').onclick=searchDialog;
-$('bTipCopy').onclick=function(){ var t=$('tipText').textContent;
-  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){ toast('הועתק — עכשיו להדביק בקלוד במחשב'); },
-    function(){ var r=document.createRange(); r.selectNodeContents($('tipText')); var sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('מסומן — Ctrl+C להעתקה'); }); };
 document.addEventListener('keydown',function(e){ if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K'||e.code==='KeyK')){ e.preventDefault(); if(!$('vApp').classList.contains('hid')) searchDialog(); } });
 
 /* ---------- הגדרות ---------- */
