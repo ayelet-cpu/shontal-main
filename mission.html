@@ -625,7 +625,10 @@ $('bSettings').onclick=function(){
 function importOld(file){
   var rd=new FileReader();
   rd.onload=function(){
-    var t=String(rd.result||'').replace(/^\uFEFF/,''), D=null;
+    var u8=new Uint8Array(rd.result||new ArrayBuffer(0)), enc='utf-8';
+    /* ה-HTA שומר ב-UTF-16 (עם או בלי סימן בתחילת הקובץ) */
+    if(u8[0]===0xFF&&u8[1]===0xFE) enc='utf-16le'; else if(u8[0]===0xFE&&u8[1]===0xFF) enc='utf-16be'; else if(u8.length>3&&u8[1]===0&&u8[3]===0) enc='utf-16le';
+    var t=new TextDecoder(enc).decode(u8).replace(/^\uFEFF/,''), D=null;
     try{ D=JSON.parse(t); }catch(_){ var wd=t.indexOf(',"waDigest"'); if(wd>0){ try{ D=JSON.parse(t.slice(0,wd)+'}'); }catch(__){} } }
     if(!D){ toast('הקובץ לא נקרא — האם זה mission-control-data.json?'); return; }
     var nn=0, nf=0, ns=0;
@@ -635,8 +638,8 @@ function importOld(file){
     addTo(KV.general,(D.sharedExtra||[]).concat(D.personal||[]));
     (D.sites||[]).forEach(function(s){ if(s&&s.target&&!KV.sites.some(function(x){ return x.target===s.target; })){ KV.sites.push({nm:s.nm,target:s.target}); ns++; } });
     (D.extraFolders||[]).forEach(function(x){ if(x&&x.path&&!KV.extra_folders.some(function(y){ return y.path===x.path; })) KV.extra_folders.push({name:x.name,path:x.path}); });
-    var notes=(D.notes||[]).map(function(n,i){ var title=n.title||'פתק', body=clean(n.body||'');
-      return {legacy_key:'hta:'+hash(title+'\u0001'+(n.body||'')),title:title,body:body,color:n.color||'',overlay:n.overlay||'',star:!!(n.star||n.pin),pos:-i}; });
+    var notes=(D.notes||[]).map(function(n,i){ var title=n.title||'פתק', body=clean(n.body||''), dr=n.drawing||'', ov=n.overlay||'';
+      return {legacy_key:'hta:'+hash(title+'\u0001'+(n.body||'')),title:title,body:body,color:n.color||'',overlay:dr.length>ov.length?dr:ov,star:!!(n.star||n.pin),pos:-i}; }).reverse();  /* הראשון ברשימה הישנה = החדש ביותר */
     var tasks=[kvSave('rest_files'),kvSave('general'),kvSave('sites'),kvSave('extra_folders')];
     if(notes.length) tasks.push(api('POST','mc_notes?on_conflict=legacy_key',notes,{'Prefer':'resolution=ignore-duplicates,return=representation'}).then(function(r){ nn=(r||[]).length; }));
     toast('מעבירה…');
@@ -644,7 +647,7 @@ function importOld(file){
       toast('הועברו: '+nn+' פתקים חדשים, '+nf+' קבצים, '+ns+' קיצורים'); })
       .catch(function(e){ toast('ההעברה נכשלה: '+e.message); });
   };
-  rd.readAsText(file,'utf-8');
+  rd.readAsArrayBuffer(file);
 }
 function hash(s){ var h=5381; for(var i=0;i<s.length;i++){ h=((h<<5)+h+s.charCodeAt(i))|0; } return (h>>>0).toString(36)+'-'+s.length; }
 
