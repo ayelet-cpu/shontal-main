@@ -541,8 +541,8 @@ var SAL_OF={'פאסטל':['פאסטל'],'אריאלה וטופול':['אריאל
 var PNL_OF={'פאסטל':'פאסטל','אריאלה':'אריאלה','טופול':'טופול','סינמה':'טופול','אסא':'אסא','צאקולי':"צ'אקולי","צ'אקולי":"צ'אקולי"};
 var CLOUD_SAL={'אסא':1,"צ'אקולי":1};
 /* רווח והפסד עבר לענן (29.10.2026) — נפתח מכל מקום, בלי המחשב */
-/* בקרת שכר בענן (29.10.2026) — פאסטל, אריאלה וטופול. אסא וצ'אקולי — עדיין במחשב */
-var PAY_KEY={'פאסטל':'pastel','אריאלה':'cafe','טופול':'cafe'};
+/* בקרת שכר בענן (29.10.2026) — כל המסעדות (צ'אקולי = פינצוס) */
+var PAY_KEY={'פאסטל':'pastel','אריאלה':'cafe','טופול':'cafe','אסא':'asa',"צ'אקולי":'pincus'};
 var PNL_KEY={'פאסטל':'pastel','אריאלה':'ariela','טופול':'topol','אסא':'asa',"צ'אקולי":'chakoli'};
 var HEB_M=['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 function systems(){
@@ -585,7 +585,7 @@ function renderRests(){
     h+='<article class="rest glass" style="--rc:'+r.c+'"><div class="rest-h"><span class="badge">'+esc(r.nm.charAt(0))+'</span><b>'+esc(r.nm)+'</b></div><div class="files">';
     pins.forEach(function(p,i){ h+=fileRow(p,{rm:r.nm+'\u0001'+i}); }); h+='</div></article>'; });
   $('rests').innerHTML=h;
-  $('restsHint').textContent='רווח והפסד ושכר — בענן, נפתחים מכל מקום (שכר אסא וצ׳אקולי — בשלב הבא)';
+  $('restsHint').textContent='רווח והפסד ושכר — בענן, נפתחים מכל מקום';
 }
 function prevDialog(nm){
   var sal=(systems()[nm]||{}).sal||[];
