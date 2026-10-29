@@ -92,6 +92,12 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .lk .em{font-size:18px;line-height:1}
 .lk.add{color:var(--ink3);font-weight:500;border-style:dashed}
 
+.tip{display:flex;align-items:center;gap:12px;padding:12px 14px;margin:-8px 0 22px;border-radius:16px}
+.tip-i{font-size:20px;flex:none}
+.tip-t{flex:1;min-width:0;font-size:13.5px;color:var(--ink2);line-height:1.5}
+.tip-t b{color:var(--ink);font-weight:600;display:block}
+.tip-t span{font-weight:600;color:var(--acc)}
+@media (max-width:600px){.tip{flex-wrap:wrap}.tip .btn{width:100%}}
 .sec-h{display:flex;align-items:baseline;gap:12px;margin:6px 4px 12px}
 .sec-h h2{margin:0;font-size:17px;font-weight:700;letter-spacing:-.1px}
 .sec-h small{color:var(--ink3);font-size:12.5px}
@@ -215,6 +221,8 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .sn-orig div{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:var(--ink2);padding:6px 0 0}
 .sn-act{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .sn-act .btn{height:32px;padding:0 12px;font-size:13px}
+.sn-exp{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:-4px 0 12px;font-size:12.5px;color:var(--ink3)}
+.sn-exp .btn{height:32px;padding:0 12px;font-size:13px}
 .sn-empty{color:var(--ink3);padding:18px;text-align:center}
 .row:last-child{border-bottom:0}
 .row .grow{flex:1;min-width:0}
@@ -284,6 +292,13 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 
   <nav class="links" id="links" aria-label="קיצורים"></nav>
 
+  <div class="tip glass" id="tipMonthly">
+    <span class="tip-i">📌</span>
+    <div class="tip-t"><b>עדכון חודשי (רווח והפסד / שכר / התקזזויות) — לכתוב לקלוד במחשב:</b>
+      <span id="tipText">רווח והפסד, שכר והתקזזויות עברו לענן — תעבוד לפי shontal-app</span></div>
+    <button class="btn ghost" id="bTipCopy">העתקה</button>
+  </div>
+
   <div class="sec-h"><h2>מסעדות</h2><small id="restsHint"></small></div>
   <section class="rests" id="rests"></section>
 
@@ -293,6 +308,14 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
       <div class="tabs" id="snTabs"></div>
       <select class="sn-sel" id="snMonth" aria-label="חודש"></select>
       <button class="btn ghost" id="snCopy" title="מעתיק את ההערות שמוצגות, לשליחה לחשבת השכר">העתקה לחשבת השכר</button>
+    </div>
+    <div class="sn-exp" id="snExp">
+      <span>ההערות שמוצגות:</span>
+      <button class="btn ghost" data-sne="xcopy" title="מעתיק כטבלה — להדביק באקסל">העתקה לאקסל</button>
+      <button class="btn ghost" data-sne="xlsx" title="קובץ אקסל להורדה">⬇ קובץ אקסל</button>
+      <span>המסמכים שלהן:</span>
+      <button class="btn ghost" data-sne="pdf" title="כל המסמכים מאוחדים לקובץ PDF אחד">⬇ הכול בקובץ אחד</button>
+      <button class="btn ghost" data-sne="each" title="כל מסמך כקובץ נפרד, כולם ביחד">⬇ הכול כקבצים נפרדים</button>
     </div>
     <div class="sn-list" id="snList"><div class="sn-empty">טוענת…</div></div>
   </section>
@@ -677,6 +700,9 @@ function searchDialog(){
   $('sq').focus(); draw();
 }
 $('bSearch').onclick=searchDialog;
+$('bTipCopy').onclick=function(){ var t=$('tipText').textContent;
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){ toast('הועתק — עכשיו להדביק בקלוד במחשב'); },
+    function(){ var r=document.createRange(); r.selectNodeContents($('tipText')); var sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('מסומן — Ctrl+C להעתקה'); }); };
 document.addEventListener('keydown',function(e){ if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K'||e.code==='KeyK')){ e.preventDefault(); if(!$('vApp').classList.contains('hid')) searchDialog(); } });
 
 /* ---------- הגדרות ---------- */
@@ -919,7 +945,7 @@ function renderSN(){
     if(n.detail) h+='<div class="sn-det">'+esc(n.detail)+'</div>';
     if(n.msg_text && n.msg_text!==n.detail) h+='<details class="sn-orig"><summary>ההודעה המקורית</summary><div>'+esc(n.msg_text)+'</div></details>';
     h+='<div class="sn-act">';
-    if(n.file_id) h+='<button class="btn ghost" data-sna="file">📎 '+esc(n.file_name||'קובץ')+'</button>';
+    if(n.file_id) h+='<button class="btn ghost" data-sna="file" title="פתיחה">📎 '+esc(n.file_name||'קובץ')+'</button><button class="btn ghost" data-sna="dl" title="הורדת הקובץ" aria-label="הורדת הקובץ">⬇</button>';
     if(n.status==='pending') h+='<button class="btn" data-sna="done">✓ הועבר לשכר</button><button class="btn ghost" data-sna="edit">עריכה</button><button class="btn ghost" data-sna="dismissed">לא רלוונטי</button>';
     else h+='<button class="btn ghost" data-sna="pending">↩ החזרה לממתינות</button><button class="btn ghost" data-sna="edit">עריכה</button>';
     return h+'</div></article>';
@@ -949,16 +975,85 @@ function snEdit(n){
     closeLayer();
   };
 }
-function snFile(n){
-  toast('פותחת את הקובץ…');
-  api('GET','mc_salary_files?id=eq.'+n.file_id+'&select=name,mime,content').then(function(r){
-    var f=r&&r[0]; if(!f){ toast('הקובץ לא נמצא'); return; }
+var snFiles={};
+function snGetFile(id){
+  if(snFiles[id]) return Promise.resolve(snFiles[id]);
+  return api('GET','mc_salary_files?id=eq.'+id+'&select=name,mime,content').then(function(r){
+    var f=r&&r[0]; if(!f) throw new Error('הקובץ לא נמצא');
     var bin=atob(f.content), u=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
-    var url=URL.createObjectURL(new Blob([u],{type:f.mime||'application/octet-stream'}));
-    if(/^(image\/|application\/pdf)/.test(f.mime||'')) window.open(url,'_blank');
-    else { var a=document.createElement('a'); a.href=url; a.download=f.name||'קובץ'; document.body.appendChild(a); a.click(); a.remove(); }
-    setTimeout(function(){ URL.revokeObjectURL(url); },60000);
+    return (snFiles[id]={name:f.name||'קובץ',mime:f.mime||'application/octet-stream',bytes:u});
+  });
+}
+function snSave(blob,name){
+  var url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(url); },60000);
+}
+function snFile(n,dl){
+  toast(dl?'מורידה את הקובץ…':'פותחת את הקובץ…');
+  snGetFile(n.file_id).then(function(f){
+    var blob=new Blob([f.bytes],{type:f.mime});
+    if(!dl && /^(image\/|application\/pdf)/.test(f.mime)){ var url=URL.createObjectURL(blob); window.open(url,'_blank'); setTimeout(function(){ URL.revokeObjectURL(url); },60000); }
+    else snSave(blob,f.name);
   },function(e){ toast('לא נפתח: '+e.message); });
+}
+function loadLib(src,glob){
+  if(window[glob]) return Promise.resolve(window[glob]);
+  return new Promise(function(ok,bad){ var t=document.createElement('script'); t.src=src; t.onload=function(){ ok(window[glob]); }; t.onerror=function(){ bad(new Error('הכלי לא נטען — בדקי חיבור לאינטרנט')); }; document.head.appendChild(t); });
+}
+var SN_HEAD=['תאריך','עובד/ת','נושא','סכום','חודש','פירוט','סטטוס','מי כתב','קובץ','ההודעה המקורית'];
+function snRows(list){
+  return list.map(function(n){ var d=new Date(n.ts);
+    return [d.toLocaleDateString('he-IL'),n.emp||'',n.topic||'',n.amount==null?'':Number(n.amount),HEB_M[snMonthOf(n)]||'',n.detail||'',
+      n.status==='done'?'הועבר לשכר':n.status==='dismissed'?'לא רלוונטי':'ממתינה',n.from_me?'איילת':(n.sender||'רועי'),n.file_name||'',n.msg_text||''];
+  });
+}
+function snStamp(){ return 'הערות שכר פאסטל'+(snMon?' - '+HEB_M[snMon]:'')+' '+new Date().toLocaleDateString('he-IL').replace(/\./g,'-'); }
+function snExport(kind){
+  var list=snShown(); if(!list.length){ toast('אין הערות בתצוגה'); return; }
+  if(kind==='xcopy'){
+    var cell=function(v){ v=String(v==null?'':v); return /[\t\n"]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+    var t=[SN_HEAD].concat(snRows(list)).map(function(r){ return r.map(cell).join('\t'); }).join('\n');
+    (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){ toast('הועתק ('+list.length+' הערות) — להדביק באקסל'); },function(){ toast('ההעתקה לא הצליחה'); });
+    return;
+  }
+  if(kind==='xlsx'){
+    toast('מכינה קובץ אקסל…');
+    loadLib('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','XLSX').then(function(X){
+      var ws=X.utils.aoa_to_sheet([SN_HEAD].concat(snRows(list)));
+      ws['!cols']=[{wch:11},{wch:18},{wch:11},{wch:9},{wch:9},{wch:50},{wch:12},{wch:12},{wch:24},{wch:60}];
+      var wb=X.utils.book_new(); X.utils.book_append_sheet(wb,ws,'הערות שכר'); wb.Workbook={Views:[{RTL:true}]};
+      X.writeFile(wb,snStamp()+'.xlsx');
+    }).catch(function(e){ toast(e.message); });
+    return;
+  }
+  var withF=list.filter(function(n){ return n.file_id; });
+  if(!withF.length){ toast('להערות שמוצגות אין מסמכים מצורפים'); return; }
+  if(kind==='each'){
+    toast('מורידה '+withF.length+' קבצים… (אם הדפדפן שואל — לאשר הורדה של כמה קבצים)');
+    withF.reduce(function(p,n){ return p.then(function(){ return snGetFile(n.file_id); }).then(function(f){
+      snSave(new Blob([f.bytes],{type:f.mime}),f.name); return new Promise(function(r){ setTimeout(r,600); }); }); },Promise.resolve())
+      .catch(function(e){ toast('לא הורד: '+e.message); });
+    return;
+  }
+  if(kind==='pdf'){
+    toast('מאחדת '+withF.length+' מסמכים לקובץ אחד…');
+    var skipped=[], L, out, files;
+    loadLib('https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js','PDFLib').then(function(lib){ L=lib;
+      return Promise.all(withF.map(function(n){ return snGetFile(n.file_id); }));
+    }).then(function(fs){ files=fs; return L.PDFDocument.create(); }).then(function(doc){ out=doc;
+      return files.reduce(function(p,f){ return p.then(function(){
+        if(/pdf/.test(f.mime)||/\.pdf$/i.test(f.name)) return L.PDFDocument.load(f.bytes,{ignoreEncryption:true}).then(function(src){
+          return out.copyPages(src,src.getPageIndices()); }).then(function(pg){ pg.forEach(function(x){ out.addPage(x); }); });
+        if(/image\/(jpe?g|png)/.test(f.mime)) return (/png/.test(f.mime)?out.embedPng(f.bytes):out.embedJpg(f.bytes)).then(function(img){
+          var w=595,h=842,sc=Math.min((w-40)/img.width,(h-40)/img.height,1),pg=out.addPage([w,h]);
+          pg.drawImage(img,{x:(w-img.width*sc)/2,y:(h-img.height*sc)/2,width:img.width*sc,height:img.height*sc}); });
+        skipped.push(f.name);
+      }).catch(function(){ skipped.push(f.name); }); },Promise.resolve());
+    }).then(function(){ if(!out.getPageCount()) throw new Error('לא היה מסמך שאפשר לאחד'); return out.save(); })
+    .then(function(b){ snSave(new Blob([b],{type:'application/pdf'}),snStamp()+' - מסמכים.pdf');
+      toast(skipped.length?'הורד. לא אוחדו (סוג קובץ אחר): '+skipped.join(', '):'הורד קובץ אחד עם '+files.length+' מסמכים'); })
+    .catch(function(e){ toast('לא אוחד: '+e.message); });
+  }
 }
 function snCopy(){
   var list=snShown(); if(!list.length){ toast('אין הערות להעתקה'); return; }
@@ -970,10 +1065,11 @@ function snCopy(){
 $('snTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-snt]'); if(!b) return; snTab=b.getAttribute('data-snt'); renderSN(); });
 $('snMonth').addEventListener('change',function(){ snMon=this.value; renderSN(); });
 $('snCopy').addEventListener('click',snCopy);
+$('snExp').addEventListener('click',function(e){ var b=e.target.closest('[data-sne]'); if(b) snExport(b.getAttribute('data-sne')); });
 $('snList').addEventListener('click',function(e){
   var b=e.target.closest('[data-sna]'); if(!b) return; var n=snFind(b.closest('[data-sn]').getAttribute('data-sn')); if(!n) return;
   var a=b.getAttribute('data-sna');
-  if(a==='file') snFile(n);
+  if(a==='file'||a==='dl') snFile(n,a==='dl');
   else if(a==='edit') snEdit(n);
   else snPatch(n,{status:a},a==='done'?'סומן «הועבר לשכר»':a==='dismissed'?'סומן «לא רלוונטי»':'הוחזר לממתינות');
 });
