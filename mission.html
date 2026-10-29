@@ -570,7 +570,7 @@ function renderRests(){
     if(r.nm==='כללי') return;
     var s=SY[r.nm]||{}, sal=s.sal||[], cur=sal[0];
     h+='<article class="rest glass" style="--rc:'+r.c+'"><div class="rest-h"><span class="badge">'+esc(r.nm.replace("'",'').charAt(0))+'</span><b>'+esc(r.nm)+'</b>'+
-      (CLOUD_SAL[r.nm]?'<a class="chip" href="https://ayelet-cpu.github.io/" target="_blank" rel="noopener" title="בקרת שכר בענן — נפתחת מכל מקום">☁ שכר בענן</a>':'')+'</div>';
+      (CLOUD_SAL[r.nm]?'<a class="chip" href="https://ayelet-cpu.github.io/" target="_blank" rel="noopener" title="פנקס העובדים והערות השכר של אסא וצ׳אקולי">📒 פנקס והערות שכר</a>':'')+'</div>';
     h+='<div class="sys-row">'+
       (PAY_KEY[r.nm]?'<a class="sys" href="pay.html?s='+PAY_KEY[r.nm]+'" target="_blank" rel="noopener"><span class="sys-i">💰</span><span class="sys-t"><b>שכר</b><small>☁ בענן · בחירת חודש בפנים</small></span></a>'
         :sysBtn('sal',cur,'שכר',cur?(HEB_M[cur.mon]+' '+cur.yr+' · '+ago(cur.mtime)):''))+
