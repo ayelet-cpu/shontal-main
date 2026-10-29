@@ -34,18 +34,18 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 </style>
 </head>
 <body>
-<div class="bar hid" id="bar"><b>בקרת שכר</b><select id="ssel" aria-label="מסעדה"></select><select id="msel" aria-label="חודש"></select><span class="st" id="st">טוען…</span><a href="mission.html">מרכז הבקרה ←</a></div>
+<div class="bar hid" id="bar"><b id="btitle">בקרת שכר</b><select id="ssel" aria-label="מסעדה"></select><select id="msel" aria-label="חודש"></select><span class="st" id="st">טוען…</span><a href="mission.html">מרכז הבקרה ←</a></div>
 <div id="view"></div>
 <script>
 (function(){
 'use strict';
 var SB='https://mjhywoiwdvuxymuyhhdc.supabase.co', KEY='sb_publishable_c7Y5hKxAqpzIFhhbuhNS2g_u55YKB90';
 var SK='mc-session';   /* אותה כניסה כמו במרכז הבקרה */
-var NAMES={pastel:'פאסטל',cafe:'אריאלה וטופול',asa:'אסא',pincus:'פינצוס (צ׳אקולי)'};
+var NAMES={pastel:'פאסטל',cafe:'אריאלה וטופול',asa:'אסא',pincus:'פינצוס (צ׳אקולי)',hz:'התקזזויות בין החברות'};
 var HEB_M=['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 var $=function(i){return document.getElementById(i);};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-function monLbl(m){ var a=String(m).split('-'); return (HEB_M[+a[1]]||a[1])+' '+a[0]; }
+function monLbl(m){ if(m==='current') return 'הגרסה הנוכחית'; var a=String(m).split('-'); return (HEB_M[+a[1]]||a[1])+' '+a[0]; }
 try{ var th=localStorage.getItem('mc-theme'); if(th) document.documentElement.setAttribute('data-theme',th); }catch(_){}
 
 /* ---------- כניסה ---------- */
@@ -145,6 +145,8 @@ function open(){
   var sysList=[]; FILES.forEach(function(f){ if(sysList.indexOf(f.sys)<0) sysList.push(f.sys); });
   $('ssel').innerHTML=sysList.map(function(s){ return '<option value="'+esc(s)+'"'+(s===SYS?' selected':'')+'>'+esc(NAMES[s]||s)+'</option>'; }).join('');
   $('msel').innerHTML=mine.map(function(f){ return '<option value="'+esc(f.month)+'"'+(f.month===MON?' selected':'')+'>'+esc(monLbl(f.month))+'</option>'; }).join('');
+  $('msel').classList.toggle('hid',mine.length===1&&MON==='current');   /* מערכת בלי חודשים */
+  $('btitle').textContent=SYS==='hz'?'התקזזויות':'בקרת שכר';
   $('ssel').onchange=function(){ go(this.value,null); };
   $('msel').onchange=function(){ go(SYS,this.value); };
   $('bar').classList.remove('hid'); setSt('טוען '+monLbl(MON)+'…','');
