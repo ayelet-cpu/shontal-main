@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>מרכז הבקרה</title>
+<meta name="theme-color" content="#14112b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238b7bff'/%3E%3Cstop offset='1' stop-color='%2337d6c5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M18 22h28M18 32h20M18 42h24' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* מרכז הבקרה של איילת — 29.10.2026. קוד בלבד; הנתונים בענן (mc_notes / mc_files / mc_kv). */
+:root{
+  --bg:#eef0fa; --bg2:#e6e3f7;
+  --blob1:#b9a9ff; --blob2:#8fe3d6; --blob3:#ffc2dc;
+  --glass:rgba(255,255,255,.58); --glass2:rgba(255,255,255,.78); --glass-hi:rgba(255,255,255,.9);
+  --line:rgba(80,70,150,.13); --line2:rgba(80,70,150,.22);
+  --ink:#1d1a33; --ink2:#4b4766; --ink3:#7d7998;
+  --acc:#6a57de; --acc2:#8b7bff; --acc-ink:#fff; --acc-soft:rgba(106,87,222,.12);
+  --ok:#1f9d6a; --warn:#c27a12; --bad:#d6455a;
+  --shadow:0 10px 34px rgba(46,36,120,.12), 0 1px 0 rgba(255,255,255,.7) inset;
+  --blur:saturate(160%) blur(22px);
+  --r:20px; --r2:14px; --r3:10px;
+}
+:root[data-theme="dark"]{
+  --bg:#0f0d22; --bg2:#151233;
+  --blob1:#5b44e0; --blob2:#0f8d86; --blob3:#9b2f72;
+  --glass:rgba(255,255,255,.065); --glass2:rgba(255,255,255,.11); --glass-hi:rgba(255,255,255,.16);
+  --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.18);
+  --ink:#f1efff; --ink2:#c3bfe0; --ink3:#8d89ad;
+  --acc:#9b8cff; --acc2:#b8adff; --acc-ink:#120f2a; --acc-soft:rgba(155,140,255,.16);
+  --ok:#4fd39b; --warn:#f0b452; --bad:#ff7688;
+  --shadow:0 14px 40px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.08) inset;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f0d22; --bg2:#151233;
+    --blob1:#5b44e0; --blob2:#0f8d86; --blob3:#9b2f72;
+    --glass:rgba(255,255,255,.065); --glass2:rgba(255,255,255,.11); --glass-hi:rgba(255,255,255,.16);
+    --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.18);
+    --ink:#f1efff; --ink2:#c3bfe0; --ink3:#8d89ad;
+    --acc:#9b8cff; --acc2:#b8adff; --acc-ink:#120f2a; --acc-soft:rgba(155,140,255,.16);
+    --ok:#4fd39b; --warn:#f0b452; --bad:#ff7688;
+    --shadow:0 14px 40px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.08) inset;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:"Heebo","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit}
+.hid{display:none!important}
+
+/* רקע — כתמי צבע רכים מאחורי הזכוכית */
+.sky{position:fixed;inset:0;z-index:-1;overflow:hidden;background:linear-gradient(160deg,var(--bg) 0%,var(--bg2) 100%)}
+.sky i{position:absolute;border-radius:50%;filter:blur(80px);opacity:.75}
+.sky i:nth-child(1){width:52vmax;height:52vmax;background:var(--blob1);top:-18vmax;right:-12vmax;animation:drift1 28s ease-in-out infinite alternate}
+.sky i:nth-child(2){width:44vmax;height:44vmax;background:var(--blob2);bottom:-20vmax;left:-10vmax;animation:drift2 34s ease-in-out infinite alternate}
+.sky i:nth-child(3){width:30vmax;height:30vmax;background:var(--blob3);top:38%;left:38%;opacity:.45;animation:drift3 40s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate(-8vmax,6vmax) scale(1.08)}}
+@keyframes drift2{to{transform:translate(9vmax,-5vmax) scale(1.1)}}
+@keyframes drift3{to{transform:translate(-6vmax,-8vmax) scale(.9)}}
+@media (prefers-reduced-motion: reduce){.sky i{animation:none}}
+
+.glass{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+
+.wrap{max-width:1360px;margin:0 auto;padding:18px 24px 60px}
+
+/* כותרת */
+.top{position:sticky;top:10px;z-index:20;display:flex;align-items:center;gap:16px;padding:12px 16px 12px 12px;margin-bottom:18px}
+.hello b{display:block;font-size:20px;font-weight:700;letter-spacing:-.2px}
+.hello span{font-size:13px;color:var(--ink3)}
+.search{flex:1;max-width:520px;margin-inline-start:auto;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border-radius:14px;background:var(--glass2);border:1px solid var(--line);color:var(--ink3);transition:border-color .15s,box-shadow .15s}
+.search:hover{border-color:var(--line2)}
+.search span{flex:1;text-align:start;font-size:14px}
+kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;border:1px solid var(--line2);color:var(--ink3);background:var(--glass)}
+.status{display:flex;gap:8px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--ink2);background:var(--glass2);border:1px solid var(--line);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink3);flex:none}
+.dot.ok{background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 22%,transparent)}
+.dot.warn{background:var(--warn)}
+.ibtn{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;border:1px solid var(--line);background:var(--glass2);color:var(--ink2);transition:background .15s,color .15s}
+.ibtn:hover{background:var(--glass-hi);color:var(--ink)}
+.ibtn svg{width:19px;height:19px}
+
+/* קיצורים */
+.links{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
+.lk{display:inline-flex;align-items:center;gap:9px;height:46px;padding:0 16px 0 14px;border-radius:14px;border:1px solid var(--line);background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);font-weight:600;font-size:14px;color:var(--ink);text-decoration:none;transition:transform .15s,background .15s,border-color .15s}
+.lk:hover{background:var(--glass2);border-color:var(--line2);transform:translateY(-1px)}
+.lk .em{font-size:18px;line-height:1}
+.lk.add{color:var(--ink3);font-weight:500;border-style:dashed}
+
+.sec-h{display:flex;align-items:baseline;gap:12px;margin:6px 4px 12px}
+.sec-h h2{margin:0;font-size:17px;font-weight:700;letter-spacing:-.1px}
+.sec-h small{color:var(--ink3);font-size:12.5px}
+
+/* מסעדות */
+.rests{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:26px}
+.rest{padding:16px;display:flex;flex-direction:column;min-height:220px;position:relative;overflow:hidden}
+.rest::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--rc)}
+.rest-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.rest-h .badge{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-weight:700;font-size:15px;color:#fff;background:var(--rc);box-shadow:0 4px 14px color-mix(in srgb,var(--rc) 45%,transparent)}
+.rest-h b{font-size:16.5px;font-weight:700;flex:1}
+.rest-h .ibtn{width:32px;height:32px;border-radius:10px}
+.rest-h .ibtn svg{width:16px;height:16px}
+.sub-h{font-size:11.5px;font-weight:600;color:var(--ink3);letter-spacing:.2px;margin:10px 2px 6px}
+.files{display:flex;flex-direction:column;gap:6px}
+.file{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid transparent;background:var(--glass);cursor:pointer;transition:background .12s,border-color .12s;min-width:0;text-align:start;width:100%}
+.file:hover{background:var(--glass-hi);border-color:var(--line)}
+.file:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.ext{flex:none;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:10px;font-weight:800;letter-spacing:.3px;color:#fff;background:#8a86a3}
+.ext.x{background:#1f8f5a}.ext.p{background:#d6455a}.ext.w{background:#2f6fd6}.ext.s{background:#d0741f}.ext.l{background:#6a57de}.ext.h{background:#0f8d86}.ext.f{background:#b48a1f}
+.fm{flex:1;min-width:0}
+.fn{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;unicode-bidi:plaintext;text-align:start}
+.fs{font-size:11.5px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.new{font-size:10.5px;font-weight:700;color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent);padding:1px 7px;border-radius:6px;margin-inline-start:6px}
+.x-btn{flex:none;width:26px;height:26px;border-radius:8px;border:0;background:transparent;color:var(--ink3);opacity:0;display:grid;place-items:center;transition:opacity .12s,background .12s}
+.file:hover .x-btn,.file:focus-within .x-btn{opacity:1}
+.x-btn:hover{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+@media (hover:none){.x-btn{opacity:.6}}
+.empty{font-size:13px;color:var(--ink3);padding:14px;border:1px dashed var(--line2);border-radius:12px;text-align:center}
+.empty button{border:0;background:none;color:var(--acc);font-weight:600;padding:0}
+
+/* מחברת */
+.nb{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:560px;overflow:hidden;margin-bottom:26px}
+.nb-side{border-inline-end:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.nb-side-h{display:flex;gap:8px;padding:14px}
+.nb-q{flex:1;min-width:0;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--glass2);padding:0 12px;outline:none}
+.nb-q:focus{border-color:var(--acc)}
+.btn{height:38px;padding:0 16px;border-radius:11px;border:1px solid transparent;background:var(--acc);color:var(--acc-ink);font-weight:600;white-space:nowrap;transition:filter .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:var(--glass2);color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{background:var(--glass-hi);filter:none}
+.btn.danger{background:var(--bad);color:#fff}
+.nb-list{flex:1;overflow:auto;padding:0 8px 12px;max-height:620px}
+.nl{display:block;width:100%;text-align:start;border:0;background:transparent;padding:10px 12px;border-radius:12px;margin-bottom:2px;transition:background .12s}
+.nl:hover{background:var(--glass)}
+.nl.on{background:var(--acc-soft)}
+.nl b{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nl small{display:block;font-size:12px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.nl .sw{width:9px;height:9px;border-radius:3px;flex:none;border:1px solid var(--line2)}
+.nb-main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.nb-tb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.tb{min-width:34px;height:34px;padding:0 8px;border-radius:9px;border:0;background:transparent;color:var(--ink2);font-weight:600;display:inline-grid;place-items:center}
+.tb:hover{background:var(--glass2);color:var(--ink)}
+.tb.on{background:var(--acc-soft);color:var(--acc)}
+.tb svg{width:17px;height:17px}
+.sep{width:1px;height:20px;background:var(--line2);margin:0 4px}
+.tb input[type=color]{width:0;height:0;opacity:0;position:absolute}
+.nb-title{border:0;outline:none;background:transparent;font-size:22px;font-weight:700;padding:18px 22px 4px;width:100%}
+.nb-meta{font-size:12px;color:var(--ink3);padding:0 22px 8px;display:flex;gap:10px}
+.nb-page{position:relative;flex:1;overflow:auto;margin:0 12px 12px;border-radius:14px;transition:background .2s}
+.nb-body{min-height:100%;outline:none;padding:10px 12px 40px;font-size:15.5px;line-height:1.65}
+.nb-body:empty::before{content:"כתבי כאן… אפשר להדביק צילום מסך (Ctrl+V)";color:var(--ink3)}
+.nb-body img{max-width:100%;height:auto;border-radius:10px}
+.nb-body table{border-collapse:collapse}.nb-body td,.nb-body th{border:1px solid var(--line2);padding:4px 8px}
+.nb-body ul.chk{list-style:none;padding-inline-start:4px}
+.nb-body ul.chk li{position:relative;padding-inline-start:28px}
+.nb-body ul.chk li::before{content:"";position:absolute;inset-inline-start:0;top:.3em;width:17px;height:17px;border-radius:5px;border:1.6px solid var(--ink3);cursor:pointer}
+.nb-body ul.chk li.done{color:var(--ink3);text-decoration:line-through}
+.nb-body ul.chk li.done::before{background:var(--acc);border-color:var(--acc);content:"✓";color:var(--acc-ink);font-size:12px;line-height:16px;text-align:center;font-weight:800}
+.nb-overlay{position:absolute;top:0;right:0;pointer-events:none;max-width:100%}
+.nb-none{flex:1;display:grid;place-items:center;color:var(--ink3);padding:40px;text-align:center}
+.colors{display:flex;gap:6px;padding:4px}
+.cbtn{width:22px;height:22px;border-radius:7px;border:1px solid var(--line2)}
+
+/* חלונות */
+.mask{position:fixed;inset:0;z-index:50;background:rgba(15,12,35,.38);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:9vh 16px 16px}
+.dlg{width:100%;max-width:620px;max-height:80vh;display:flex;flex-direction:column;background:var(--glass2);overflow:hidden}
+:root[data-theme="dark"] .dlg{background:rgba(30,26,60,.82)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .dlg{background:rgba(30,26,60,.82)}}
+.dlg-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.dlg-h b{flex:1;font-size:16px}
+.dlg-q{width:100%;height:52px;border:0;border-bottom:1px solid var(--line);background:transparent;padding:0 18px;font-size:16px;outline:none}
+.dlg-b{overflow:auto;padding:10px}
+.dlg-f{display:flex;gap:8px;justify-content:flex-start;padding:12px 16px;border-top:1px solid var(--line)}
+.res{display:flex;align-items:center;gap:10px;width:100%;text-align:start;border:0;background:transparent;padding:9px 10px;border-radius:12px}
+.res:hover,.res.sel{background:var(--acc-soft)}
+.res .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--glass);border:1px solid var(--line);color:var(--ink2);flex:none}
+.grp{font-size:11.5px;font-weight:700;color:var(--ink3);padding:10px 10px 4px}
+.fld{display:block;margin-bottom:12px}
+.fld span{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:5px;font-weight:500}
+.fld input,.fld select{width:100%;height:42px;border-radius:11px;border:1px solid var(--line2);background:var(--glass);padding:0 12px;outline:none}
+.fld input:focus{border-color:var(--acc)}
+.tabs{display:flex;gap:6px;padding:10px 16px 0}
+.tab{border:1px solid var(--line);background:var(--glass);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--ink2)}
+.tab.on{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+.row{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .grow{flex:1;min-width:0}
+.note{font-size:13px;color:var(--ink2);background:var(--acc-soft);border-radius:12px;padding:10px 12px;margin-bottom:12px}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:80;display:flex;align-items:center;gap:12px;padding:10px 12px 10px 16px;font-size:14px;background:var(--glass2);max-width:calc(100% - 32px)}
+:root[data-theme="dark"] .toast{background:rgba(30,26,60,.9)}
+.toast button{border:0;background:var(--acc-soft);color:var(--acc);font-weight:700;border-radius:9px;padding:5px 12px}
+
+/* כניסה */
+.login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.login .card{width:100%;max-width:400px;padding:30px 28px}
+.login h1{margin:0 0 4px;font-size:24px}
+.login p{margin:0 0 18px;color:var(--ink2);font-size:14px}
+.login .btn{width:100%;height:46px;margin-top:4px}
+.msg{min-height:20px;font-size:13px;color:var(--ink2);margin-top:12px}
+.msg.err{color:var(--bad)}
+
+@media (max-width:860px){
+  .wrap{padding:12px 16px 50px}
+  .top{flex-wrap:wrap}
+  .search{order:3;flex-basis:100%;max-width:none}
+  .status .chip span.lbl{display:none}
+  .nb{grid-template-columns:minmax(0,1fr)}
+  .top{position:relative;top:0}
+  .rest{min-height:0}
+  .nb-page{min-height:320px}
+  .nb-side{border-inline-end:0;border-bottom:1px solid var(--line)}
+  .nb-list{max-height:220px}
+  .rests{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<!-- כניסה -->
+<div id="vLogin" class="login hid">
+  <div class="card glass">
+    <h1>מרכז הבקרה</h1>
+    <p>כניסה עם קוד שנשלח למייל</p>
+    <div id="stEmail">
+      <label class="fld"><span>מייל</span><input id="em" type="email" dir="ltr" autocomplete="email" placeholder="bills.ayelet@gmail.com"></label>
+      <button class="btn" id="bSend">שלחי לי קוד</button>
+    </div>
+    <div id="stCode" class="hid">
+      <label class="fld"><span>הקוד מהמייל</span><input id="cd" inputmode="numeric" dir="ltr" autocomplete="one-time-code"></label>
+      <button class="btn" id="bVerify">כניסה</button>
+      <button class="btn ghost" id="bBack" style="margin-top:8px">חזרה</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+</div>
+
+<!-- הדשבורד -->
+<div id="vApp" class="wrap hid">
+  <header class="top glass">
+    <div class="hello"><b id="hHello">שלום</b><span id="hDate"></span></div>
+    <button class="search" id="bSearch" aria-label="חיפוש"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>חיפוש קובץ, פתק או קיצור…</span><kbd>Ctrl K</kbd></button>
+    <div class="status">
+      <span class="chip" id="cPc" title=""><i class="dot"></i><span class="lbl">בודקת מחשב…</span></span>
+      <span class="chip" id="cSync" title="מתי המחשב שלח לאחרונה את רשימת הקבצים"><i class="dot"></i><span class="lbl">…</span></span>
+      <button class="ibtn" id="bTheme" aria-label="מצב בהיר/כהה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+      <button class="ibtn" id="bSettings" aria-label="הגדרות"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </div>
+  </header>
+
+  <nav class="links" id="links" aria-label="קיצורים"></nav>
+
+  <div class="sec-h"><h2>מסעדות</h2><small id="restsHint">הקבצים שבחרת, ומתחת — מה שהשתנה לאחרונה בתיקייה</small></div>
+  <section class="rests" id="rests"></section>
+
+  <div class="sec-h"><h2>מחברת</h2><small id="nbHint">נשמר לבד, ומסתנכרן בין המחשב לטלפון</small></div>
+  <section class="nb glass" id="nb">
+    <aside class="nb-side">
+      <div class="nb-side-h"><input class="nb-q" id="nbQ" placeholder="חיפוש בפתקים"><button class="btn" id="bNewNote">+ פתק</button></div>
+      <div class="nb-list" id="nbList"></div>
+    </aside>
+    <div class="nb-main" id="nbMain">
+      <div class="nb-none" id="nbNone">אין עדיין פתקים. «+ פתק» כדי להתחיל.</div>
+      <div id="nbEd" class="hid" style="display:flex;flex-direction:column;flex:1;min-height:0">
+        <div class="nb-tb" id="nbTb">
+          <button class="tb" data-c="bold" title="מודגש (Ctrl+B)"><b>B</b></button>
+          <button class="tb" data-c="italic" title="נטוי (Ctrl+I)"><i>I</i></button>
+          <button class="tb" data-c="underline" title="קו תחתון (Ctrl+U)"><u>U</u></button>
+          <button class="tb" data-c="strikeThrough" title="קו חוצה"><s>S</s></button>
+          <span class="sep"></span>
+          <button class="tb" data-c="h2" title="כותרת">H</button>
+          <button class="tb" data-c="insertUnorderedList" title="רשימה">•</button>
+          <button class="tb" data-c="insertOrderedList" title="רשימה ממוספרת">1.</button>
+          <button class="tb" data-c="chk" title="רשימת סימון">☑</button>
+          <span class="sep"></span>
+          <label class="tb" title="צבע טקסט" style="position:relative"><span style="border-bottom:3px solid #d6455a;line-height:1">A</span><input type="color" id="fgColor" value="#d6455a"></label>
+          <button class="tb" data-c="mark" title="מרקר צהוב"><span style="background:#ffe066;color:#222;padding:0 4px;border-radius:3px">A</span></button>
+          <button class="tb" data-c="removeFormat" title="ניקוי עיצוב">⌫</button>
+          <button class="tb" data-c="img" title="הוספת תמונה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></button>
+          <span class="sep"></span>
+          <button class="tb" data-c="page" title="צבע דף">🎨</button>
+          <button class="tb" data-c="star" title="מועדף">☆</button>
+          <button class="tb" data-c="export" title="הורדה כקובץ וורד">⤓</button>
+          <button class="tb" data-c="del" title="מחיקת פתק" style="color:var(--bad)">🗑</button>
+          <input type="file" id="imgPick" accept="image/*" class="hid">
+        </div>
+        <input class="nb-title" id="nbTitle" placeholder="כותרת">
+        <div class="nb-meta"><span id="nbSaved"></span></div>
+        <div class="nb-page" id="nbPage"><div class="nb-body" id="nbBody" contenteditable="true" spellcheck="true"></div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="layer"></div>
+
+<script>
+(function(){
+'use strict';
+var SB='https://mjhywoiwdvuxymuyhhdc.supabase.co';
+var KEY='sb_publishable_c7Y5hKxAqpzIFhhbuhNS2g_u55YKB90';
+var SK='mc-session';          /* נפרד משונטל: לכל מסך חיבור משלו, שלא ינתקו זה את זה */
+var PORTAL='http://localhost:8000';
+var RESTS=[
+  {nm:'פאסטל',c:'#5b8ff0'},{nm:'אריאלה',c:'#e86f78'},{nm:'טופול',c:'#2fb37a'},
+  {nm:"צ'אקולי",c:'#d6a21f'},{nm:'אסא',c:'#9a6ee6'},{nm:'כללי',c:'#0f9d95'}
+];
+var FIXED_LINKS=[
+  {nm:'שונטל',em:'🧾',target:'https://ayelet-cpu.github.io/shontal-main/'},
+  {nm:'תזרים',em:'📈',target:'https://ayelet-cpu.github.io/shontal-main/tazrim.html'},
+  {nm:'בקרת שכר',em:'👥',target:'https://ayelet-cpu.github.io/'}
+];
+var $=function(i){return document.getElementById(i);};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function isUrl(t){return /^https?:\/\//i.test(t||'');}
+
+/* ---------- ערכת צבעים ---------- */
+function themeLoad(){ try{ var t=localStorage.getItem('mc-theme'); if(t) document.documentElement.setAttribute('data-theme',t); }catch(_){} }
+themeLoad();
+$('bTheme').onclick=function(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  if(!cur) cur=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  var nx=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',nx);
+  try{ localStorage.setItem('mc-theme',nx); }catch(_){}
+};
+
+/* ---------- חיבור לענן ---------- */
+var S=null;
+function loadS(){ try{ S=JSON.parse(localStorage.getItem(SK)||'null'); }catch(_){ S=null; } }
+function saveS(o){ S=o; try{ localStorage.setItem(SK,JSON.stringify(o)); }catch(_){} }
+function clearS(){ S=null; try{ localStorage.removeItem(SK); }catch(_){} }
+loadS();
+function auth(path,body){
+  return fetch(SB+'/auth/v1/'+path,{method:'POST',headers:{'apikey':KEY,'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){ return r.text().then(function(t){ var j={}; try{ j=JSON.parse(t||'{}'); }catch(_){}
+      if(!r.ok){ var e=new Error(j.msg||j.error_description||j.message||('שגיאה '+r.status)); e.status=r.status; throw e; } return j; }); });
+}
+function keep(j){ saveS({access_token:j.access_token,refresh_token:j.refresh_token,expires_at:(j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600)),email:(j.user&&j.user.email)||(S&&S.email)||''}); }
+var _ref=null;
+function fresh(){
+  var mine=S; loadS();                       /* לשונית אחרת אולי כבר חידשה */
+  if(!S){ S=mine; }
+  if(!S) return Promise.reject(new Error('אין חיבור'));
+  if((S.expires_at||0)-Date.now()/1000>120) return Promise.resolve(S);
+  if(!_ref) _ref=auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token})
+    .then(function(j){ keep(j); _ref=null; return S; },function(e){ _ref=null; if(e.status===400||e.status===401){ clearS(); showLogin(); } throw e; });
+  return _ref;
+}
+function hdr(extra){ var h={'apikey':KEY,'Authorization':'Bearer '+(S&&S.access_token||''),'Content-Type':'application/json'}; for(var k in extra||{}) h[k]=extra[k]; return h; }
+function api(method,q,body,extra){
+  return fresh().then(function(){ return fetch(SB+'/rest/v1/'+q,{method:method,headers:hdr(extra),body:body==null?undefined:JSON.stringify(body)}); })
+    .then(function(r){ if(r.status===401){ clearS(); showLogin(); throw new Error('נותקת'); }
+      return r.text().then(function(t){ if(!r.ok) throw new Error(t||('שגיאה '+r.status)); return t?JSON.parse(t):null; }); });
+}
+
+function msg(t,err){ var m=$('msg'); m.textContent=t||''; m.className='msg'+(err?' err':''); }
+function showLogin(){ $('vApp').classList.add('hid'); $('vLogin').classList.remove('hid'); $('stEmail').classList.remove('hid'); $('stCode').classList.add('hid');
+  try{ $('em').value=localStorage.getItem('mc-email')||localStorage.getItem('shontal-cloud-email')||''; }catch(_){} }
+$('bSend').onclick=function(){
+  var em=($('em').value||'').trim().toLowerCase(), b=this;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ msg('נא להקליד מייל תקין',true); return; }
+  b.disabled=true; msg('שולחת קוד…');
+  auth('otp',{email:em,create_user:false}).then(function(){
+    try{ localStorage.setItem('mc-email',em); }catch(_){}
+    $('stEmail').classList.add('hid'); $('stCode').classList.remove('hid');
+    msg('שלחתי קוד ל-'+em+'. הוא מגיע תוך דקה (כדאי לבדוק גם בספאם).'); $('cd').focus();
+  }).catch(function(e){ msg(e.status===429?'נשלחו יותר מדי קודים. נסי שוב בעוד כמה דקות.':'לא הצלחתי לשלוח קוד: '+e.message,true); })
+  .then(function(){ b.disabled=false; });
+};
+$('bVerify').onclick=function(){
+  var em=($('em').value||'').trim().toLowerCase(), cd=($('cd').value||'').replace(/\s/g,''), b=this;
+  if(!cd){ msg('נא להקליד את הקוד',true); return; }
+  b.disabled=true; msg('בודקת…');
+  auth('verify',{type:'email',email:em,token:cd}).then(function(j){ keep(j); msg(''); start(); })
+  .catch(function(){ msg('הקוד לא נכון או שפג תוקפו. אפשר לבקש קוד חדש.',true); })
+  .then(function(){ b.disabled=false; });
+};
+$('cd').addEventListener('keydown',function(e){ if(e.key==='Enter') $('bVerify').click(); });
+$('em').addEventListener('keydown',function(e){ if(e.key==='Enter') $('bSend').click(); });
+$('bBack').onclick=function(){ $('stCode').classList.add('hid'); $('stEmail').classList.remove('hid'); msg(''); };
+
+/* ---------- מצב ---------- */
+var KV={rest_files:{},general:[],sites:[],extra_folders:[],recent:[]};
+var FILES=[];          /* מהענן: {path,root,rel,name,ext,mtime} */
+var NOTES=[];
+var PC=false;          /* הפורטל במחשב הזה עונה */
+var SYNCED=null;
+
+function kvSave(k){ return api('POST','mc_kv',{k:k,v:KV[k],updated_at:new Date().toISOString()},{'Prefer':'resolution=merge-duplicates,return=minimal'}).catch(function(e){ toast('לא נשמר: '+e.message); }); }
+function loadKV(){
+  return api('GET','mc_kv?select=k,v').then(function(rows){
+    (rows||[]).forEach(function(r){ if(r.k==='files_synced_at') SYNCED=r.v; else KV[r.k]=r.v; });
+    if(!KV.rest_files||typeof KV.rest_files!=='object') KV.rest_files={};
+    ['general','sites','extra_folders','recent'].forEach(function(k){ if(!Array.isArray(KV[k])) KV[k]=[]; });
+  });
+}
+function loadFiles(){
+  var out=[];
+  function page(off){ return api('GET','mc_files?select=path,root,rel,name,ext,mtime&order=mtime.desc.nullslast&offset='+off+'&limit=1000').then(function(rows){
+    out=out.concat(rows||[]); if(rows&&rows.length===1000&&off<20000) return page(off+1000); }); }
+  return page(0).then(function(){ FILES=out; });
+}
+
+/* ---------- זמן ---------- */
+var DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+var MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+function ago(t){
+  if(!t) return ''; var d=(Date.now()-new Date(t).getTime())/1000;
+  if(d<60) return 'עכשיו'; if(d<3600) return 'לפני '+Math.round(d/60)+' דק׳';
+  if(d<86400) return 'לפני '+Math.round(d/3600)+' שע׳';
+  var dd=Math.round(d/86400); if(dd===1) return 'אתמול'; if(dd<30) return 'לפני '+dd+' ימים';
+  var x=new Date(t); return x.getDate()+'.'+(x.getMonth()+1)+'.'+String(x.getFullYear()).slice(2);
+}
+function isToday(t){ if(!t) return false; var a=new Date(t), b=new Date(); return a.toDateString()===b.toDateString(); }
+function tick(){
+  var d=new Date(), h=d.getHours();
+  var g=h<5?'לילה טוב':h<12?'בוקר טוב':h<17?'צהריים טובים':h<21?'ערב טוב':'לילה טוב';
+  $('hHello').textContent=g+', איילת';
+  $('hDate').textContent='יום '+DAYS[d.getDay()]+', '+d.getDate()+' ב'+MONTHS[d.getMonth()]+' · '+String(h).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  var c=$('cSync'), dot=c.querySelector('.dot'), l=c.querySelector('.lbl');
+  if(SYNCED){ var old=(Date.now()-new Date(SYNCED).getTime())>3600e3; dot.className='dot '+(old?'warn':'ok'); l.textContent='קבצים: '+ago(SYNCED);
+    c.title=old?'המחשב לא שלח רשימת קבצים יותר משעה — כנראה שהפורטל כבוי':'רשימת הקבצים עדכנית'; }
+  else { dot.className='dot warn'; l.textContent='קבצים: עוד לא נשלחו'; c.title='כשהפורטל במחשב ירוץ, הוא ישלח את רשימת הקבצים'; }
+}
+
+/* ---------- המחשב (הפורטל המקומי) ---------- */
+function pingPc(){
+  var ctl=('AbortController' in window)?new AbortController():null; var tm=setTimeout(function(){ if(ctl) ctl.abort(); },1800);
+  return fetch(PORTAL+'/mc/ping',{signal:ctl&&ctl.signal}).then(function(r){ return r.ok?r.json():null; })
+    .then(function(j){ PC=!!(j&&j.ok); },function(){ PC=false; })
+    .then(function(){ clearTimeout(tm); var c=$('cPc');
+      c.querySelector('.dot').className='dot'+(PC?' ok':'');
+      c.querySelector('.lbl').textContent=PC?'מחובר למחשב':'מהענן';
+      c.title=PC?'קבצים נפתחים ישר באקסל/וורד במחשב הזה':'הפורטל לא עונה כאן — קבצים ייפתחו דרך Google Drive'; });
+}
+
+/* ---------- פתיחה ---------- */
+function driveUrl(path){ var n=String(path).split(/[\\/]/).pop().replace(/\.(gsheet|gdoc)$/i,''); return 'https://drive.google.com/drive/search?q='+encodeURIComponent(n); }
+function remember(item){
+  if(!item||!item.target) return;
+  KV.recent=[{nm:item.nm,target:item.target,at:new Date().toISOString()}].concat((KV.recent||[]).filter(function(x){ return x.target!==item.target; })).slice(0,12);
+  kvSave('recent');
+}
+function openItem(item){
+  var t=item.target; if(!t) return;
+  if(isUrl(t)){ window.open(t,'_blank','noopener'); remember(item); return; }
+  if(PC){
+    fetch(PORTAL+'/mc/open',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:t})})
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok||!j.ok) throw new Error(j.reason||('שגיאה '+r.status)); }); })
+      .then(function(){ toast('נפתח במחשב: '+item.nm); remember(item); },
+            function(e){ toast('לא נפתח במחשב ('+e.message+') — פותחת ב-Drive'); window.open(driveUrl(t),'_blank','noopener'); });
+    return;
+  }
+  window.open(driveUrl(t),'_blank','noopener'); remember(item);
+}
+
+/* ---------- סמלי קבצים ---------- */
+function extOf(n){ var m=/\.([a-z0-9]+)$/i.exec(n||''); return m?m[1].toLowerCase():''; }
+function extBadge(target,ext){
+  if(isUrl(target)) return '<span class="ext l">🔗</span>';
+  var e=ext||extOf(target);
+  var cls={xlsx:'x',xls:'x',xlsm:'x',xlsb:'x',csv:'x',gsheet:'x',pdf:'p',docx:'w',doc:'w',gdoc:'w',pptx:'s',html:'h'}[e];
+  if(!e) return '<span class="ext f">📁</span>';
+  return '<span class="ext '+(cls||'')+'">'+esc(e.replace('gsheet','GS').replace('gdoc','GD').slice(0,4).toUpperCase())+'</span>';
+}
+function bare(n){ return String(n||'').replace(/\.(xlsx|xlsb|xls|xlsm|csv|docx|doc|pdf|pptx|gsheet|gdoc|html)$/i,''); }
+function fileByPath(p){ for(var i=0;i<FILES.length;i++) if(FILES[i].path===p) return FILES[i]; return null; }
+function fileRow(item,opts){
+  opts=opts||{}; var f=isUrl(item.target)?null:fileByPath(item.target);
+  var sub=opts.sub!=null?opts.sub:(isUrl(item.target)?item.target.replace(/^https?:\/\//,'').split('/')[0]:(f?((f.rel?f.rel+' · ':'')+ago(f.mtime)):'')), fresh=f&&isToday(f.mtime);
+  return '<div class="file" role="button" tabindex="0" data-open="'+esc(item.target)+'" data-nm="'+esc(item.nm)+'" title="'+esc(item.target)+'">'+extBadge(item.target,f&&f.ext)+
+    '<div class="fm"><div class="fn">'+esc(bare(item.nm))+(fresh?'<span class="new">היום</span>':'')+'</div>'+(sub?'<div class="fs">'+esc(sub)+'</div>':'')+'</div>'+
+    (opts.rm?'<button class="x-btn" data-rm="'+esc(opts.rm)+'" aria-label="הסרה"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>':'')+'</div>';
+}
+
+/* ---------- קיצורים ---------- */
+function renderLinks(){
+  var h='';
+  FIXED_LINKS.forEach(function(l){ h+='<a class="lk" href="'+esc(l.target)+'" target="_blank" rel="noopener" data-nm="'+esc(l.nm)+'"><span class="em">'+l.em+'</span>'+esc(l.nm)+'</a>'; });
+  (KV.sites||[]).forEach(function(s,i){ h+='<button class="lk" data-open="'+esc(s.target)+'" data-nm="'+esc(s.nm)+'"><span class="em">'+(isUrl(s.target)?'🌐':'📄')+'</span>'+esc(s.nm)+'</button>'; });
+  h+='<button class="lk add" id="bAddSite">+ קיצור</button>';
+  $('links').innerHTML=h;
+  $('bAddSite').onclick=function(){ linkDialog('הוספת קיצור',function(it){ KV.sites.push(it); kvSave('sites'); renderLinks(); }); };
+}
+
+/* ---------- מסעדות ---------- */
+function restKey(nm){ return nm==='כללי'?'general':nm; }
+function pinsOf(nm){ return nm==='כללי'?(KV.general||[]):((KV.rest_files||{})[nm]||[]); }
+function setPins(nm,a){ if(nm==='כללי'){ KV.general=a; kvSave('general'); } else { KV.rest_files[nm]=a; kvSave('rest_files'); } }
+function rootPath(nm){ var f=null; for(var i=0;i<FILES.length;i++){ if(FILES[i].root===nm){ f=FILES[i]; break; } } if(!f) return ''; var p=f.path; var rel=f.rel?f.rel.length+1:0; return p.slice(0,p.length-f.name.length-1-rel).replace(/[\\/]$/,''); }
+function renderRests(){
+  var extra=(KV.extra_folders||[]).map(function(x){ return {nm:x.name,c:'#7d7998'}; });
+  var h='';
+  RESTS.concat(extra).forEach(function(r){
+    var pins=pinsOf(r.nm), pinned={}; pins.forEach(function(p){ pinned[p.target]=1; });
+    var recent=FILES.filter(function(f){ return f.root===r.nm && !pinned[f.path]; }).slice(0,3);
+    h+='<article class="rest glass" style="--rc:'+r.c+'"><div class="rest-h"><span class="badge">'+esc(r.nm.replace("'",'').charAt(0))+'</span><b>'+esc(r.nm)+'</b>'+
+      (rootPath(r.nm)?'<button class="ibtn" data-folder="'+esc(r.nm)+'" title="פתיחת התיקייה" aria-label="פתיחת התיקייה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>':'')+
+      '<button class="ibtn" data-pick="'+esc(r.nm)+'" title="הוספת קובץ" aria-label="הוספת קובץ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>';
+    h+='<div class="files">';
+    if(pins.length) pins.forEach(function(p,i){ h+=fileRow(p,{rm:r.nm+'\u0001'+i}); });
+    else h+='<div class="empty">עוד לא נבחרו קבצים · <button data-pick="'+esc(r.nm)+'">בחירת קובץ</button></div>';
+    h+='</div>';
+    if(recent.length){ h+='<div class="sub-h">השתנו לאחרונה בתיקייה</div><div class="files">';
+      recent.forEach(function(f){ h+=fileRow({nm:f.name,target:f.path}); }); h+='</div>'; }
+    h+='</article>';
+  });
+  $('rests').innerHTML=h;
+}
+document.addEventListener('click',function(e){
+  var rm=e.target.closest('[data-rm]'); if(rm){ e.stopPropagation(); var a=rm.getAttribute('data-rm').split('\u0001'), nm=a[0], i=+a[1];
+    var pins=pinsOf(nm).slice(), gone=pins.splice(i,1)[0]; setPins(nm,pins); renderRests();
+    toast('«'+gone.nm+'» הוסר',function(){ var p=pinsOf(nm).slice(); p.splice(i,0,gone); setPins(nm,p); renderRests(); }); return; }
+  var pk=e.target.closest('[data-pick]'); if(pk){ pickDialog(pk.getAttribute('data-pick')); return; }
+  var fd=e.target.closest('[data-folder]'); if(fd){ var nm2=fd.getAttribute('data-folder'); openItem({nm:nm2,target:rootPath(nm2)}); return; }
+  var op=e.target.closest('[data-open]'); if(op){ openItem({nm:op.getAttribute('data-nm'),target:op.getAttribute('data-open')}); }
+});
+document.addEventListener('keydown',function(e){ if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('file')){ e.preventDefault(); e.target.click(); } });
+
+/* ---------- חלונות ---------- */
+function closeLayer(){ $('layer').innerHTML=''; }
+function dialog(html){ $('layer').innerHTML='<div class="mask" id="mask">'+html+'</div>';
+  $('mask').addEventListener('mousedown',function(e){ if(e.target.id==='mask') closeLayer(); }); return $('mask'); }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape' && $('mask')) closeLayer(); });
+var xSvg='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+
+function pickDialog(nm){
+  var scope=nm;
+  var m=dialog('<div class="dlg glass" role="dialog" aria-label="בחירת קובץ"><div class="dlg-h"><b>הוספת קובץ — '+esc(nm)+'</b><button class="ibtn" data-x>'+xSvg+'</button></div>'+
+    '<div class="tabs"><button class="tab on" data-sc="'+esc(nm)+'">'+esc(nm)+'</button><button class="tab" data-sc="*">כל התיקיות</button></div>'+
+    '<input class="dlg-q" id="pq" placeholder="חיפוש לפי שם קובץ או תיקייה"><div class="dlg-b" id="pr"></div>'+
+    '<div class="dlg-f"><button class="btn ghost" id="pLink">+ קישור או נתיב אחר</button></div></div>');
+  function draw(){
+    var q=($('pq').value||'').trim().toLowerCase(), words=q.split(/\s+/).filter(Boolean);
+    var list=FILES.filter(function(f){ if(scope!=='*'&&f.root!==scope) return false; var s=(f.name+' '+f.rel).toLowerCase(); return words.every(function(w){ return s.indexOf(w)>=0; }); }).slice(0,80);
+    var h=list.map(function(f,i){ return '<button class="res" data-i="'+i+'">'+extBadge(f.path,f.ext)+'<div class="fm"><div class="fn">'+esc(bare(f.name))+'</div><div class="fs">'+esc((scope==='*'?f.root+' · ':'')+(f.rel||'')+' · '+ago(f.mtime))+'</div></div></button>'; }).join('');
+    if(!FILES.length) h='<div class="empty">רשימת הקבצים עוד לא הגיעה מהמחשב. כשהפורטל ירוץ במחשב (כמו תמיד), הקבצים יופיעו כאן תוך כמה דקות. בינתיים אפשר להוסיף קישור או נתיב ידנית.</div>';
+    else if(!list.length) h='<div class="empty">לא נמצא קובץ מתאים</div>';
+    $('pr').innerHTML=h;
+    $('pr').onclick=function(e){ var b=e.target.closest('[data-i]'); if(!b) return; var f=list[+b.getAttribute('data-i')];
+      var pins=pinsOf(nm).slice(); if(!pins.some(function(p){ return p.target===f.path; })) pins.push({nm:f.name.replace(/\.[^.]+$/,''),target:f.path}); setPins(nm,pins); renderRests(); closeLayer(); toast('נוסף ל'+nm); };
+  }
+  m.querySelector('[data-x]').onclick=closeLayer;
+  m.querySelectorAll('[data-sc]').forEach(function(t){ t.onclick=function(){ m.querySelectorAll('[data-sc]').forEach(function(x){ x.classList.remove('on'); }); t.classList.add('on'); scope=t.getAttribute('data-sc'); draw(); }; });
+  $('pq').oninput=draw; $('pq').focus(); draw();
+  $('pLink').onclick=function(){ linkDialog('הוספה ל'+nm,function(it){ var p=pinsOf(nm).slice(); p.push(it); setPins(nm,p); renderRests(); }); };
+}
+function linkDialog(title,done){
+  var m=dialog('<div class="dlg glass" style="max-width:460px"><div class="dlg-h"><b>'+esc(title)+'</b><button class="ibtn" data-x>'+xSvg+'</button></div><div class="dlg-b" style="padding:16px">'+
+    '<label class="fld"><span>שם</span><input id="lN" placeholder="למשל: וואטסאפ"></label>'+
+    '<label class="fld"><span>כתובת אתר, או נתיב של קובץ במחשב</span><input id="lT" dir="ltr" placeholder="https://…  או  C:\\Users\\PC\\…"></label></div>'+
+    '<div class="dlg-f"><button class="btn" id="lOk">הוספה</button><button class="btn ghost" data-x>ביטול</button></div></div>');
+  m.querySelectorAll('[data-x]').forEach(function(b){ b.onclick=closeLayer; });
+  $('lN').focus();
+  $('lOk').onclick=function(){ var n=$('lN').value.trim(), t=$('lT').value.trim().replace(/^"|"$/g,''); if(!t){ $('lT').focus(); return; }
+    if(/^www\./i.test(t)) t='https://'+t; done({nm:n||t.split(/[\\/]/).pop(),target:t}); closeLayer(); };
+}
+
+/* ---------- חיפוש כללי ---------- */
+function searchDialog(){
+  var m=dialog('<div class="dlg glass" role="dialog" aria-label="חיפוש"><input class="dlg-q" id="sq" placeholder="מה לחפש? שם קובץ, פתק, קיצור…" autocomplete="off"><div class="dlg-b" id="sr"></div></div>');
+  var items=[], sel=0;
+  function txt(html){ var d=document.createElement('div'); d.innerHTML=html||''; return d.textContent||''; }
+  function draw(){
+    var q=($('sq').value||'').trim().toLowerCase(), words=q.split(/\s+/).filter(Boolean), h='';
+    items=[];
+    function match(s){ s=(s||'').toLowerCase(); return words.every(function(w){ return s.indexOf(w)>=0; }); }
+    if(!words.length){
+      (KV.recent||[]).slice(0,8).forEach(function(r){ items.push({k:'open',nm:r.nm,target:r.target,sub:'פתחת '+ago(r.at),grp:'פתחת לאחרונה'}); });
+      FILES.slice(0,6).forEach(function(f){ items.push({k:'open',nm:f.name,target:f.path,ext:f.ext,sub:f.root+' · '+ago(f.mtime),grp:'השתנו לאחרונה'}); });
+    } else {
+      FIXED_LINKS.concat(KV.sites||[]).filter(function(l){ return match(l.nm); }).forEach(function(l){ items.push({k:'open',nm:l.nm,target:l.target,sub:'קיצור',grp:'קיצורים'}); });
+      NOTES.filter(function(n){ return match(n.title+' '+txt(n.body)); }).slice(0,8).forEach(function(n){ items.push({k:'note',id:n.id,nm:n.title||'ללא כותרת',sub:ago(n.updated_at),grp:'פתקים'}); });
+      FILES.filter(function(f){ return match(f.name+' '+f.rel+' '+f.root); }).slice(0,40).forEach(function(f){ items.push({k:'open',nm:f.name,target:f.path,ext:f.ext,sub:f.root+(f.rel?' · '+f.rel:'')+' · '+ago(f.mtime),grp:'קבצים'}); });
+    }
+    if(sel>=items.length) sel=Math.max(0,items.length-1);
+    var g='';
+    items.forEach(function(it,i){ if(it.grp!==g){ g=it.grp; h+='<div class="grp">'+esc(g)+'</div>'; }
+      h+='<button class="res'+(i===sel?' sel':'')+'" data-i="'+i+'">'+(it.k==='note'?'<span class="ext l">📝</span>':extBadge(it.target,it.ext))+'<div class="fm"><div class="fn">'+esc(it.k==='note'?it.nm:bare(it.nm))+'</div><div class="fs">'+esc(it.sub||'')+'</div></div></button>'; });
+    if(!items.length) h='<div class="empty">'+(words.length?'לא נמצא כלום':'עוד אין היסטוריה')+'</div>';
+    $('sr').innerHTML=h;
+    var s=$('sr').querySelector('.sel'); if(s) s.scrollIntoView({block:'nearest'});
+  }
+  function go(i){ var it=items[i]; if(!it) return; closeLayer(); if(it.k==='note'){ selectNote(it.id); $('nb').scrollIntoView({behavior:'smooth',block:'start'}); } else openItem(it); }
+  $('sq').oninput=function(){ sel=0; draw(); };
+  $('sq').onkeydown=function(e){ if(e.key==='ArrowDown'){ sel=Math.min(items.length-1,sel+1); draw(); e.preventDefault(); } else if(e.key==='ArrowUp'){ sel=Math.max(0,sel-1); draw(); e.preventDefault(); } else if(e.key==='Enter'){ go(sel); } };
+  $('sr').onclick=function(e){ var b=e.target.closest('[data-i]'); if(b) go(+b.getAttribute('data-i')); };
+  $('sq').focus(); draw();
+}
+$('bSearch').onclick=searchDialog;
+document.addEventListener('keydown',function(e){ if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K'||e.code==='KeyK')){ e.preventDefault(); if(!$('vApp').classList.contains('hid')) searchDialog(); } });
+
+/* ---------- הגדרות ---------- */
+$('bSettings').onclick=function(){
+  function draw(){
+    var h='<div class="dlg glass"><div class="dlg-h"><b>הגדרות</b><button class="ibtn" data-x>'+xSvg+'</button></div><div class="dlg-b" style="padding:16px">';
+    h+='<div class="sub-h" style="margin-top:0">תיקיות נוספות לסריקה</div><div class="note">המסעדות ו«משותף» נסרקות לבד. כאן אפשר להוסיף עוד תיקייה מהמחשב — היא תופיע כקופסה חדשה תוך כמה דקות (כשהפורטל רץ).</div>';
+    (KV.extra_folders||[]).forEach(function(x,i){ h+='<div class="row"><div class="grow"><b>'+esc(x.name)+'</b><div class="fs" dir="ltr" style="text-align:right">'+esc(x.path)+'</div></div><button class="btn ghost" data-delf="'+i+'">הסרה</button></div>'; });
+    h+='<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><input id="fN" class="nb-q" placeholder="שם" style="flex:1 1 120px"><input id="fP" class="nb-q" dir="ltr" placeholder="C:\\Users\\PC\\האחסון שלי\\…" style="flex:3 1 240px"><button class="btn" id="fAdd">הוספה</button></div>';
+    if((KV.sites||[]).length){ h+='<div class="sub-h">קיצורים</div>'; KV.sites.forEach(function(s,i){ h+='<div class="row"><div class="grow"><b>'+esc(s.nm)+'</b><div class="fs" dir="ltr" style="text-align:right">'+esc(s.target)+'</div></div><button class="btn ghost" data-dels="'+i+'">הסרה</button></div>'; }); }
+    h+='<div class="sub-h">העברה מהמערכת הישנה</div><div class="note">בחרי את הקובץ <b>mission-control-data.json</b> — הוא נמצא באותה תיקייה שבה נמצא Mission-Control.hta. הפתקים, הקבצים שבחרת לכל מסעדה והקיצורים יעברו לכאן. אפשר לעשות את זה יותר מפעם אחת — שום דבר לא יוכפל.</div>';
+    h+='<label class="btn ghost" style="display:inline-grid;place-items:center">בחירת הקובץ…<input type="file" id="impF" accept=".json,application/json" class="hid"></label>';
+    h+='<div class="sub-h">חיבור</div><div class="row"><div class="grow">מחוברת בתור <span dir="ltr">'+esc(S&&S.email||'')+'</span></div><button class="btn ghost" id="bOut">יציאה</button></div>';
+    h+='</div></div>';
+    var m=dialog(h);
+    m.querySelector('[data-x]').onclick=closeLayer;
+    $('fAdd').onclick=function(){ var n=$('fN').value.trim(), p=$('fP').value.trim().replace(/^"|"$/g,''); if(!p) return;
+      KV.extra_folders.push({name:n||p.split(/[\\/]/).pop(),path:p}); kvSave('extra_folders'); renderRests(); draw(); };
+    m.querySelectorAll('[data-delf]').forEach(function(b){ b.onclick=function(){ KV.extra_folders.splice(+b.getAttribute('data-delf'),1); kvSave('extra_folders'); renderRests(); draw(); }; });
+    m.querySelectorAll('[data-dels]').forEach(function(b){ b.onclick=function(){ KV.sites.splice(+b.getAttribute('data-dels'),1); kvSave('sites'); renderLinks(); draw(); }; });
+    $('impF').onchange=function(){ var f=this.files&&this.files[0]; if(f) importOld(f); };
+    $('bOut').onclick=function(){ clearS(); closeLayer(); showLogin(); };
+  }
+  draw();
+};
+
+/* ייבוא מ-mission-control-data.json של ה-HTA */
+function importOld(file){
+  var rd=new FileReader();
+  rd.onload=function(){
+    var t=String(rd.result||'').replace(/^\uFEFF/,''), D=null;
+    try{ D=JSON.parse(t); }catch(_){ var wd=t.indexOf(',"waDigest"'); if(wd>0){ try{ D=JSON.parse(t.slice(0,wd)+'}'); }catch(__){} } }
+    if(!D){ toast('הקובץ לא נקרא — האם זה mission-control-data.json?'); return; }
+    var nn=0, nf=0, ns=0;
+    function same(a,b){ return a.target===b.target; }
+    function addTo(arr,items){ items.forEach(function(it){ if(it&&it.target&&!arr.some(function(x){ return same(x,it); })){ arr.push({nm:it.nm||String(it.target).split(/[\\/]/).pop(),target:it.target}); nf++; } }); }
+    Object.keys(D.restFiles||{}).forEach(function(r){ if(!KV.rest_files[r]) KV.rest_files[r]=[]; addTo(KV.rest_files[r],D.restFiles[r]||[]); });
+    addTo(KV.general,(D.sharedExtra||[]).concat(D.personal||[]));
+    (D.sites||[]).forEach(function(s){ if(s&&s.target&&!KV.sites.some(function(x){ return x.target===s.target; })){ KV.sites.push({nm:s.nm,target:s.target}); ns++; } });
+    (D.extraFolders||[]).forEach(function(x){ if(x&&x.path&&!KV.extra_folders.some(function(y){ return y.path===x.path; })) KV.extra_folders.push({name:x.name,path:x.path}); });
+    var notes=(D.notes||[]).map(function(n,i){ var title=n.title||'פתק', body=clean(n.body||'');
+      return {legacy_key:'hta:'+hash(title+'\u0001'+(n.body||'')),title:title,body:body,color:n.color||'',overlay:n.overlay||'',star:!!(n.star||n.pin),pos:-i}; });
+    var tasks=[kvSave('rest_files'),kvSave('general'),kvSave('sites'),kvSave('extra_folders')];
+    if(notes.length) tasks.push(api('POST','mc_notes?on_conflict=legacy_key',notes,{'Prefer':'resolution=ignore-duplicates,return=representation'}).then(function(r){ nn=(r||[]).length; }));
+    toast('מעבירה…');
+    Promise.all(tasks).then(function(){ return loadNotes(true); }).then(function(){ renderLinks(); renderRests(); closeLayer();
+      toast('הועברו: '+nn+' פתקים חדשים, '+nf+' קבצים, '+ns+' קיצורים'); })
+      .catch(function(e){ toast('ההעברה נכשלה: '+e.message); });
+  };
+  rd.readAsText(file,'utf-8');
+}
+function hash(s){ var h=5381; for(var i=0;i<s.length;i++){ h=((h<<5)+h+s.charCodeAt(i))|0; } return (h>>>0).toString(36)+'-'+s.length; }
+
+/* ---------- מחברת ---------- */
+var CUR=null, dirty=false, saveT=null, lastPull=null, saving=null;
+var PAGE_COLORS=['','#fff8d6','#e9f7ef','#eaf1ff','#fdecef','#f1ecfd','#1e1b3a'];
+function clean(html){
+  var d=document.createElement('div'); d.innerHTML=html||'';
+  d.querySelectorAll('script,iframe,object,embed,style,link,meta,form').forEach(function(x){ x.remove(); });
+  d.querySelectorAll('*').forEach(function(el){ Array.prototype.slice.call(el.attributes).forEach(function(a){
+    if(/^on/i.test(a.name)||(/^(href|src)$/i.test(a.name)&&/^\s*javascript:/i.test(a.value))) el.removeAttribute(a.name); }); });
+  return d.innerHTML;
+}
+function plain(html){ var d=document.createElement('div'); d.innerHTML=(html||'').replace(/<img[^>]*>/gi,' 🖼 ').replace(/<(br|\/p|\/div|\/li)>/gi,' '); return (d.textContent||'').replace(/\s+/g,' ').trim(); }
+function loadNotes(full){
+  var q='mc_notes?select=*&order=updated_at.asc';
+  if(!full&&lastPull) q+='&updated_at=gt.'+encodeURIComponent(lastPull);
+  else q+='&deleted=is.false';
+  return api('GET',q).then(function(rows){
+    if(full) NOTES=[];
+    (rows||[]).forEach(function(r){
+      if(!lastPull||r.updated_at>lastPull) lastPull=r.updated_at;
+      var i=NOTES.findIndex(function(n){ return n.id===r.id; });
+      if(CUR===r.id&&dirty) return;                       /* באמצע כתיבה — לא דורסים */
+      if(r.deleted){ if(i>=0) NOTES.splice(i,1); if(CUR===r.id){ CUR=null; } return; }
+      if(i>=0) NOTES[i]=r; else NOTES.push(r);
+      if(CUR===r.id) fillEditor(true);
+    });
+    renderNoteList(); if(!CUR&&NOTES.length) selectNote(sortedNotes()[0].id); else if(!NOTES.length) showEditor(false);
+  });
+}
+function sortedNotes(){ return NOTES.slice().sort(function(a,b){ return (b.star-a.star)||(b.updated_at>a.updated_at?1:b.updated_at<a.updated_at?-1:0); }); }
+function renderNoteList(){
+  var q=($('nbQ').value||'').trim().toLowerCase(), h='';
+  sortedNotes().forEach(function(n){
+    var p=plain(n.body); if(q&&(n.title+' '+p).toLowerCase().indexOf(q)<0) return;
+    h+='<button class="nl'+(n.id===CUR?' on':'')+'" data-n="'+n.id+'"><b>'+(n.star?'⭐':'')+(n.color?'<i class="sw" style="background:'+esc(n.color)+'"></i>':'')+esc(n.title||'ללא כותרת')+'</b><small>'+esc(ago(n.updated_at))+(p?' · '+esc(p.slice(0,70)):'')+'</small></button>';
+  });
+  $('nbList').innerHTML=h||'<div class="empty" style="margin:6px">'+(q?'לא נמצא פתק':'אין פתקים')+'</div>';
+}
+$('nbList').onclick=function(e){ var b=e.target.closest('[data-n]'); if(b) selectNote(b.getAttribute('data-n')); };
+$('nbQ').oninput=renderNoteList;
+function curNote(){ return NOTES.find(function(n){ return n.id===CUR; }); }
+function showEditor(on){ $('nbEd').classList.toggle('hid',!on); $('nbNone').classList.toggle('hid',on); }
+function selectNote(id){ if(dirty) saveNow(); CUR=id; fillEditor(); renderNoteList(); }
+function fillEditor(keepCaret){
+  var n=curNote(); if(!n){ showEditor(false); return; } showEditor(true);
+  if(document.activeElement!==$('nbTitle')) $('nbTitle').value=n.title||'';
+  if(!(keepCaret&&document.activeElement===$('nbBody'))) $('nbBody').innerHTML=clean(n.body);
+  var dark=n.color==='#1e1b3a';
+  $('nbPage').style.background=n.color||'transparent'; $('nbPage').style.color=n.color?(dark?'#f1efff':'#1d1a33'):'';
+  var ov=$('nbPage').querySelector('.nb-overlay'); if(ov) ov.remove();
+  if(n.overlay){ var im=new Image(); im.className='nb-overlay'; im.src=n.overlay; $('nbPage').appendChild(im); }
+  $('nbTb').querySelector('[data-c=star]').textContent=n.star?'★':'☆';
+  $('nbTb').querySelector('[data-c=star]').classList.toggle('on',!!n.star);
+  $('nbSaved').textContent='נשמר · '+ago(n.updated_at);
+}
+function markDirty(){ var n=curNote(); if(!n) return; dirty=true; $('nbSaved').textContent='שומרת…'; clearTimeout(saveT); saveT=setTimeout(saveNow,700); }
+function saveNow(){
+  clearTimeout(saveT); var n=curNote(); if(!n||!dirty) return Promise.resolve();
+  n.title=$('nbTitle').value; n.body=$('nbBody').innerHTML; dirty=false;
+  saving=api('PATCH','mc_notes?id=eq.'+n.id+'&select=updated_at',{title:n.title,body:n.body},{'Prefer':'return=representation'})
+    .then(function(r){ if(r&&r[0]) n.updated_at=r[0].updated_at; if(CUR===n.id&&!dirty) $('nbSaved').textContent='נשמר'; renderNoteList(); },
+          function(e){ dirty=true; $('nbSaved').textContent='לא נשמר — אנסה שוב'; clearTimeout(saveT); saveT=setTimeout(saveNow,5000); });
+  return saving;
+}
+function patchNote(fields){ var n=curNote(); if(!n) return; for(var k in fields) n[k]=fields[k]; n.updated_at=new Date().toISOString();
+  fillEditor(true); renderNoteList(); return api('PATCH','mc_notes?id=eq.'+n.id+'&select=updated_at',fields,{'Prefer':'return=representation'})
+    .then(function(r){ if(r&&r[0]) n.updated_at=r[0].updated_at; },function(e){ toast('לא נשמר: '+e.message); }); }
+$('nbTitle').addEventListener('input',markDirty);
+$('nbBody').addEventListener('input',markDirty);
+window.addEventListener('beforeunload',function(e){ if(dirty){ saveNow(); e.preventDefault(); e.returnValue=''; } });
+document.addEventListener('visibilitychange',function(){ if(document.hidden&&dirty) saveNow(); });
+
+$('bNewNote').onclick=function(){
+  if(dirty) saveNow();
+  api('POST','mc_notes',{title:'',body:''},{'Prefer':'return=representation'}).then(function(r){
+    var n=r&&r[0]; if(!n) return; NOTES.push(n); if(!lastPull||n.updated_at>lastPull) lastPull=n.updated_at; CUR=n.id; fillEditor(); renderNoteList(); $('nbTitle').focus();
+  }).catch(function(e){ toast('לא נוצר: '+e.message); });
+};
+
+/* סרגל כלים */
+function wrapSel(tag,style){
+  var s=getSelection(); if(!s.rangeCount||s.isCollapsed) return; var r=s.getRangeAt(0);
+  if(!$('nbBody').contains(r.commonAncestorContainer)) return;
+  var el=document.createElement(tag); if(style) el.setAttribute('style',style);
+  try{ el.appendChild(r.extractContents()); r.insertNode(el); }catch(_){}
+  markDirty();
+}
+$('nbTb').addEventListener('mousedown',function(e){ if(e.target.closest('.tb')&&!e.target.closest('label')) e.preventDefault(); });
+$('nbTb').addEventListener('click',function(e){
+  var b=e.target.closest('[data-c]'); if(!b) return; var c=b.getAttribute('data-c');
+  if(c==='star'){ var n=curNote(); if(n) patchNote({star:!n.star}); return; }
+  if(c==='del'){ var n2=curNote(); if(!n2) return; var id=n2.id;
+    patchNote({deleted:true}); NOTES=NOTES.filter(function(x){ return x.id!==id; }); CUR=null; dirty=false;
+    var nx=sortedNotes()[0]; if(nx) selectNote(nx.id); else { showEditor(false); renderNoteList(); }
+    toast('הפתק נמחק',function(){ api('PATCH','mc_notes?id=eq.'+id,{deleted:false},{'Prefer':'return=minimal'}).then(function(){ lastPull=null; return loadNotes(true); }).then(function(){ selectNote(id); }); });
+    return; }
+  if(c==='page'){ pageColors(b); return; }
+  if(c==='export'){ exportNote(); return; }
+  if(c==='img'){ $('imgPick').click(); return; }
+  $('nbBody').focus();
+  if(c==='h2'){ document.execCommand('formatBlock',false,'h3'); }
+  else if(c==='mark'){ document.execCommand('styleWithCSS',false,true); document.execCommand('hiliteColor',false,'#ffe066'); }
+  else if(c==='chk'){ document.execCommand('insertUnorderedList'); var s=getSelection(); var n3=s.anchorNode; var ul=n3&&(n3.nodeType===1?n3:n3.parentElement).closest('ul'); if(ul) ul.classList.add('chk'); }
+  else document.execCommand(c);
+  markDirty();
+});
+$('fgColor').addEventListener('input',function(){ $('nbBody').focus(); document.execCommand('styleWithCSS',false,true); document.execCommand('foreColor',false,this.value); markDirty(); });
+$('nbBody').addEventListener('click',function(e){
+  var li=e.target.closest('ul.chk > li'); if(!li) return;
+  var r=li.getBoundingClientRect(), x=e.clientX; var rtl=getComputedStyle(li).direction==='rtl';
+  if(rtl?(x>r.right-26):(x<r.left+26)){ li.classList.toggle('done'); markDirty(); }
+});
+function pageColors(anchor){
+  var m=dialog('<div class="dlg glass" style="max-width:360px"><div class="dlg-h"><b>צבע דף</b><button class="ibtn" data-x>'+xSvg+'</button></div><div class="dlg-b"><div class="colors" style="padding:12px;gap:10px;flex-wrap:wrap">'+
+    PAGE_COLORS.map(function(c){ return '<button class="cbtn" style="width:40px;height:40px;background:'+(c||'transparent')+'" data-pc="'+c+'" title="'+(c?c:'בלי צבע')+'">'+(c?'':'∅')+'</button>'; }).join('')+'</div></div></div>');
+  m.querySelector('[data-x]').onclick=closeLayer;
+  m.querySelectorAll('[data-pc]').forEach(function(b){ b.onclick=function(){ patchNote({color:b.getAttribute('data-pc')}); closeLayer(); }; });
+}
+function exportNote(){
+  var n=curNote(); if(!n) return;
+  var html='<html><head><meta charset="utf-8"><title>'+esc(n.title)+'</title></head><body dir="rtl" style="font-family:Arial">'+'<h1>'+esc(n.title)+'</h1>'+$('nbBody').innerHTML+'</body></html>';
+  var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+html],{type:'application/msword'}));
+  a.download=(n.title||'פתק').replace(/[\\\/:*?"<>|]/g,'_')+'.doc'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+}
+
+/* תמונות — הדבקה / גרירה / בחירה. מוקטנות כדי שהפתק יישאר קל */
+function shrink(file){ return new Promise(function(res,rej){
+  var url=URL.createObjectURL(file), im=new Image();
+  im.onload=function(){ var max=1600, w=im.naturalWidth, h=im.naturalHeight, k=Math.min(1,max/Math.max(w,h));
+    var c=document.createElement('canvas'); c.width=Math.round(w*k); c.height=Math.round(h*k); c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    URL.revokeObjectURL(url); var out=c.toDataURL('image/webp',.82); if(out.indexOf('data:image/webp')!==0) out=c.toDataURL('image/jpeg',.85); res(out); };
+  im.onerror=function(){ URL.revokeObjectURL(url); rej(new Error('תמונה לא נקראה')); }; im.src=url; }); }
+function insertImages(files){
+  $('nbBody').focus();
+  files.reduce(function(p,f){ return p.then(function(){ return shrink(f).then(function(src){ document.execCommand('insertHTML',false,'<img src="'+src+'" alt=""><br>'); }); }); },Promise.resolve())
+    .then(markDirty,function(e){ toast(e.message); });
+}
+$('nbBody').addEventListener('paste',function(e){
+  var cd=e.clipboardData; if(!cd) return;
+  var imgs=Array.prototype.filter.call(cd.files||[],function(f){ return /^image\//.test(f.type); });
+  if(imgs.length){ e.preventDefault(); insertImages(imgs); return; }
+  var h=cd.getData('text/html'); if(h){ e.preventDefault(); document.execCommand('insertHTML',false,clean(h).replace(/<img[^>]+src="(?!data:)[^"]*"[^>]*>/gi,'')); }
+});
+$('nbBody').addEventListener('drop',function(e){ var fs=Array.prototype.filter.call((e.dataTransfer&&e.dataTransfer.files)||[],function(f){ return /^image\//.test(f.type); }); if(fs.length){ e.preventDefault(); insertImages(fs); } });
+$('imgPick').onchange=function(){ var fs=Array.prototype.slice.call(this.files||[]); this.value=''; if(fs.length) insertImages(fs); };
+
+/* ---------- הודעה קטנה ---------- */
+var toastT=null;
+function toast(t,undo){
+  clearTimeout(toastT); var l=document.getElementById('toast'); if(l) l.remove();
+  var d=document.createElement('div'); d.id='toast'; d.className='toast glass'; d.setAttribute('role','status');
+  d.innerHTML='<span>'+esc(t)+'</span>'+(undo?'<button>בטלי</button>':''); document.body.appendChild(d);
+  if(undo) d.querySelector('button').onclick=function(){ d.remove(); undo(); };
+  toastT=setTimeout(function(){ d.remove(); },undo?7000:3500);
+}
+
+/* ---------- רענון לבד ---------- */
+var pollT=null, lastSig='';
+function refreshAll(){
+  if(document.hidden) return Promise.resolve();
+  return Promise.all([loadKV(),loadFiles(),loadNotes(false),pingPc()]).then(function(){
+    var sig=JSON.stringify([KV.sites,KV.rest_files,KV.general,KV.extra_folders])+'|'+FILES.length+'|'+(FILES[0]&&FILES[0].mtime)+'|'+SYNCED+'|'+PC;
+    if(sig!==lastSig&&!$('mask')){ lastSig=sig; renderLinks(); renderRests(); } tick(); },function(){});
+}
+function start(){
+  $('vLogin').classList.add('hid'); $('vApp').classList.remove('hid'); tick();
+  Promise.all([loadKV(),loadFiles(),pingPc()]).then(function(){ renderLinks(); renderRests(); tick(); })
+    .catch(function(e){ toast('בעיה בטעינה: '+e.message); });
+  loadNotes(true).catch(function(e){ toast('הפתקים לא נטענו: '+e.message); });
+  clearInterval(pollT); pollT=setInterval(refreshAll,30000);
+  setInterval(tick,20000);
+  window.addEventListener('focus',refreshAll);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) refreshAll(); });
+}
+if(S&&S.refresh_token) start(); else showLogin();
+})();
+</script>
+</body>
+</html>
