@@ -208,7 +208,7 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .my{padding:14px;margin-bottom:22px}
 .my .tabs{padding:0;flex-wrap:wrap}
 .my-view{margin-top:12px}
-.my-view iframe{display:block;width:100%;height:calc(100vh - 120px);min-height:480px;border:1px solid var(--line);border-radius:var(--r2);background:#fff}
+.my-view iframe{display:block;width:100%;height:70vh;border:0;border-radius:var(--r2);background:transparent}
 .my-upd{margin-top:6px;font-size:12px;color:var(--ink3)}
 /* הערות שכר פאסטל */
 .sn{padding:14px;margin-bottom:22px}
@@ -1091,7 +1091,7 @@ $('snList').addEventListener('click',function(e){
 /* ---------- שלי: לשוניות פרטיות (private_pages, מוגן RLS) — רק בזיכרון של הדף ---------- */
 var MY=[], myGen=0;
 function myClear(){
-  myGen++; MY=[];
+  myGen++; MY=[]; myOpenI=-1; myFrame=null;
   $('myView').innerHTML=''; $('myView').classList.add('hid');
   $('myTabs').innerHTML=''; $('myWrap').classList.add('hid');
 }
@@ -1110,26 +1110,86 @@ function myHtml(b64){
   for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
   return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
 }
-$('myTabs').addEventListener('click',function(e){
-  var b=e.target.closest('[data-my]'); if(!b) return;
-  var v=$('myView');
-  if(b.classList.contains('on')){ b.classList.remove('on'); v.innerHTML=''; v.classList.add('hid'); return; }
-  var r=MY[+b.getAttribute('data-my')]; if(!r) return;
-  var g=myGen;
-  $('myTabs').querySelectorAll('.tab').forEach(function(x){ x.classList.toggle('on',x===b); });
+/* רץ בתוך ה-iframe: הופך את הדף הפרטי למראה הזכוכית של מרכז הבקרה (בלי לדעת את המבנה שלו) ומדווח גובה */
+function myInner(DARK){
+  function rgb(t){ var m=/rgba?\(([^)]+)\)/.exec(t||''); if(!m) return null; var p=m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat);
+    return {r:p[0]/255,g:p[1]/255,b:p[2]/255,a:p.length>3?p[3]:1}; }
+  function hsl(c){ var mx=Math.max(c.r,c.g,c.b), mn=Math.min(c.r,c.g,c.b), l=(mx+mn)/2, d=mx-mn, h=0, s=0;
+    if(d){ s=d/(1-Math.abs(2*l-1)); h=mx===c.r?((c.g-c.b)/d)%6:mx===c.g?(c.b-c.r)/d+2:(c.r-c.g)/d+4; h=(h*60+360)%360; }
+    return {h:h,s:s,l:l,c:d}; }
+  var SAVE=new Map();
+  function set(el,p,v){ var o=SAVE.get(el); if(!o){ o={}; SAVE.set(el,o); }
+    if(!(p in o)) o[p]=[el.style.getPropertyValue(p),el.style.getPropertyPriority(p)]; el.style.setProperty(p,v,'important'); }
+  function reset(){ SAVE.forEach(function(o,el){ for(var p in o){ if(o[p][0]) el.style.setProperty(p,o[p][0],o[p][1]); else el.style.removeProperty(p); } }); SAVE.clear(); }
+  function fix(el){
+    var cs=getComputedStyle(el), bg=rgb(cs.backgroundColor), root=el===document.body||el===document.documentElement;
+    var SIDES=['top','right','bottom','left'], bw=Math.max.apply(null,SIDES.map(function(x){ return parseFloat(cs.getPropertyValue('border-'+x+'-width'))||0; })), rad=parseFloat(cs.borderTopLeftRadius)||0;
+    if(bg&&bg.a>.5){ var h=hsl(bg);
+      if(h.s>.45&&h.h>=200&&h.h<=255&&h.l>.3&&h.l<.72){            /* הכחול של הדף → הסגול של מרכז הבקרה */
+        set(el,'background','linear-gradient(135deg,#8b7bff,#6a57de)'); if(bw) set(el,'border-color','transparent');
+      } else if(h.l>.8&&h.c<.12){                                    /* משטח בהיר → זכוכית */
+        if(root) set(el,'background','transparent');
+        else if((rad||bw)&&el.getBoundingClientRect().height>=16){ set(el,'background',DARK?'rgba(255,255,255,.07)':'rgba(255,255,255,.55)');
+          set(el,'box-shadow',DARK?'0 8px 26px rgba(0,0,0,.25)':'0 8px 26px rgba(46,36,120,.08), inset 0 1px 0 rgba(255,255,255,.75)');
+          set(el,'backdrop-filter','saturate(160%) blur(14px)'); set(el,'-webkit-backdrop-filter','saturate(160%) blur(14px)');
+          set(el,'border-color',DARK?'rgba(255,255,255,.12)':'rgba(255,255,255,.8)');
+          if(!bw) set(el,'border','1px solid '+(DARK?'rgba(255,255,255,.12)':'rgba(255,255,255,.8)')); }
+        else set(el,'background',DARK?'rgba(255,255,255,.1)':'rgba(106,87,222,.10)');   /* פסים / רקע של מד */
+      }
+    }
+    if(!DARK) return;
+    var c=rgb(cs.color); if(c){ var hc=hsl(c);
+      if(hc.c<.25&&hc.l<.55) set(el,'color',hc.l<.3?'#efeefe':'#b3afd0');
+      else if(hc.l<.5) set(el,'color','hsl('+Math.round(hc.h)+','+Math.round(hc.s*100)+'%,64%)'); }   /* אדום/ירוק כהים → בהירים יותר */
+    SIDES.forEach(function(x){ var w=parseFloat(cs.getPropertyValue('border-'+x+'-width'))||0, bc=rgb(cs.getPropertyValue('border-'+x+'-color'));
+      if(w&&bc&&hsl(bc).l>.75) set(el,'border-'+x+'-color','rgba(255,255,255,.12)'); });
+  }
+  var busy=false;
+  function all(){ busy=false; reset(); fix(document.documentElement); document.querySelectorAll('body, body *').forEach(fix); post(); }
+  function soon(){ if(!busy){ busy=true; requestAnimationFrame(all); } }
+  var last=0;
+  function post(){ var b=document.body; if(!b) return; var cs=getComputedStyle(b);
+    var h=Math.ceil(b.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom));
+    if(h!==last){ last=h; parent.postMessage({myH:h},'*'); } }
+  function go(){ all(); new MutationObserver(soon).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+    if(window.ResizeObserver) new ResizeObserver(post).observe(document.body); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+  window.addEventListener('load',all);
+}
+function myDark(){ var t=document.documentElement.getAttribute('data-theme'); return t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches; }
+function myDress(html){
+  var inj='<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap">'
+    +'<style>html,body{background:transparent!important;min-height:0!important;height:auto!important}html{overflow:hidden}body{font-family:Heebo,system-ui,sans-serif!important}</style>'
+    +'<script>('+myInner.toString()+')('+(myDark()?1:0)+')<\/script>';
+  return /<head[^>]*>/i.test(html)?html.replace(/<head[^>]*>/i,function(m){ return m+inj; }):inj+html;
+}
+var myOpenI=-1, myFrame=null;
+function myOpen(i){
+  var v=$('myView'), r=MY[i], g=myGen; myOpenI=i; myFrame=null;
+  $('myTabs').querySelectorAll('.tab').forEach(function(x){ x.classList.toggle('on',+x.getAttribute('data-my')===i); });
+  if(!r){ myOpenI=-1; v.innerHTML=''; v.classList.add('hid'); return; }
   v.innerHTML='<div class="my-upd">טוענת…</div>'; v.classList.remove('hid');
   myHtml(r.html_gz_b64).then(function(html){
-    if(g!==myGen||!b.classList.contains('on')) return;
+    if(g!==myGen||myOpenI!==i) return;
     var f=document.createElement('iframe');
     f.setAttribute('sandbox','allow-scripts');
     f.setAttribute('title',r.title||r.key||'');
-    f.srcdoc=html;
+    f.srcdoc=myDress(html);
     var u=document.createElement('div'); u.className='my-upd';
     var d=r.updated_at?new Date(r.updated_at):null;
     u.textContent='עודכן: '+(d&&!isNaN(d)?d.toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):(r.updated_at||'—'));
-    v.innerHTML=''; v.appendChild(f); v.appendChild(u);
+    v.innerHTML=''; v.appendChild(f); v.appendChild(u); myFrame=f;
   }).catch(function(err){ if(g===myGen) v.innerHTML='<div class="my-upd">הדף לא נפתח: '+esc(err.message)+'</div>'; });
+}
+$('myTabs').addEventListener('click',function(e){
+  var b=e.target.closest('[data-my]'); if(!b) return; var i=+b.getAttribute('data-my');
+  myOpen(i===myOpenI?-1:i);
 });
+window.addEventListener('message',function(e){
+  if(!myFrame||e.source!==myFrame.contentWindow||!e.data||typeof e.data.myH!=='number') return;
+  myFrame.style.height=Math.max(200,Math.min(e.data.myH,20000))+'px';
+});
+new MutationObserver(function(){ if(myOpenI>=0) myOpen(myOpenI); }).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 
 /* ---------- רענון לבד ---------- */
 var pollT=null, lastSig='';
