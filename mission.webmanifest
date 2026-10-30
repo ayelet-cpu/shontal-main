@@ -1,0 +1,15 @@
+{
+  "name": "מרכז הבקרה",
+  "short_name": "מרכז הבקרה",
+  "start_url": "mission.html",
+  "scope": "mission",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "he",
+  "background_color": "#14112b",
+  "theme_color": "#14112b",
+  "icons": [
+    {"src": "mission-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "mission-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

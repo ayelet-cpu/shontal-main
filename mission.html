@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>מרכז הבקרה</title>
 <meta name="theme-color" content="#14112b">
+<link rel="manifest" href="mission.webmanifest">
+<link rel="apple-touch-icon" href="mission-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="מרכז הבקרה">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238b7bff'/%3E%3Cstop offset='1' stop-color='%2337d6c5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M18 22h28M18 32h20M18 42h24' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -238,6 +242,17 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .tk-add{display:flex;gap:8px;margin-bottom:10px}
 .tk-add input{flex:1;min-width:0;height:42px;border-radius:12px;border:1px solid var(--line2);background:var(--glass2);padding:0 14px;font-size:15px;color:var(--ink);outline:none}
 .tk-add input:focus{border-color:var(--acc)}
+.tk-add{flex-wrap:wrap}
+.tk-add select{height:42px;border-radius:12px;border:1px solid var(--line2);background:var(--glass2);padding:0 10px;color:var(--ink);font-size:14px;outline:none;max-width:150px}
+.tk-prev{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 2px 10px;font-size:12.5px;color:var(--ink2)}
+.tk-prev span{padding:2px 9px;border-radius:999px;background:var(--glass2);border:1px solid var(--line)}
+.tk-prev b{font-weight:700;color:var(--ink)}
+.tk-prev .u{color:var(--bad);border-color:var(--bad)}
+.tp-list{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.tp-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 4px 3px 10px;border-radius:999px;background:var(--acc-soft);color:var(--acc);font-size:13.5px;font-weight:600}
+.tp-chip button{border:0;background:none;color:inherit;width:22px;height:22px;border-radius:50%;padding:0;display:grid;place-items:center}
+.tp-chip button:hover{background:rgba(0,0,0,.08)}
+.tp-add{display:flex;gap:8px}.tp-add input{flex:1;min-width:0;height:40px;border-radius:11px;border:1px solid var(--line2);background:var(--glass);padding:0 12px;color:var(--ink);outline:none}
 .tk-bar{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .tk .tabs{padding:0;flex-wrap:wrap}
 .tab.del{border-style:dashed}
@@ -246,6 +261,9 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .tk-flt input[type=search]{width:150px}
 .tk-flt input:focus,.tk-flt select:focus{border-color:var(--acc)}
 .tk-flt .on{border-color:var(--acc);background:var(--acc-soft)}
+.tk-push{height:34px;padding:0 12px;font-size:13px;margin-inline-start:auto}
+.tk-push.on{border-color:var(--ok);color:var(--ok)}
+.ios-steps{margin:0;padding-inline-start:20px;line-height:1.9;font-size:14.5px}
 .tk-u{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--ink2)}
 .tk-clr{border:0;background:none;color:var(--acc);font-weight:600;font-size:13px;padding:0 4px}
 .tk-tp{font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--acc-soft);color:var(--acc)}
@@ -318,6 +336,8 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
   .rests{grid-template-columns:1fr}
   .tk-item{flex-wrap:wrap}
   .tk-flt input[type=search]{flex:1 1 100%;width:auto}
+  .tk-add input{flex:1 1 100%}
+  .tk-add select{flex:1 1 30%;max-width:none;min-width:0}
   .tk-flt select{flex:1 1 40%;min-width:0}
   .tk-a{flex-basis:100%;justify-content:flex-start;padding-inline-start:34px}
 }
@@ -376,9 +396,12 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
   <div class="sec-h"><h2>משימות</h2><small>מוסיפים כאן, או כותבים לקלוד «עדכן משימה בדף הבית שלי…»</small></div>
   <section class="tk glass" id="tk">
     <form class="tk-add" id="tkAdd" autocomplete="off">
-      <input id="tkNew" placeholder="משימה חדשה… (Enter להוספה)" aria-label="משימה חדשה">
+      <input id="tkNew" placeholder="למשל: פאסטל להתקשר לספק מחר ב-10 דחוף" aria-label="משימה חדשה">
+      <select id="tkNR" aria-label="מסעדה למשימה החדשה"></select>
+      <select id="tkNT" aria-label="נושא למשימה החדשה"></select>
       <button class="btn" type="submit">+ הוספה</button>
     </form>
+    <div class="tk-prev hid" id="tkPrev"></div>
     <div class="tk-bar">
       <div class="tabs" id="tkTabs"></div>
       <div class="tk-flt">
@@ -395,6 +418,7 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
           <option value="topic">מיון: לפי נושא</option>
         </select>
         <label class="tk-u"><input type="checkbox" id="tkFU"> רק דחופות</label>
+        <button class="btn ghost tk-push" id="tkPush" type="button" title="שהתזכורות של המשימות יקפצו במכשיר הזה, גם כשהדף סגור">🔔 התראות בטלפון</button>
       </div>
     </div>
     <div class="tk-list" id="tkList"><div class="sn-empty">טוענת…</div></div>
@@ -1346,17 +1370,92 @@ document.querySelectorAll('.sec-h').forEach(function(h){
   b.onclick=tog; t.onclick=tog; draw();
 });
 
+/* ---------- הבנה חכמה של שורת ההוספה: «פאסטל להתקשר לספק מחר ב-10 דחוף», «יום הולדת לרועי 12.3 כל שנה» ---------- */
+var TK_REP={daily:'כל יום',weekly:'כל שבוע',monthly:'כל חודש',yearly:'כל שנה'};
+var TK_DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+var TK_REST_ALIAS={'צאקולי':"צ'אקולי",'צ׳אקולי':"צ'אקולי",'פינצוס':"צ'אקולי",'קפה':''};
+function tkParse(txt){
+  var t=' '+String(txt||'').replace(/\s+/g,' ')+' ', r={}, now=new Date(), day=null, hh=null, mm=0;
+  function cut(re,fn){ var m=re.exec(t); if(m){ if(fn(m)!==false) t=t.slice(0,m.index)+' '+t.slice(m.index+m[0].length); } return m; }
+  /* חזרה */
+  cut(/ (?:ו?כל|פעם ב)(?:-| )?(יום|שבוע|חודש|שנה) /,function(m){ r.repeat={'יום':'daily','שבוע':'weekly','חודש':'monthly','שנה':'yearly'}[m[1]]; });
+  if(!r.repeat && /יום הולדת|יומולדת|יום נישואין/.test(t)) r.repeat='yearly';
+  /* דחיפות */
+  cut(/ (?:דחוף|דחופה|בדחיפות|!!?) /,function(){ r.urgent=true; });
+  /* מסעדה — מילה שלמה, גם עם ב/ל/של לפניה */
+  RESTS.concat(Object.keys(TK_REST_ALIAS).map(function(k){ return {nm:k,to:TK_REST_ALIAS[k]}; })).some(function(x){
+    if(x.to==='') return false;
+    var nm=x.nm.replace(/'/g,"['׳]?"), m=cut(new RegExp(' (?:של |ב|ל|ו)?'+nm+' '),function(){});
+    if(m){ r.rest=x.to||x.nm; return true; }
+  });
+  /* נושא: רק עם # (למשל #ספקים) */
+  cut(/ #(\S+) /,function(m){ r.topic=m[1].replace(/_/g,' '); });
+  /* תאריך */
+  var base=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  function addD(n){ var d=new Date(base); d.setDate(d.getDate()+n); return d; }
+  cut(/ (?:ב|ל|עד ה?|עד |ב-|ל-)?(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))? /,function(m){
+    var y=m[3]?(+m[3]<100?2000+ +m[3]:+m[3]):now.getFullYear(), d=new Date(y,+m[2]-1,+m[1]);
+    if(isNaN(d)||d.getMonth()!==+m[2]-1) return false;
+    if(!m[3]&&d<base) d.setFullYear(y+1); day=d; });
+  if(!day) cut(/ (?:עד )?(היום|הערב|מחרתיים|מחר) /,function(m){ day=addD({'היום':0,'הערב':0,'מחר':1,'מחרתיים':2}[m[1]]); if(m[1]==='הערב') hh=19; });
+  if(!day) cut(/ בעוד (\d+|יומיים|שבועיים|שבוע|חודש|שעה|שעתיים|חצי שעה)(?: (ימים|יום|שבועות|חודשים|שעות|דקות))? /,function(m){
+    var n=/^\d+$/.test(m[1])?+m[1]:1, u=m[2]||m[1];
+    if(/דקות/.test(u)||/שעה|שעות|שעתיים/.test(u)){ var mins=/דקות/.test(u)?n:m[1]==='שעתיים'?120:m[1]==='חצי שעה'?30:n*60, x=new Date(now.getTime()+mins*60000);
+      day=new Date(x.getFullYear(),x.getMonth(),x.getDate()); hh=x.getHours(); mm=x.getMinutes(); return; }
+    day=addD(m[1]==='יומיים'?2:m[1]==='שבועיים'?14:/שבוע/.test(u)?n*7:/חודש/.test(u)?n*30:n); });
+  if(!day) cut(new RegExp(' (?:ב?יום |ב)('+TK_DAYS.join('|')+') '),function(m){ var w=TK_DAYS.indexOf(m[1]), k=(w-base.getDay()+7)%7||7; day=addD(k); });
+  /* שעה */
+  cut(/ (?:ב-?|בשעה |ב-?שעה |עד )?(\d{1,2}):(\d{2}) /,function(m){ if(+m[1]>23||+m[2]>59) return false; hh=+m[1]; mm=+m[2]; });
+  if(hh==null) cut(/ (?:ב-|בשעה |ב)(\d{1,2}) /,function(m){ if(+m[1]>23) return false; hh=+m[1]; mm=0; });
+  if(hh==null) cut(/ (בבוקר|בצהריים|בצהרים|אחה"צ|אחר הצהריים|בערב|בלילה) /,function(m){ hh={'בבוקר':9,'בצהריים':13,'בצהרים':13,'אחה"צ':16,'אחר הצהריים':16,'בערב':19,'בלילה':21}[m[1]]; });
+  if(hh!=null&&!day){ day=new Date(base); if(hh*60+mm<=now.getHours()*60+now.getMinutes()) day=addD(1); }
+  if(day){ r.due=day.toLocaleDateString('en-CA'); var at=new Date(day); at.setHours(hh==null?9:hh,mm,0,0); r.remind_at=at.toISOString(); r.timeSet=hh!=null; }
+  r.title=t.replace(/\s+/g,' ').replace(/^[\s,–-]+|[\s,–-]+$/g,'').trim();
+  return r;
+}
+function tkPrevDraw(){
+  var v=$('tkNew').value.trim(), el=$('tkPrev'); if(!v){ el.classList.add('hid'); return; }
+  var p=tkParse(v), c=[];
+  c.push('<span>משימה: <b>'+esc(p.title||'—')+'</b></span>');
+  if(p.remind_at) c.push('<span>📅 '+esc(new Date(p.remind_at).toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric'}))+(p.timeSet?' · '+esc(new Date(p.remind_at).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})):' · תזכורת 09:00')+'</span>');
+  if(p.repeat) c.push('<span>🔁 '+TK_REP[p.repeat]+'</span>');
+  var rest=p.rest||$('tkNR').value, topic=p.topic||$('tkNT').value;
+  if(rest) c.push('<span>'+esc(rest)+'</span>');
+  if(topic) c.push('<span>#'+esc(topic)+'</span>');
+  if(p.urgent) c.push('<span class="u">דחוף</span>');
+  el.innerHTML=c.join(''); el.classList.toggle('hid',c.length<2&&p.title===v);
+}
+$('tkNew').addEventListener('input',tkPrevDraw);
+
 /* ---------- משימות (mc_tasks) — איילת מוסיפה כאן, Claude מעדכן לפי בקשה בצ'אט ---------- */
 var TK=[], tkTab='open', tkSig='';
 var TK_TOPICS=['שכר','ספקים','בנק','עובדים','מיסים','רו״ח','אישי'];
 var TKF={q:'',r:'',t:'',u:false,sort:'smart'};
 try{ var _f=JSON.parse(localStorage.getItem('mc-tk-f')||'{}'); TKF.r=_f.r||''; TKF.t=_f.t||''; TKF.u=!!_f.u; TKF.sort=_f.sort||'smart'; }catch(e){}
 function tkKeep(){ try{ localStorage.setItem('mc-tk-f',JSON.stringify({r:TKF.r,t:TKF.t,u:TKF.u,sort:TKF.sort})); }catch(e){} }
-function tkTopics(){ var o={}; TK_TOPICS.forEach(function(t){ o[t]=1; }); TK.forEach(function(t){ if(t.topic) o[t.topic]=1; }); return Object.keys(o); }
+function tkTopicList(){ return Array.isArray(KV.task_topics)?KV.task_topics:TK_TOPICS.slice(); }   /* הנושאים של איילת (mc_kv task_topics) */
+function tkTopics(){ var o={}, out=tkTopicList().slice(); out.forEach(function(t){ o[t]=1; }); TK.forEach(function(t){ if(t.topic&&!o[t.topic]){ o[t.topic]=1; out.push(t.topic); } }); return out; }
+function tkTopicOpts(sel,none){ return tkTopics().map(function(t){ return '<option'+(sel===t?' selected':'')+'>'+esc(t)+'</option>'; }).join('')+(none||'')+'<option value="+">＋ הוספה / עריכה של נושאים…</option>'; }
+function tkTopicsDialog(after){
+  var m=dialog('<div class="dlg glass" role="dialog" aria-label="נושאים"><div class="dlg-h"><b>נושאים למשימות</b><button class="ibtn" data-x aria-label="סגירה">'+xSvg+'</button></div>'+
+    '<div class="dlg-b" style="padding:14px 18px"><div class="tp-list" id="tpL"></div>'+
+    '<form class="tp-add" id="tpF"><input id="tpN" placeholder="נושא חדש" aria-label="נושא חדש"><button class="btn" type="submit">+ הוספה</button></form></div>'+
+    '<div class="dlg-f"><button class="btn ghost" data-x>סגירה</button></div></div>');
+  function draw(){ $('tpL').innerHTML=tkTopicList().map(function(t,i){ return '<span class="tp-chip">'+esc(t)+'<button type="button" data-tpi="'+i+'" title="הסרת הנושא" aria-label="הסרת '+esc(t)+'">✕</button></span>'; }).join('')||'<span style="color:var(--ink3)">אין נושאים</span>'; }
+  function save(l){ KV.task_topics=l; kvSave('task_topics'); draw(); }
+  $('tpL').onclick=function(e){ var b=e.target.closest('[data-tpi]'); if(!b) return; var l=tkTopicList().slice(); l.splice(+b.getAttribute('data-tpi'),1); save(l); };
+  $('tpF').onsubmit=function(e){ e.preventDefault(); var v=$('tpN').value.trim(); if(!v) return; var l=tkTopicList().slice(); if(l.indexOf(v)<0) l.push(v); $('tpN').value=''; save(l); };
+  m.querySelectorAll('[data-x]').forEach(function(x){ x.onclick=function(){ closeLayer(); renderTK(); if(after) after(); }; });
+  draw(); setTimeout(function(){ $('tpN').focus(); },30);
+}
 function tkFiltersUI(){
   var used={}; TK.forEach(function(t){ if(t.topic) used[t.topic]=1; });
   $('tkFR').innerHTML='<option value="">כל המסעדות</option>'+RESTS.map(function(r){ return '<option'+(TKF.r===r.nm?' selected':'')+'>'+esc(r.nm)+'</option>'; }).join('')+'<option value="-"'+(TKF.r==='-'?' selected':'')+'>בלי מסעדה</option>';
-  $('tkFT').innerHTML='<option value="">כל הנושאים</option>'+Object.keys(used).sort().map(function(t){ return '<option'+(TKF.t===t?' selected':'')+'>'+esc(t)+'</option>'; }).join('')+'<option value="-"'+(TKF.t==='-'?' selected':'')+'>בלי נושא</option>';
+  $('tkFT').innerHTML='<option value="">כל הנושאים</option>'+tkTopicOpts(TKF.t,'<option value="-"'+(TKF.t==='-'?' selected':'')+'>בלי נושא</option>');
+  var nr=$('tkNR').value, nt=$('tkNT').value;
+  if(nr===''&&TKF.r&&TKF.r!=='-') nr=TKF.r; if(nt===''&&TKF.t&&TKF.t!=='-') nt=TKF.t;
+  $('tkNR').innerHTML='<option value="">מסעדה —</option>'+RESTS.map(function(r){ return '<option'+(nr===r.nm?' selected':'')+'>'+esc(r.nm)+'</option>'; }).join('');
+  $('tkNT').innerHTML='<option value="">נושא —</option>'+tkTopicOpts(nt);
   $('tkSort').value=TKF.sort; $('tkFU').checked=TKF.u;
   $('tkFR').classList.toggle('on',!!TKF.r); $('tkFT').classList.toggle('on',!!TKF.t); $('tkQ').classList.toggle('on',!!TKF.q);
 }
@@ -1409,6 +1508,7 @@ function renderTK(){
     if(t.urgent&&!t.done) m.push('<span class="u">דחוף</span>');
     if(t.due) m.push('<span'+(tkLate(t)?' class="w"':'')+'>יעד: '+esc(tkFmtDate(t.due))+(tkLate(t)?' (עבר)':'')+'</span>');
     if(t.remind_at) m.push('<span'+(tkDue(t)?' class="w"':'')+'>'+(tkDue(t)?'⏰ הגיע הזמן · ':'🔔 ')+esc(tkFmtTime(t.remind_at))+'</span>');
+    if(t.repeat) m.push('<span>🔁 '+TK_REP[t.repeat]+'</span>');
     if(t.topic) m.push('<span class="tk-tp">'+esc(t.topic)+'</span>');
     if(t.rest) m.push('<span>'+esc(t.rest)+'</span>');
     if(t.deleted&&t.updated_at) m.push('<span>נמחקה '+esc(new Date(t.updated_at).toLocaleDateString('he-IL'))+'</span>');
@@ -1470,12 +1570,13 @@ function tkEdit(t){
     '<div class="tk-cal">כדי שהתזכורת תקפוץ בטלפון: לשמור, ואז «📅 ליומן» ← «שמירה» ביומן גוגל. <button type="button" id="tkIcs">יומן אחר (אייפון / אאוטלוק)</button></div>'+
     '<div class="fld-row"><label class="fld"><span>מסעדה</span><select id="tkRest"><option value="">—</option>'+RESTS.map(function(r){ return '<option'+(r.nm===t.rest?' selected':'')+'>'+esc(r.nm)+'</option>'; }).join('')+'</select></label>'+
     '<label class="fld"><span>נושא (לבחור או לכתוב חדש)</span><input id="tkTp" list="tkTpL" value="'+esc(t.topic||'')+'"><datalist id="tkTpL">'+tkTopics().map(function(x){ return '<option value="'+esc(x)+'">'; }).join('')+'</datalist></label></div>'+
+    '<div class="fld-row"><label class="fld"><span>חזרה</span><select id="tkRep"><option value="">בלי חזרה</option>'+Object.keys(TK_REP).map(function(k){ return '<option value="'+k+'"'+(t.repeat===k?' selected':'')+'>'+TK_REP[k]+'</option>'; }).join('')+'</select></label></div>'+
     '<label class="fld-chk"><input type="checkbox" id="tkU"'+(t.urgent?' checked':'')+'> דחוף</label>'+
     '</div><div class="dlg-f"><button class="btn" id="tkS">שמירה</button><button class="btn ghost" id="tkC">ביטול</button>'+
     (isNew?'':'<button class="btn ghost" id="tkDel" style="margin-inline-start:auto;color:var(--bad)">מחיקה</button>')+'</div></div>');
   var val=function(){ var r=$('tkR').value;
     return {title:$('tkT').value.trim(),detail:$('tkD').value.trim(),due:$('tkDue').value||null,remind_at:r?new Date(r).toISOString():null,
-      rest:$('tkRest').value,topic:$('tkTp').value.trim(),urgent:$('tkU').checked}; };
+      rest:$('tkRest').value,topic:$('tkTp').value.trim(),repeat:$('tkRep').value,urgent:$('tkU').checked}; };
   $('tkX').onclick=$('tkC').onclick=closeLayer;
   $('tkIcs').onclick=function(){ var v=val(); if(!v.due&&!v.remind_at){ toast('קודם לבחור תאריך יעד או תזכורת'); return; } v.id=t.id||'new'; tkIcs(v); };
   $('tkS').onclick=function(){
@@ -1490,14 +1591,17 @@ function tkEdit(t){
 $('tkAdd').addEventListener('submit',function(e){
   e.preventDefault(); var v=$('tkNew').value.trim(); if(!v) return;
   $('tkNew').value='';
-  var nf={title:v}; if(TKF.r&&TKF.r!=='-') nf.rest=TKF.r; if(TKF.t&&TKF.t!=='-') nf.topic=TKF.t;
-  tkAdd(nf).then(function(){ toast('נוספה — «עריכה» להוספת תאריך ותזכורת'); },function(err){ $('tkNew').value=v; toast('לא נשמר: '+err.message); });
+  var p=tkParse(v), nf={title:p.title||v, rest:p.rest||$('tkNR').value, topic:p.topic||$('tkNT').value};
+  ['urgent','due','remind_at','repeat'].forEach(function(k){ if(p[k]) nf[k]=p[k]; });
+  $('tkPrev').classList.add('hid');
+  tkAdd(nf).then(function(){ toast(nf.remind_at?'נוספה, עם תזכורת':'נוספה — «עריכה» להוספת תאריך ותזכורת'); },function(err){ $('tkNew').value=v; toast('לא נשמר: '+err.message); });
 });
 $('tkTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-tkt]'); if(!b) return; var v=b.getAttribute('data-tkt');
   if(v==='clr'){ TKF.q='';TKF.r='';TKF.t='';TKF.u=false; $('tkQ').value=''; tkKeep(); } else tkTab=v; renderTK(); });
 $('tkQ').addEventListener('input',function(){ TKF.q=this.value.trim(); renderTK(); });
 $('tkFR').addEventListener('change',function(){ TKF.r=this.value; tkKeep(); renderTK(); });
-$('tkFT').addEventListener('change',function(){ TKF.t=this.value; tkKeep(); renderTK(); });
+$('tkFT').addEventListener('change',function(){ if(this.value==='+'){ this.value=TKF.t; tkTopicsDialog(); return; } TKF.t=this.value; tkKeep(); renderTK(); });
+$('tkNT').addEventListener('change',function(){ if(this.value==='+'){ this.value=''; tkTopicsDialog(); } });
 $('tkSort').addEventListener('change',function(){ TKF.sort=this.value; tkKeep(); renderTK(); });
 $('tkFU').addEventListener('change',function(){ TKF.u=this.checked; tkKeep(); renderTK(); });
 $('tkList').addEventListener('click',function(e){
@@ -1508,6 +1612,61 @@ $('tkList').addEventListener('click',function(e){
   else if(a==='undel') tkPatch(t,{deleted:false},'המשימה שוחזרה');
   else tkEdit(t);
 });
+
+/* ---------- התראות בטלפון: mission-sw.js + mc_push_subs; השליחה בענן (cloud/functions/mc-push, כל דקה) ---------- */
+var VAPID_PUB='BMgRzTMXJTFU5j0vGVQpb8WmST_KvnGFjeudyfD4OT_ZoHDo4WBZuJcWihqYr5o2BpULGWEzkF0x11Lw7B3OCDc';
+var pushOk=('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);
+function isIOS(){ return /iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); }
+function standalone(){ return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true; }
+function b64u(x){ x=x.replace(/-/g,'+').replace(/_/g,'/'); x+='===='.slice(0,(4-x.length%4)%4); var b=atob(x),u=new Uint8Array(b.length); for(var i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
+function pushDevice(){ var u=navigator.userAgent; return (/iPhone/.test(u)?'אייפון':/iPad/.test(u)?'אייפד':/Android/.test(u)?'אנדרואיד':/Windows/.test(u)?'מחשב':/Mac/.test(u)?'מק':'מכשיר')+(standalone()?' (אפליקציה)':''); }
+function pushSub(){ if(!pushOk) return Promise.resolve(null);
+  return navigator.serviceWorker.getRegistration('mission').then(function(r){ return r?r.pushManager.getSubscription():null; }); }
+function pushSave(sub){ var j=sub.toJSON();
+  return api('POST','mc_push_subs',{endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,device:pushDevice()},{'Prefer':'resolution=merge-duplicates,return=minimal'}); }
+function pushState(){
+  pushSub().then(function(sub){
+    var on=!!sub&&Notification.permission==='granted', b=$('tkPush');
+    b.classList.toggle('on',on); b.textContent=on?'🔔 התראות פעילות':'🔔 התראות בטלפון';
+    if(on) pushSave(sub).catch(function(){});   /* שהמכשיר יישאר רשום בענן */
+  }).catch(function(){});
+}
+function pushHelpIOS(){
+  dialog('<div class="dlg glass" role="dialog" aria-label="התראות באייפון"><div class="dlg-h"><b>התראות באייפון</b><button class="ibtn" data-x aria-label="סגירה">'+xSvg+'</button></div>'+
+    '<div class="dlg-b" style="padding:14px 18px"><p style="margin:0 0 10px">באייפון התראות עובדות רק כשפותחים את מרכז הבקרה מאייקון במסך הבית:</p><ol class="ios-steps">'+
+    '<li>בספארי, לוחצים על כפתור השיתוף (ריבוע עם חץ למעלה)</li><li>בוחרים «הוספה למסך הבית» ← «הוספה»</li>'+
+    '<li>פותחים את «מרכז הבקרה» מהאייקון החדש ונכנסים</li><li>לוחצים שוב «🔔 התראות בטלפון» ומאשרים</li></ol></div>'+
+    '<div class="dlg-f"><button class="btn" data-x>הבנתי</button></div></div>').querySelectorAll('[data-x]').forEach(function(x){ x.onclick=closeLayer; });
+}
+function pushOn(){
+  if(isIOS()&&!standalone()){ pushHelpIOS(); return; }
+  if(!pushOk){ toast('הדפדפן הזה לא יכול לקבל התראות'); return; }
+  Notification.requestPermission().then(function(p){
+    if(p!=='granted') throw new Error(p==='denied'?'ההתראות חסומות — צריך לאפשר אותן בהגדרות הדפדפן לאתר הזה':'לא אושרו התראות');
+    return navigator.serviceWorker.register('mission-sw.js',{scope:'mission'});
+  }).then(function(){ return navigator.serviceWorker.ready; }).then(function(r){
+    return r.pushManager.getSubscription().then(function(sub){ return sub||r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)}); })
+      .then(function(sub){ return pushSave(sub); }).then(function(){
+        pushState(); toast('מעכשיו התזכורות של המשימות יקפצו במכשיר הזה');
+        r.showNotification('🔔 התראות פועלות',{body:'ככה תקפוץ תזכורת של משימה',icon:'mission-192.png',dir:'rtl',lang:'he',tag:'mc-test'});
+      });
+  }).catch(function(e){ toast('לא הופעל: '+(e&&e.message||e)); });
+}
+function pushOff(){
+  var m=dialog('<div class="dlg glass" role="dialog" aria-label="התראות"><div class="dlg-h"><b>התראות במכשיר הזה</b><button class="ibtn" data-x aria-label="סגירה">'+xSvg+'</button></div>'+
+    '<div class="dlg-b" style="padding:14px 18px">ההתראות פעילות. בשעת התזכורת של משימה תקפוץ כאן התראה, גם כשהדף סגור.</div>'+
+    '<div class="dlg-f"><button class="btn" data-x>סגירה</button><button class="btn ghost" id="pushTest">התראת ניסיון</button><button class="btn ghost" id="pushStop" style="margin-inline-start:auto;color:var(--bad)">כיבוי במכשיר הזה</button></div></div>');
+  m.querySelectorAll('[data-x]').forEach(function(x){ x.onclick=closeLayer; });
+  $('pushTest').onclick=function(){ closeLayer();   /* משימת ניסיון: השרת ישלח עליה התראה תוך דקה, ואז היא נמחקת לבד מהרשימה (סימון «נמחקה») */
+    tkAdd({title:'🔔 בדיקת התראה',detail:'אפשר למחוק',remind_at:new Date().toISOString()}).then(function(t){
+      toast('תוך דקה בערך תקפוץ התראה «בדיקת התראה»'); if(t) setTimeout(function(){ var x=tkFind(t.id); if(x&&!x.deleted) tkPatch(x,{deleted:true}); },150000); },
+      function(e){ toast('לא נשמר: '+e.message); }); };
+  $('pushStop').onclick=function(){ closeLayer();
+    pushSub().then(function(sub){ if(!sub) return; var ep=sub.endpoint;
+      return sub.unsubscribe().then(function(){ return api('DELETE','mc_push_subs?endpoint=eq.'+encodeURIComponent(ep),null,{'Prefer':'return=minimal'}); }); })
+    .then(function(){ pushState(); toast('ההתראות כובו במכשיר הזה'); },function(e){ toast('לא כובה: '+e.message); }); };
+}
+$('tkPush').onclick=function(){ if(this.classList.contains('on')) pushOff(); else pushOn(); };
 
 /* ---------- שלי: לשוניות פרטיות (private_pages, מוגן RLS) — רק בזיכרון של הדף ---------- */
 var MY=[], myGen=0;
@@ -1631,6 +1790,7 @@ function start(){
     .catch(function(e){ toast('בעיה בטעינה: '+e.message); });
   loadNotes(true).catch(function(e){ toast('הפתקים לא נטענו: '+e.message); });
   myClear(); loadMy().catch(function(){ myClear(); });
+  pushState();
   loadTK().catch(function(e){ $('tkList').innerHTML='<div class="sn-empty">המשימות לא נטענו: '+esc(e.message)+'</div>'; });
   loadSN().catch(function(e){ $('snList').innerHTML='<div class="sn-empty">הערות השכר לא נטענו: '+esc(e.message)+'</div>'; });
   clearInterval(pollT); pollT=setInterval(refreshAll,30000);
