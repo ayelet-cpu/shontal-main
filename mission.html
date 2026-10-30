@@ -210,6 +210,8 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .my-view{margin-top:12px}
 .my-view iframe{display:block;width:100%;height:70vh;border:0;border-radius:var(--r2);background:transparent}
 .my-upd{margin-top:6px;font-size:12px;color:var(--ink3)}
+.my-need{font-size:14px;color:var(--ink2)}
+.mfa-qr{display:block;width:180px;height:180px;margin:10px 0;background:#fff;border-radius:var(--r2);padding:6px}
 /* הערות שכר פאסטל */
 .sn{padding:14px;margin-bottom:22px}
 .sn-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
@@ -279,6 +281,11 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
       <button class="btn" id="bVerify">כניסה</button>
       <button class="btn ghost" id="bBack" style="margin-top:8px">חזרה</button>
     </div>
+    <div id="stMfa" class="hid">
+      <label class="fld"><span>הקוד מאפליקציית האימות (6 ספרות)</span><input id="mf" inputmode="numeric" dir="ltr" autocomplete="one-time-code" maxlength="6"></label>
+      <button class="btn" id="bMfa">אישור</button>
+      <button class="btn ghost" id="bMfaOut" style="margin-top:8px">יציאה</button>
+    </div>
     <div class="msg" id="msg"></div>
   </div>
 </div>
@@ -308,6 +315,7 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
   <div id="myWrap" class="hid">
     <div class="sec-h"><h2>שלי</h2><small>פרטי — רק לך</small></div>
     <section class="my glass" id="my">
+      <div class="my-need hid" id="myNeed">כדי לראות את הלשוניות הפרטיות צריך להפעיל אימות דו-שלבי — בהגדרות (גלגל השיניים למעלה).</div>
       <div class="tabs" id="myTabs"></div>
       <div class="my-view hid" id="myView"></div>
     </section>
@@ -436,8 +444,43 @@ function api(method,q,body,extra){
       return r.text().then(function(t){ if(!r.ok) throw new Error(t||('שגיאה '+r.status)); return t?JSON.parse(t):null; }); });
 }
 
+/* ---------- אימות דו-שלבי (TOTP של Supabase) ---------- */
+var OWNER='bills.ayelet@gmail.com';
+function jwtOf(){ try{ var p=(S&&S.access_token||'').split('.')[1].replace(/-/g,'+').replace(/_/g,'/'); return JSON.parse(decodeURIComponent(escape(atob(p)))); }catch(_){ return {}; } }
+function aal2(){ return jwtOf().aal==='aal2'; }
+function authU(method,path,body){
+  return fresh().then(function(){ return fetch(SB+'/auth/v1/'+path,{method:method,headers:hdr(),body:body==null?undefined:JSON.stringify(body)}); })
+    .then(function(r){ return r.text().then(function(t){ var j={}; try{ j=JSON.parse(t||'{}'); }catch(_){}
+      if(!r.ok){ var e=new Error(j.msg||j.error_description||j.message||('שגיאה '+r.status)); e.status=r.status; throw e; } return j; }); });
+}
+function totpFactors(){ return authU('GET','user').then(function(u){ return (u.factors||[]).filter(function(f){ return f.factor_type==='totp'; }); }); }
+function mfaVerify(fid,code){
+  return authU('POST','factors/'+fid+'/challenge',{}).then(function(c){
+    return authU('POST','factors/'+fid+'/verify',{challenge_id:c.id,code:code}); }).then(function(j){ keep(j); return j; });
+}
+var mfaFid=null;
+function showMfa(fid){ mfaFid=fid; $('vApp').classList.add('hid'); $('vLogin').classList.remove('hid');
+  $('stEmail').classList.add('hid'); $('stCode').classList.add('hid'); $('stMfa').classList.remove('hid');
+  $('mf').value=''; msg('יש לך אימות דו-שלבי: פתחי את אפליקציית האימות בטלפון והקלידי את הקוד שמופיע ליד «מרכז הבקרה».'); $('mf').focus(); }
+/* אחרי כניסה: מי שהפעיל אימות דו-שלבי — מתבקש לקוד; כל השאר נכנסים כרגיל */
+function enter(){
+  if(aal2()){ start(); return; }
+  totpFactors().then(function(fs){ var v=fs.filter(function(f){ return f.status==='verified'; });
+    if(v.length) showMfa(v[0].id); else start(); },function(e){ if(S) start(); });
+}
+$('bMfa').onclick=function(){
+  var cd=($('mf').value||'').replace(/\s/g,''), b=this;
+  if(!/^\d{6}$/.test(cd)){ msg('נא להקליד את 6 הספרות',true); return; }
+  b.disabled=true; msg('בודקת…');
+  mfaVerify(mfaFid,cd).then(function(){ msg(''); $('stMfa').classList.add('hid'); start(); })
+  .catch(function(){ msg('הקוד לא נכון או שעבר הזמן שלו. חכי לקוד הבא באפליקציה ונסי שוב.',true); })
+  .then(function(){ b.disabled=false; });
+};
+$('mf').addEventListener('keydown',function(e){ if(e.key==='Enter') $('bMfa').click(); });
+$('bMfaOut').onclick=function(){ clearS(); showLogin(); msg(''); };
+
 function msg(t,err){ var m=$('msg'); m.textContent=t||''; m.className='msg'+(err?' err':''); }
-function showLogin(){ myClear(); $('vApp').classList.add('hid'); $('vLogin').classList.remove('hid'); $('stEmail').classList.remove('hid'); $('stCode').classList.add('hid');
+function showLogin(){ myClear(); $('vApp').classList.add('hid'); $('vLogin').classList.remove('hid'); $('stEmail').classList.remove('hid'); $('stCode').classList.add('hid'); $('stMfa').classList.add('hid');
   try{ $('em').value=localStorage.getItem('mc-email')||localStorage.getItem('shontal-cloud-email')||''; }catch(_){} }
 $('bSend').onclick=function(){
   var em=($('em').value||'').trim().toLowerCase(), b=this;
@@ -454,7 +497,7 @@ $('bVerify').onclick=function(){
   var em=($('em').value||'').trim().toLowerCase(), cd=($('cd').value||'').replace(/\s/g,''), b=this;
   if(!cd){ msg('נא להקליד את הקוד',true); return; }
   b.disabled=true; msg('בודקת…');
-  auth('verify',{type:'email',email:em,token:cd}).then(function(j){ keep(j); msg(''); start(); })
+  auth('verify',{type:'email',email:em,token:cd}).then(function(j){ keep(j); msg(''); enter(); })
   .catch(function(){ msg('הקוד לא נכון או שפג תוקפו. אפשר לבקש קוד חדש.',true); })
   .then(function(){ b.disabled=false; });
 };
@@ -729,6 +772,7 @@ $('bSettings').onclick=function(){
     if((KV.sites||[]).length){ h+='<div class="sub-h">קיצורים</div>'; KV.sites.forEach(function(s,i){ h+='<div class="row"><div class="grow"><b>'+esc(s.nm)+'</b><div class="fs" dir="ltr" style="text-align:right">'+esc(s.target)+'</div></div><button class="btn ghost" data-dels="'+i+'">הסרה</button></div>'; }); }
     h+='<div class="sub-h">העברה מהמערכת הישנה</div><div class="note">בחרי את הקובץ <b>mission-control-data.json</b> — הוא נמצא באותה תיקייה שבה נמצא Mission-Control.hta. הפתקים, הקבצים שבחרת לכל מסעדה והקיצורים יעברו לכאן. אפשר לעשות את זה יותר מפעם אחת — שום דבר לא יוכפל.</div>';
     h+='<label class="btn ghost" style="display:inline-grid;place-items:center">בחירת הקובץ…<input type="file" id="impF" accept=".json,application/json" class="hid"></label>';
+    h+='<div class="sub-h">אימות דו-שלבי</div><div id="mfaBox"><div class="note">בודקת…</div></div>';
     h+='<div class="sub-h">חיבור</div><div class="row"><div class="grow">מחוברת בתור <span dir="ltr">'+esc(S&&S.email||'')+'</span></div><button class="btn ghost" id="bOut">יציאה</button></div>';
     h+='</div></div>';
     var m=dialog(h);
@@ -739,9 +783,43 @@ $('bSettings').onclick=function(){
     m.querySelectorAll('[data-dels]').forEach(function(b){ b.onclick=function(){ KV.sites.splice(+b.getAttribute('data-dels'),1); kvSave('sites'); renderLinks(); draw(); }; });
     $('impF').onchange=function(){ var f=this.files&&this.files[0]; if(f) importOld(f); };
     $('bOut').onclick=function(){ clearS(); closeLayer(); showLogin(); };
+    mfaSettings();
   }
   draw();
 };
+function qrSrc(q){ q=String(q||''); var i=q.indexOf('<svg'); return i>=0?'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(q.slice(i)):q; }
+/* הגדרות ← אימות דו-שלבי: הפעלה (QR + קוד ראשון) או «פעיל» */
+function mfaSettings(){
+  var box=$('mfaBox'); if(!box) return;
+  totpFactors().then(function(fs){
+    if(!$('mfaBox')) return;
+    var on=fs.some(function(f){ return f.status==='verified'; });
+    if(on){ box.innerHTML='<div class="note">✓ אימות דו-שלבי פעיל. בכל כניסה חדשה יתבקש גם הקוד מאפליקציית האימות בטלפון.</div>'; return; }
+    box.innerHTML='<div class="note">שכבת הגנה נוספת: בכניסה יתבקש גם קוד מאפליקציה בטלפון (Google Authenticator או Microsoft Authenticator).</div><button class="btn" id="bMfaOn">הפעלת אימות דו-שלבי</button>';
+    $('bMfaOn').onclick=function(){
+      var b=this; b.disabled=true; b.textContent='מכינה…';
+      /* ניסיון קודם שלא הושלם — מנקים אותו קודם */
+      Promise.all(fs.filter(function(f){ return f.status!=='verified'; }).map(function(f){ return authU('DELETE','factors/'+f.id).catch(function(){}); }))
+      .then(function(){ return authU('POST','factors',{factor_type:'totp',friendly_name:'מרכז הבקרה',issuer:'מרכז הבקרה'}); })
+      .then(function(f){
+        if(!$('mfaBox')) return;
+        box.innerHTML='<div class="note"><b>1.</b> בטלפון: פתחי את אפליקציית האימות ← «+» ← «סריקת קוד QR», וסרקי את הריבוע.<br><b>2.</b> הקלידי כאן את 6 הספרות שהאפליקציה מראה.</div>'+
+          '<img class="mfa-qr" alt="קוד QR לסריקה" src="'+esc(qrSrc(f.totp.qr_code))+'">'+
+          '<div class="fs" style="margin-bottom:8px">אי אפשר לסרוק? אפשר להקליד באפליקציה את הקוד: <span dir="ltr" style="user-select:all">'+esc(f.totp.secret)+'</span></div>'+
+          '<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="mfaC" class="nb-q" inputmode="numeric" dir="ltr" maxlength="6" placeholder="123456" style="flex:0 1 140px"><button class="btn" id="bMfaOk">אישור</button></div><div class="msg" id="mfaMsg"></div>';
+        $('mfaC').focus();
+        $('mfaC').addEventListener('keydown',function(e){ if(e.key==='Enter') $('bMfaOk').click(); });
+        $('bMfaOk').onclick=function(){
+          var cd=($('mfaC').value||'').replace(/\s/g,''), k=this;
+          if(!/^\d{6}$/.test(cd)){ $('mfaMsg').textContent='נא להקליד את 6 הספרות'; return; }
+          k.disabled=true; $('mfaMsg').textContent='בודקת…';
+          mfaVerify(f.id,cd).then(function(){ toast('אימות דו-שלבי הופעל'); mfaSettings(); loadMy().catch(function(){ myClear(); }); },
+            function(){ $('mfaMsg').textContent='הקוד לא נכון או שעבר הזמן שלו. חכי לקוד הבא באפליקציה ונסי שוב.'; k.disabled=false; });
+        };
+      }).catch(function(e){ if($('mfaBox')) box.innerHTML='<div class="note">לא הצלחתי להתחיל: '+esc(e.message)+'</div>'; });
+    };
+  }).catch(function(e){ if($('mfaBox')) box.innerHTML='<div class="note">לא הצלחתי לבדוק: '+esc(e.message)+'</div>'; });
+}
 
 /* ייבוא מ-mission-control-data.json של ה-HTA */
 function importOld(file){
@@ -1093,14 +1171,17 @@ var MY=[], myGen=0;
 function myClear(){
   myGen++; MY=[]; myOpenI=-1; myFrame=null;
   $('myView').innerHTML=''; $('myView').classList.add('hid');
-  $('myTabs').innerHTML=''; $('myWrap').classList.add('hid');
+  $('myTabs').innerHTML=''; $('myWrap').classList.add('hid'); $('myNeed').classList.add('hid');
 }
 function loadMy(){
   var g=++myGen;
+  /* הלשוניות הפרטיות נטענות רק אחרי אימות דו-שלבי (aal2) */
+  if(!aal2()){ myClear(); if(String(S&&S.email||'').toLowerCase()===OWNER){ $('myNeed').classList.remove('hid'); $('myWrap').classList.remove('hid'); } return Promise.resolve(); }
   return api('GET','private_pages?select=key,title,html_gz_b64,updated_at&order=title').then(function(rows){
     if(g!==myGen) return;
     MY=Array.isArray(rows)?rows:[];
     if(!MY.length){ myClear(); return; }
+    $('myNeed').classList.add('hid');
     $('myTabs').innerHTML=MY.map(function(r,i){ return '<button class="tab" data-my="'+i+'">'+esc(r.title||r.key)+'</button>'; }).join('');
     $('myWrap').classList.remove('hid');
   });
@@ -1212,7 +1293,7 @@ function start(){
   window.addEventListener('focus',refreshAll);
   document.addEventListener('visibilitychange',function(){ if(!document.hidden) refreshAll(); });
 }
-if(S&&S.refresh_token) start(); else showLogin();
+if(S&&S.refresh_token) enter(); else showLogin();
 })();
 </script>
 </body>
