@@ -199,7 +199,8 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .fld{display:block;margin-bottom:12px}
 .fld span{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:5px;font-weight:500}
 .fld input,.fld select{width:100%;height:42px;border-radius:11px;border:1px solid var(--line2);background:var(--glass);padding:0 12px;outline:none}
-.fld input:focus{border-color:var(--acc)}
+.fld input:focus,.fld textarea:focus{border-color:var(--acc)}
+.fld textarea{border-radius:11px;border:1px solid var(--line2);background:var(--glass);padding:10px 12px;outline:none;font:inherit;color:var(--ink)}
 .tabs{display:flex;gap:6px;padding:10px 16px 0}
 .tab{border:1px solid var(--line);background:var(--glass);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--ink2)}
 .tab.on{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
@@ -214,6 +215,30 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .mfa-qr{display:block;width:180px;height:180px;margin:10px 0;background:#fff;border-radius:var(--r2);padding:6px}
 /* הערות שכר פאסטל */
 .sn{padding:14px;margin-bottom:22px}
+.tk{padding:14px;margin-bottom:22px}
+.tk-add{display:flex;gap:8px;margin-bottom:10px}
+.tk-add input{flex:1;min-width:0;height:42px;border-radius:12px;border:1px solid var(--line2);background:var(--glass2);padding:0 14px;font-size:15px;color:var(--ink);outline:none}
+.tk-add input:focus{border-color:var(--acc)}
+.tk .tabs{padding:0 0 10px}
+.tk-list{max-height:520px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.tk-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r2);background:var(--glass2)}
+.tk-item.due{border-color:var(--warn);box-shadow:inset 3px 0 0 var(--warn)}
+.tk-chk{flex:none;width:24px;height:24px;margin-top:1px;border-radius:50%;border:1.8px solid var(--ink3);background:transparent;color:var(--acc-ink);font-size:13px;font-weight:800;display:grid;place-items:center;padding:0}
+.tk-chk:hover{border-color:var(--acc)}
+.tk-item.done .tk-chk{background:var(--ok);border-color:var(--ok)}
+.tk-b{flex:1;min-width:0}
+.tk-t{border:0;background:none;padding:0;text-align:start;font-size:15px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.tk-item.done .tk-t{color:var(--ink3);text-decoration:line-through;font-weight:500}
+.tk-m{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:4px;font-size:12px;color:var(--ink3)}
+.tk-m .w{color:var(--warn);font-weight:600}
+.tk-m .u{color:var(--bad);font-weight:700}
+.tk-d{font-size:13.5px;color:var(--ink2);white-space:pre-wrap;overflow-wrap:anywhere;margin-top:3px}
+.tk-a{flex:none;display:flex;gap:4px}
+.tk-a .btn{height:30px;padding:0 10px;font-size:12.5px}
+.fld-row{display:flex;gap:10px;flex-wrap:wrap}.fld-row .fld{flex:1;min-width:150px}
+.fld-chk{display:flex;align-items:center;gap:8px;font-size:14px;margin:4px 0 10px}
+.tk-cal{font-size:12.5px;color:var(--ink3);margin:-4px 0 6px}
+.tk-cal button{border:0;background:none;color:var(--acc);font-weight:600;padding:0}
 .sn-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
 .sn-bar .tabs{padding:0;flex:1;flex-wrap:wrap}
 .sn-sel{height:38px;border-radius:11px;border:1px solid var(--line2);background:var(--glass);padding:0 10px;color:var(--ink)}
@@ -261,6 +286,8 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
   .nb-side{border-inline-end:0;border-bottom:1px solid var(--line)}
   .nb-list{max-height:220px}
   .rests{grid-template-columns:1fr}
+  .tk-item{flex-wrap:wrap}
+  .tk-a{flex-basis:100%;justify-content:flex-start;padding-inline-start:34px}
 }
 </style>
 </head>
@@ -311,6 +338,16 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
       <span id="tipText">רווח והפסד, שכר והתקזזויות עברו לענן — תעבוד לפי shontal-app</span></div>
     <button class="btn ghost" id="bTipCopy">העתקה</button>
   </div>
+
+  <div class="sec-h"><h2>משימות</h2><small>מוסיפים כאן, או כותבים לקלוד «עדכן משימה בדף הבית שלי…»</small></div>
+  <section class="tk glass" id="tk">
+    <form class="tk-add" id="tkAdd" autocomplete="off">
+      <input id="tkNew" placeholder="משימה חדשה… (Enter להוספה)" aria-label="משימה חדשה">
+      <button class="btn" type="submit">+ הוספה</button>
+    </form>
+    <div class="tabs" id="tkTabs"></div>
+    <div class="tk-list" id="tkList"><div class="sn-empty">טוענת…</div></div>
+  </section>
 
   <div id="myWrap" class="hid">
     <div class="sec-h"><h2>שלי</h2><small>פרטי — רק לך</small></div>
@@ -1166,6 +1203,117 @@ $('snList').addEventListener('click',function(e){
   else snPatch(n,{status:a},a==='done'?'סומן «הועבר לשכר»':a==='dismissed'?'סומן «לא רלוונטי»':'הוחזר לממתינות');
 });
 
+/* ---------- משימות (mc_tasks) — איילת מוסיפה כאן, Claude מעדכן לפי בקשה בצ'אט ---------- */
+var TK=[], tkTab='open', tkSig='';
+function loadTK(){
+  return api('GET','mc_tasks?select=*&deleted=eq.false&order=id.desc&limit=500')
+    .then(function(rows){ TK=rows||[]; var sig=JSON.stringify(TK); if(sig!==tkSig){ tkSig=sig; if(!$('mask')) renderTK(); } });
+}
+function tkWhen(t){ return t.remind_at?new Date(t.remind_at).getTime():t.due?new Date(t.due+'T09:00').getTime():Infinity; }
+function tkDue(t){ return !t.done && t.remind_at && new Date(t.remind_at)<=new Date(); }
+function tkLate(t){ return !t.done && t.due && t.due<new Date().toLocaleDateString('en-CA'); }
+function tkFmtDate(d){ return new Date(d+'T12:00').toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric'}); }
+function tkFmtTime(iso){ var d=new Date(iso); return d.toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric'})+' '+d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}); }
+function renderTK(){
+  var open=TK.filter(function(t){ return !t.done; }), done=TK.filter(function(t){ return t.done; });
+  $('tkTabs').innerHTML='<button class="tab'+(tkTab==='open'?' on':'')+'" data-tkt="open">פתוחות ('+open.length+')</button>'+
+    '<button class="tab'+(tkTab==='done'?' on':'')+'" data-tkt="done">בוצעו ('+done.length+')</button>';
+  var list=tkTab==='open'?open.sort(function(a,b){ return (b.urgent-a.urgent)||(tkWhen(a)-tkWhen(b))||(b.id-a.id); })
+    :done.sort(function(a,b){ return String(b.done_at||'').localeCompare(String(a.done_at||'')); }).slice(0,100);
+  if(!list.length){ $('tkList').innerHTML='<div class="sn-empty">'+(tkTab==='open'?'אין משימות פתוחות 🎉':'עוד לא סומנו משימות כבוצעו')+'</div>'; return; }
+  $('tkList').innerHTML=list.map(function(t){
+    var m=[];
+    if(t.urgent&&!t.done) m.push('<span class="u">דחוף</span>');
+    if(t.due) m.push('<span'+(tkLate(t)?' class="w"':'')+'>יעד: '+esc(tkFmtDate(t.due))+(tkLate(t)?' (עבר)':'')+'</span>');
+    if(t.remind_at) m.push('<span'+(tkDue(t)?' class="w"':'')+'>'+(tkDue(t)?'⏰ הגיע הזמן · ':'🔔 ')+esc(tkFmtTime(t.remind_at))+'</span>');
+    if(t.rest) m.push('<span>'+esc(t.rest)+'</span>');
+    if(t.by_claude) m.push('<span title="נוסף או עודכן על ידי קלוד לפי בקשה שלך">🤖 קלוד</span>');
+    if(t.done&&t.done_at) m.push('<span>בוצע '+esc(new Date(t.done_at).toLocaleDateString('he-IL'))+'</span>');
+    var h='<article class="tk-item'+(t.done?' done':'')+(tkDue(t)||tkLate(t)?' due':'')+'" data-tk="'+t.id+'">';
+    h+='<button class="tk-chk" data-tka="tog" aria-label="'+(t.done?'החזרה לפתוחות':'סימון כבוצע')+'" title="'+(t.done?'החזרה לפתוחות':'בוצע')+'">'+(t.done?'✓':'')+'</button>';
+    h+='<div class="tk-b"><button class="tk-t" data-tka="edit">'+esc(t.title)+'</button>';
+    if(m.length) h+='<div class="tk-m">'+m.join('')+'</div>';
+    if(t.detail) h+='<div class="tk-d">'+esc(t.detail)+'</div>';
+    h+='</div><div class="tk-a">';
+    if(!t.done&&(t.remind_at||t.due)) h+='<button class="btn ghost" data-tka="cal" title="פותח את יומן גוגל עם המשימה — לשמור שם, והיומן יקפיץ תזכורת בטלפון">📅 ליומן</button>';
+    h+='<button class="btn ghost" data-tka="edit">עריכה</button></div></article>';
+    return h;
+  }).join('');
+}
+function tkFind(id){ return TK.find(function(t){ return String(t.id)===String(id); }); }
+function tkPatch(t,fields,undoMsg){
+  var old={}; for(var k in fields){ old[k]=t[k]; t[k]=fields[k]; } renderTK();
+  return api('PATCH','mc_tasks?id=eq.'+t.id,fields,{'Prefer':'return=minimal'}).then(function(){
+    tkSig=JSON.stringify(TK);
+    if(undoMsg) toast(undoMsg,function(){ tkPatch(t,old); });
+  },function(e){ for(var k in old) t[k]=old[k]; renderTK(); toast('לא נשמר: '+e.message); });
+}
+function tkAdd(fields){
+  return api('POST','mc_tasks',fields,{'Prefer':'return=representation'}).then(function(r){
+    if(r&&r[0]){ TK.unshift(r[0]); tkSig=JSON.stringify(TK); } tkTab='open'; renderTK(); return r&&r[0];
+  });
+}
+function tkPad(n){ return (n<10?'0':'')+n; }
+function tkLocal(iso){ if(!iso) return ''; var d=new Date(iso); return d.getFullYear()+'-'+tkPad(d.getMonth()+1)+'-'+tkPad(d.getDate())+'T'+tkPad(d.getHours())+':'+tkPad(d.getMinutes()); }
+function tkUtc(d){ return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,''); }
+function tkSpan(t){   /* [התחלה, סוף] בפורמט יומן; משימה עם תאריך בלבד = יום שלם */
+  if(t.remind_at){ var a=new Date(t.remind_at); return [tkUtc(a),tkUtc(new Date(a.getTime()+15*60000)),false]; }
+  var d=new Date(t.due+'T12:00'), e=new Date(d.getTime()+864e5), f=function(x){ return x.toLocaleDateString('en-CA').replace(/-/g,''); };
+  return [f(d),f(e),true];
+}
+function tkCal(t){
+  var sp=tkSpan(t), det=[t.detail,t.rest?'מסעדה: '+t.rest:'','מרכז הבקרה: https://ayelet-cpu.github.io/shontal-main/mission.html'].filter(Boolean).join('\n');
+  window.open('https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('📌 '+t.title)+'&dates='+sp[0]+'/'+sp[1]+'&ctz=Asia/Jerusalem&details='+encodeURIComponent(det),'_blank');
+}
+function tkIcs(t){   /* ליומן של אייפון / אאוטלוק — עם התראה בדיוק בזמן */
+  var sp=tkSpan(t), esc2=function(v){ return String(v||'').replace(/[\\;,]/g,'\\$&').replace(/\n/g,'\\n'); };
+  var ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//mission//tasks//HE','BEGIN:VEVENT','UID:mc-task-'+t.id+'@mission','DTSTAMP:'+tkUtc(new Date()),
+    sp[2]?'DTSTART;VALUE=DATE:'+sp[0]:'DTSTART:'+sp[0], sp[2]?'DTEND;VALUE=DATE:'+sp[1]:'DTEND:'+sp[1],
+    'SUMMARY:'+esc2('📌 '+t.title),'DESCRIPTION:'+esc2(t.detail),
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+esc2(t.title),sp[2]?'TRIGGER:PT9H':'TRIGGER:PT0M','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  snSave(new Blob([ics],{type:'text/calendar'}),'משימה - '+t.title.slice(0,40).replace(/[\\\/:*?"<>|]/g,'')+'.ics');
+}
+function tkEdit(t){
+  var isNew=!t.id;
+  var m=dialog('<div class="dlg glass" role="dialog" aria-label="משימה"><div class="dlg-h"><b>'+(isNew?'משימה חדשה':'עריכת משימה')+'</b><button class="ibtn" id="tkX" aria-label="סגירה">'+xSvg+'</button></div>'+
+    '<div class="dlg-b" style="padding:14px 16px">'+
+    '<label class="fld"><span>משימה</span><input id="tkT" value="'+esc(t.title)+'"></label>'+
+    '<label class="fld"><span>פירוט (לא חובה)</span><textarea id="tkD" rows="3" style="width:100%;resize:vertical">'+esc(t.detail)+'</textarea></label>'+
+    '<div class="fld-row"><label class="fld"><span>תאריך יעד</span><input id="tkDue" type="date" value="'+esc(t.due||'')+'"></label>'+
+    '<label class="fld"><span>תזכורת (יום ושעה)</span><input id="tkR" type="datetime-local" value="'+esc(tkLocal(t.remind_at))+'"></label></div>'+
+    '<div class="tk-cal">כדי שהתזכורת תקפוץ בטלפון: לשמור, ואז «📅 ליומן» ← «שמירה» ביומן גוגל. <button type="button" id="tkIcs">יומן אחר (אייפון / אאוטלוק)</button></div>'+
+    '<div class="fld-row"><label class="fld"><span>מסעדה</span><select id="tkRest"><option value="">—</option>'+RESTS.map(function(r){ return '<option'+(r.nm===t.rest?' selected':'')+'>'+esc(r.nm)+'</option>'; }).join('')+'</select></label></div>'+
+    '<label class="fld-chk"><input type="checkbox" id="tkU"'+(t.urgent?' checked':'')+'> דחוף</label>'+
+    '</div><div class="dlg-f"><button class="btn" id="tkS">שמירה</button><button class="btn ghost" id="tkC">ביטול</button>'+
+    (isNew?'':'<button class="btn ghost" id="tkDel" style="margin-inline-start:auto;color:var(--bad)">מחיקה</button>')+'</div></div>');
+  var val=function(){ var r=$('tkR').value;
+    return {title:$('tkT').value.trim(),detail:$('tkD').value.trim(),due:$('tkDue').value||null,remind_at:r?new Date(r).toISOString():null,
+      rest:$('tkRest').value,urgent:$('tkU').checked}; };
+  $('tkX').onclick=$('tkC').onclick=closeLayer;
+  $('tkIcs').onclick=function(){ var v=val(); if(!v.due&&!v.remind_at){ toast('קודם לבחור תאריך יעד או תזכורת'); return; } v.id=t.id||'new'; tkIcs(v); };
+  $('tkS').onclick=function(){
+    var v=val(); if(!v.title){ toast('צריך לכתוב מה המשימה'); return; }
+    closeLayer();
+    if(isNew) tkAdd(v).then(function(){ toast('המשימה נוספה'); },function(e){ toast('לא נשמר: '+e.message); });
+    else tkPatch(t,v).then(function(){ toast('נשמר'); });
+  };
+  if(!isNew) $('tkDel').onclick=function(){ closeLayer(); tkPatch(t,{deleted:true},'המשימה נמחקה'); };
+  setTimeout(function(){ $('tkT').focus(); },30);
+}
+$('tkAdd').addEventListener('submit',function(e){
+  e.preventDefault(); var v=$('tkNew').value.trim(); if(!v) return;
+  $('tkNew').value='';
+  tkAdd({title:v}).then(function(){ toast('נוספה — «עריכה» להוספת תאריך ותזכורת'); },function(err){ $('tkNew').value=v; toast('לא נשמר: '+err.message); });
+});
+$('tkTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-tkt]'); if(!b) return; tkTab=b.getAttribute('data-tkt'); renderTK(); });
+$('tkList').addEventListener('click',function(e){
+  var b=e.target.closest('[data-tka]'); if(!b) return; var t=tkFind(b.closest('[data-tk]').getAttribute('data-tk')); if(!t) return;
+  var a=b.getAttribute('data-tka');
+  if(a==='tog') tkPatch(t,t.done?{done:false,done_at:null}:{done:true,done_at:new Date().toISOString()},t.done?'הוחזרה לפתוחות':'✓ בוצע');
+  else if(a==='cal') tkCal(t);
+  else tkEdit(t);
+});
+
 /* ---------- שלי: לשוניות פרטיות (private_pages, מוגן RLS) — רק בזיכרון של הדף ---------- */
 var MY=[], myGen=0;
 function myClear(){
@@ -1277,6 +1425,7 @@ var pollT=null, lastSig='';
 function refreshAll(){
   if(document.hidden) return Promise.resolve();
   loadSN().catch(function(){});
+  loadTK().catch(function(){});
   return Promise.all([loadKV(),loadFiles(),loadNotes(false),pingPc()]).then(function(){
     var sig=JSON.stringify([KV.sites,KV.rest_files,KV.general,KV.extra_folders])+'|'+FILES.length+'|'+(FILES[0]&&FILES[0].mtime)+'|'+SYNCED+'|'+PC;
     if(sig!==lastSig&&!$('mask')){ lastSig=sig; renderLinks(); renderRests(); } tick(); },function(){});
@@ -1287,6 +1436,7 @@ function start(){
     .catch(function(e){ toast('בעיה בטעינה: '+e.message); });
   loadNotes(true).catch(function(e){ toast('הפתקים לא נטענו: '+e.message); });
   myClear(); loadMy().catch(function(){ myClear(); });
+  loadTK().catch(function(e){ $('tkList').innerHTML='<div class="sn-empty">המשימות לא נטענו: '+esc(e.message)+'</div>'; });
   loadSN().catch(function(e){ $('snList').innerHTML='<div class="sn-empty">הערות השכר לא נטענו: '+esc(e.message)+'</div>'; });
   clearInterval(pollT); pollT=setInterval(refreshAll,30000);
   setInterval(tick,20000);
