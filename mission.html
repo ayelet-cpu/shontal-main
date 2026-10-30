@@ -216,10 +216,40 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 /* הערות שכר פאסטל */
 .sn{padding:14px;margin-bottom:22px}
 .tk{padding:14px;margin-bottom:22px}
+.folded{display:none!important}
+.sec-h h2{cursor:pointer}
+.fold-b{margin-inline-start:auto;border:0;background:none;color:var(--ink3);font-size:12.5px;font-weight:600;padding:3px 8px;border-radius:8px;align-self:center}
+.fold-b:hover{background:var(--glass2);color:var(--ink)}
+#stkLayer{position:absolute;top:0;left:0;width:0;height:0;z-index:30}
+.stk{position:absolute;width:250px;border-radius:14px;color:#2a2540;box-shadow:0 10px 28px rgba(30,20,80,.22),0 1px 0 rgba(255,255,255,.6) inset;font-size:14px}
+.stk-h{display:flex;align-items:center;gap:2px;padding:5px 6px 2px 8px;cursor:grab;touch-action:none;user-select:none}
+.stk.drag .stk-h{cursor:grabbing}
+.stk-t{flex:1;min-width:0;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stk-h button{flex:none;width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:#4a4466;font-size:13px;display:grid;place-items:center;padding:0;cursor:pointer}
+.stk-h button:hover{background:rgba(0,0,0,.08)}
+.stk-b{padding:2px 12px 12px;min-height:56px;max-height:340px;overflow:auto;outline:none;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
+.stk-b:empty::before{content:"כתבי כאן…";color:rgba(42,37,64,.45)}
+.stk.min{width:auto;max-width:230px}
+.stk.min .stk-b{display:none}
+.stk.min .stk-h{padding:5px 6px 5px 10px}
+.stk-strip{display:flex;flex-direction:column;gap:8px;margin:-8px 0 18px}
+.stk-strip .stk{position:static;width:auto;max-width:none}
+.stk-strip .stk-h{cursor:default}
 .tk-add{display:flex;gap:8px;margin-bottom:10px}
 .tk-add input{flex:1;min-width:0;height:42px;border-radius:12px;border:1px solid var(--line2);background:var(--glass2);padding:0 14px;font-size:15px;color:var(--ink);outline:none}
 .tk-add input:focus{border-color:var(--acc)}
-.tk .tabs{padding:0 0 10px}
+.tk-bar{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.tk .tabs{padding:0;flex-wrap:wrap}
+.tab.del{border-style:dashed}
+.tk-flt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tk-flt input[type=search],.tk-flt select{height:34px;border-radius:10px;border:1px solid var(--line2);background:var(--glass);padding:0 10px;color:var(--ink);font-size:13px;outline:none}
+.tk-flt input[type=search]{width:150px}
+.tk-flt input:focus,.tk-flt select:focus{border-color:var(--acc)}
+.tk-flt .on{border-color:var(--acc);background:var(--acc-soft)}
+.tk-u{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--ink2)}
+.tk-clr{border:0;background:none;color:var(--acc);font-weight:600;font-size:13px;padding:0 4px}
+.tk-tp{font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--acc-soft);color:var(--acc)}
+.tk-item.del{opacity:.75}
 .tk-list{max-height:520px;overflow:auto;display:flex;flex-direction:column;gap:6px}
 .tk-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r2);background:var(--glass2)}
 .tk-item.due{border-color:var(--warn);box-shadow:inset 3px 0 0 var(--warn)}
@@ -287,6 +317,8 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
   .nb-list{max-height:220px}
   .rests{grid-template-columns:1fr}
   .tk-item{flex-wrap:wrap}
+  .tk-flt input[type=search]{flex:1 1 100%;width:auto}
+  .tk-flt select{flex:1 1 40%;min-width:0}
   .tk-a{flex-basis:100%;justify-content:flex-start;padding-inline-start:34px}
 }
 </style>
@@ -325,14 +357,16 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
     <div class="status">
       <span class="chip hid" id="cPc" title=""><i class="dot"></i><span class="lbl">בודקת מחשב…</span></span>
       <span class="chip hid" id="cSync" title="מתי המחשב שלח לאחרונה את רשימת הקבצים"><i class="dot"></i><span class="lbl">…</span></span>
+      <button class="ibtn" id="bStk" aria-label="פתק דביק חדש" title="פתק דביק חדש — אפשר לגרור אותו לכל מקום">📝</button>
       <button class="ibtn" id="bTheme" aria-label="מצב בהיר/כהה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
       <button class="ibtn" id="bSettings" aria-label="הגדרות"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </div>
   </header>
 
   <nav class="links" id="links" aria-label="קיצורים"></nav>
+  <div class="stk-strip hid" id="stkStrip"></div>
 
-  <div class="tip glass" id="tipMonthly">
+  <div class="tip glass hid" id="tipMonthly">
     <span class="tip-i">📌</span>
     <div class="tip-t"><b>עדכון חודשי (רווח והפסד / שכר / התקזזויות) — לכתוב לקלוד במחשב:</b>
       <span id="tipText">רווח והפסד, שכר והתקזזויות עברו לענן — תעבוד לפי shontal-app</span></div>
@@ -345,7 +379,24 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
       <input id="tkNew" placeholder="משימה חדשה… (Enter להוספה)" aria-label="משימה חדשה">
       <button class="btn" type="submit">+ הוספה</button>
     </form>
-    <div class="tabs" id="tkTabs"></div>
+    <div class="tk-bar">
+      <div class="tabs" id="tkTabs"></div>
+      <div class="tk-flt">
+        <input id="tkQ" type="search" placeholder="חיפוש" aria-label="חיפוש במשימות">
+        <select id="tkFR" aria-label="סינון לפי מסעדה"></select>
+        <select id="tkFT" aria-label="סינון לפי נושא"></select>
+        <select id="tkSort" aria-label="מיון">
+          <option value="smart">מיון: דחוף ואז הכי קרוב</option>
+          <option value="when">מיון: לפי מועד</option>
+          <option value="new">מיון: נוספו לאחרונה</option>
+          <option value="old">מיון: הכי ישנות</option>
+          <option value="abc">מיון: לפי א״ב</option>
+          <option value="rest">מיון: לפי מסעדה</option>
+          <option value="topic">מיון: לפי נושא</option>
+        </select>
+        <label class="tk-u"><input type="checkbox" id="tkFU"> רק דחופות</label>
+      </div>
+    </div>
     <div class="tk-list" id="tkList"><div class="sn-empty">טוענת…</div></div>
   </section>
 
@@ -1203,10 +1254,133 @@ $('snList').addEventListener('click',function(e){
   else snPatch(n,{status:a},a==='done'?'סומן «הועבר לשכר»':a==='dismissed'?'סומן «לא רלוונטי»':'הוחזר לממתינות');
 });
 
+/* ---------- פתקים דביקים (mc_kv 'stickies') — גוררים לכל מקום בדף, מקפלים. בטלפון: אחד מתחת לשני למעלה ---------- */
+var STK=null, stkT=null, stkSig='', stkDrag=null, STK_C=['#fff1a6','#ffd5df','#cdf3dc','#d5e7ff','#e6dcff'];
+var stkNarrow=matchMedia('(max-width:720px)');
+function stkSave(){ clearTimeout(stkT); stkT=setTimeout(function(){ stkT=null; KV.stickies=STK; stkSig=JSON.stringify(STK); kvSave('stickies'); },500); }
+function stkInit(){
+  if(STK) return;
+  if(Array.isArray(KV.stickies)) STK=KV.stickies;
+  else {   /* פעם ראשונה: התזכורת החודשית הגדולה הופכת לפתק */
+    var t=(($('tipText')||{}).textContent||'').trim();
+    STK=t?[{id:Date.now(),text:'עדכון חודשי — לכתוב לקלוד:\n'+t,c:0,x:0.02,y:96,min:true}]:[];
+    KV.stickies=STK; kvSave('stickies');
+  }
+  stkSig=JSON.stringify(STK);
+}
+function stkGet(el){ var d=el.closest('[data-stk]'); if(!d) return null; var id=d.getAttribute('data-stk'); return STK.find(function(n){ return String(n.id)===id; }); }
+function renderStk(){
+  if(!STK) return;
+  var old=document.getElementById('stkLayer'); if(old) old.remove();
+  var narrow=stkNarrow.matches, strip=$('stkStrip'), host;
+  strip.innerHTML=''; strip.classList.toggle('hid',!narrow||!STK.length);
+  if(narrow) host=strip; else { host=document.createElement('div'); host.id='stkLayer'; document.body.appendChild(host); }
+  var W=document.documentElement.clientWidth;
+  STK.forEach(function(n){
+    var d=document.createElement('div'); d.className='stk'+(n.min?' min':''); d.setAttribute('data-stk',n.id);
+    d.style.background=STK_C[(n.c||0)%STK_C.length];
+    if(!narrow){ d.style.left=Math.max(4,Math.min(W-(n.min?120:254),(n.x||0)*W))+'px'; d.style.top=Math.max(4,n.y||0)+'px'; }
+    var first=(n.text||'').split('\n')[0].trim()||'פתק';
+    d.innerHTML='<div class="stk-h" title="'+(narrow?'':'לגרור מכאן')+'"><span class="stk-t">📌 '+(n.min?esc(first.slice(0,40)):'')+'</span>'+
+      '<button data-stka="copy" title="העתקה" aria-label="העתקה">⧉</button><button data-stka="color" title="צבע" aria-label="צבע">🎨</button>'+
+      '<button data-stka="min" title="'+(n.min?'פתיחה':'קיפול')+'" aria-label="'+(n.min?'פתיחה':'קיפול')+'">'+(n.min?'▢':'–')+'</button>'+
+      '<button data-stka="del" title="מחיקה" aria-label="מחיקה">✕</button></div><div class="stk-b" contenteditable="true" spellcheck="true"></div>';
+    d.querySelector('.stk-b').textContent=n.text||'';
+    host.appendChild(d);
+  });
+}
+function stkNew(){
+  if(!STK) return;
+  var W=document.documentElement.clientWidth;
+  var n={id:Date.now(),text:'',c:STK.length%STK_C.length,x:Math.max(0,(W/2-125)/W),y:window.scrollY+120,min:false};
+  STK.push(n); renderStk(); stkSave();
+  var b=document.querySelector('[data-stk="'+n.id+'"] .stk-b'); if(b){ b.focus(); if(stkNarrow.matches) b.scrollIntoView({block:'center'}); }
+}
+$('bStk').onclick=stkNew;
+document.addEventListener('input',function(e){
+  var b=e.target.closest&&e.target.closest('.stk-b'); if(!b) return; var n=stkGet(b); if(!n) return;
+  n.text=b.innerText.replace(/\n$/,''); stkSave();
+});
+document.addEventListener('click',function(e){
+  var b=e.target.closest&&e.target.closest('[data-stka]'); if(!b) return; var n=stkGet(b); if(!n) return;
+  var a=b.getAttribute('data-stka');
+  if(a==='copy'){ (navigator.clipboard?navigator.clipboard.writeText(n.text||''):Promise.reject()).then(function(){ toast('הועתק'); },function(){ toast('ההעתקה לא הצליחה'); }); return; }
+  if(a==='color') n.c=((n.c||0)+1)%STK_C.length;
+  else if(a==='min') n.min=!n.min;
+  else if(a==='del'){ var i=STK.indexOf(n); STK.splice(i,1); toast('הפתק נמחק',function(){ STK.splice(i,0,n); renderStk(); stkSave(); }); }
+  renderStk(); stkSave();
+});
+document.addEventListener('pointerdown',function(e){
+  if(stkNarrow.matches||e.button>0) return;
+  var h=e.target.closest&&e.target.closest('.stk-h'); if(!h||e.target.closest('button')) return;
+  var d=h.parentNode, n=stkGet(d); if(!n) return;
+  e.preventDefault();
+  STK.splice(STK.indexOf(n),1); STK.push(n); d.parentNode.appendChild(d);   /* הפתק שגוררים — מעל כולם */
+  stkDrag={d:d,n:n,dx:e.pageX-d.offsetLeft,dy:e.pageY-d.offsetTop};
+  d.classList.add('drag'); h.setPointerCapture(e.pointerId);
+});
+document.addEventListener('pointermove',function(e){
+  if(!stkDrag) return; var W=document.documentElement.clientWidth, d=stkDrag.d;
+  d.style.left=Math.max(4,Math.min(W-d.offsetWidth-4,e.pageX-stkDrag.dx))+'px';
+  d.style.top=Math.max(4,e.pageY-stkDrag.dy)+'px';
+});
+document.addEventListener('pointerup',function(){
+  if(!stkDrag) return; var d=stkDrag.d, n=stkDrag.n, W=document.documentElement.clientWidth;
+  n.x=d.offsetLeft/W; n.y=d.offsetTop; d.classList.remove('drag'); stkDrag=null; stkSave();
+});
+function stkRefresh(){   /* שינוי שהגיע מהטלפון/מחשב אחר — רק כשלא עורכים או גוררים כרגע */
+  if(!STK||stkT||stkDrag||!Array.isArray(KV.stickies)) return;
+  var a=document.activeElement; if(a&&a.closest&&a.closest('.stk')) return;
+  var sig=JSON.stringify(KV.stickies); if(sig===stkSig) return;
+  STK=KV.stickies; stkSig=sig; renderStk();
+}
+(stkNarrow.addEventListener?stkNarrow.addEventListener.bind(stkNarrow,'change'):stkNarrow.addListener.bind(stkNarrow))(renderStk);
+
+/* ---------- קיפול אזורים (נשמר בדפדפן) ---------- */
+var FOLD={}; try{ FOLD=JSON.parse(localStorage.getItem('mc-fold')||'{}'); }catch(e){}
+document.querySelectorAll('.sec-h').forEach(function(h){
+  var sec=h.nextElementSibling, t=h.querySelector('h2'); if(!sec||!t) return;
+  var k=t.textContent.trim(), b=document.createElement('button'); b.type='button'; b.className='fold-b'; h.appendChild(b);
+  function draw(){ var f=!!FOLD[k]; sec.classList.toggle('folded',f); b.textContent=f?'▸ פתיחה':'▾ קיפול'; b.setAttribute('aria-expanded',String(!f)); }
+  function tog(){ FOLD[k]=!FOLD[k]; if(!FOLD[k]) delete FOLD[k]; try{ localStorage.setItem('mc-fold',JSON.stringify(FOLD)); }catch(e){} draw(); }
+  b.onclick=tog; t.onclick=tog; draw();
+});
+
 /* ---------- משימות (mc_tasks) — איילת מוסיפה כאן, Claude מעדכן לפי בקשה בצ'אט ---------- */
 var TK=[], tkTab='open', tkSig='';
+var TK_TOPICS=['שכר','ספקים','בנק','עובדים','מיסים','רו״ח','אישי'];
+var TKF={q:'',r:'',t:'',u:false,sort:'smart'};
+try{ var _f=JSON.parse(localStorage.getItem('mc-tk-f')||'{}'); TKF.r=_f.r||''; TKF.t=_f.t||''; TKF.u=!!_f.u; TKF.sort=_f.sort||'smart'; }catch(e){}
+function tkKeep(){ try{ localStorage.setItem('mc-tk-f',JSON.stringify({r:TKF.r,t:TKF.t,u:TKF.u,sort:TKF.sort})); }catch(e){} }
+function tkTopics(){ var o={}; TK_TOPICS.forEach(function(t){ o[t]=1; }); TK.forEach(function(t){ if(t.topic) o[t.topic]=1; }); return Object.keys(o); }
+function tkFiltersUI(){
+  var used={}; TK.forEach(function(t){ if(t.topic) used[t.topic]=1; });
+  $('tkFR').innerHTML='<option value="">כל המסעדות</option>'+RESTS.map(function(r){ return '<option'+(TKF.r===r.nm?' selected':'')+'>'+esc(r.nm)+'</option>'; }).join('')+'<option value="-"'+(TKF.r==='-'?' selected':'')+'>בלי מסעדה</option>';
+  $('tkFT').innerHTML='<option value="">כל הנושאים</option>'+Object.keys(used).sort().map(function(t){ return '<option'+(TKF.t===t?' selected':'')+'>'+esc(t)+'</option>'; }).join('')+'<option value="-"'+(TKF.t==='-'?' selected':'')+'>בלי נושא</option>';
+  $('tkSort').value=TKF.sort; $('tkFU').checked=TKF.u;
+  $('tkFR').classList.toggle('on',!!TKF.r); $('tkFT').classList.toggle('on',!!TKF.t); $('tkQ').classList.toggle('on',!!TKF.q);
+}
+function tkMatch(t){
+  if(TKF.r && (TKF.r==='-'?t.rest:t.rest!==TKF.r)) return false;
+  if(TKF.t && (TKF.t==='-'?t.topic:t.topic!==TKF.t)) return false;
+  if(TKF.u && !t.urgent) return false;
+  if(TKF.q){ var q=TKF.q.toLowerCase(); if([t.title,t.detail,t.rest,t.topic].join(' ').toLowerCase().indexOf(q)<0) return false; }
+  return true;
+}
+function tkSorter(){
+  var heb=function(a,b){ return String(a||'\uffff').localeCompare(String(b||'\uffff'),'he'); };
+  return {
+    smart:function(a,b){ return (b.urgent-a.urgent)||(tkWhen(a)-tkWhen(b))||(b.id-a.id); },
+    when:function(a,b){ return (tkWhen(a)-tkWhen(b))||(b.id-a.id); },
+    new:function(a,b){ return b.id-a.id; },
+    old:function(a,b){ return a.id-b.id; },
+    abc:function(a,b){ return heb(a.title,b.title); },
+    rest:function(a,b){ return heb(a.rest,b.rest)||(b.urgent-a.urgent)||(tkWhen(a)-tkWhen(b)); },
+    topic:function(a,b){ return heb(a.topic,b.topic)||(b.urgent-a.urgent)||(tkWhen(a)-tkWhen(b)); }
+  }[TKF.sort]||function(a,b){ return b.id-a.id; };
+}
 function loadTK(){
-  return api('GET','mc_tasks?select=*&deleted=eq.false&order=id.desc&limit=500')
+  return api('GET','mc_tasks?select=*&order=id.desc&limit=1000')
     .then(function(rows){ TK=rows||[]; var sig=JSON.stringify(TK); if(sig!==tkSig){ tkSig=sig; if(!$('mask')) renderTK(); } });
 }
 function tkWhen(t){ return t.remind_at?new Date(t.remind_at).getTime():t.due?new Date(t.due+'T09:00').getTime():Infinity; }
@@ -1215,26 +1389,38 @@ function tkLate(t){ return !t.done && t.due && t.due<new Date().toLocaleDateStri
 function tkFmtDate(d){ return new Date(d+'T12:00').toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric'}); }
 function tkFmtTime(iso){ var d=new Date(iso); return d.toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric'})+' '+d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}); }
 function renderTK(){
-  var open=TK.filter(function(t){ return !t.done; }), done=TK.filter(function(t){ return t.done; });
-  $('tkTabs').innerHTML='<button class="tab'+(tkTab==='open'?' on':'')+'" data-tkt="open">פתוחות ('+open.length+')</button>'+
-    '<button class="tab'+(tkTab==='done'?' on':'')+'" data-tkt="done">בוצעו ('+done.length+')</button>';
-  var list=tkTab==='open'?open.sort(function(a,b){ return (b.urgent-a.urgent)||(tkWhen(a)-tkWhen(b))||(b.id-a.id); })
-    :done.sort(function(a,b){ return String(b.done_at||'').localeCompare(String(a.done_at||'')); }).slice(0,100);
-  if(!list.length){ $('tkList').innerHTML='<div class="sn-empty">'+(tkTab==='open'?'אין משימות פתוחות 🎉':'עוד לא סומנו משימות כבוצעו')+'</div>'; return; }
+  tkFiltersUI();
+  var live=TK.filter(function(t){ return !t.deleted; }), del=TK.filter(function(t){ return t.deleted; });
+  var groups={open:live.filter(function(t){ return !t.done; }),done:live.filter(function(t){ return t.done; }),del:del};
+  var f=function(g){ return groups[g].filter(tkMatch).length; }, filt=!!(TKF.q||TKF.r||TKF.t||TKF.u);
+  var cnt=function(g){ var a=f(g), b=groups[g].length; return filt&&a!==b?a+' מתוך '+b:b; };
+  $('tkTabs').innerHTML='<button class="tab'+(tkTab==='open'?' on':'')+'" data-tkt="open">פתוחות ('+cnt('open')+')</button>'+
+    '<button class="tab'+(tkTab==='done'?' on':'')+'" data-tkt="done">בוצעו ('+cnt('done')+')</button>'+
+    '<button class="tab del'+(tkTab==='del'?' on':'')+'" data-tkt="del">🗑 מחוקים ('+cnt('del')+')</button>'+
+    (filt?'<button class="tk-clr" data-tkt="clr">ניקוי סינון ✕</button>':'');
+  var list=groups[tkTab].filter(tkMatch);
+  if(tkTab==='done'&&TKF.sort==='smart') list.sort(function(a,b){ return String(b.done_at||'').localeCompare(String(a.done_at||'')); });
+  else if(tkTab==='del'&&TKF.sort==='smart') list.sort(function(a,b){ return String(b.updated_at||'').localeCompare(String(a.updated_at||'')); });
+  else list.sort(tkSorter());
+  list=list.slice(0,300);
+  if(!list.length){ $('tkList').innerHTML='<div class="sn-empty">'+(filt?'אין משימות שמתאימות לסינון':tkTab==='open'?'אין משימות פתוחות 🎉':tkTab==='done'?'עוד לא סומנו משימות כבוצעו':'אין משימות מחוקות')+'</div>'; return; }
   $('tkList').innerHTML=list.map(function(t){
     var m=[];
     if(t.urgent&&!t.done) m.push('<span class="u">דחוף</span>');
     if(t.due) m.push('<span'+(tkLate(t)?' class="w"':'')+'>יעד: '+esc(tkFmtDate(t.due))+(tkLate(t)?' (עבר)':'')+'</span>');
     if(t.remind_at) m.push('<span'+(tkDue(t)?' class="w"':'')+'>'+(tkDue(t)?'⏰ הגיע הזמן · ':'🔔 ')+esc(tkFmtTime(t.remind_at))+'</span>');
+    if(t.topic) m.push('<span class="tk-tp">'+esc(t.topic)+'</span>');
     if(t.rest) m.push('<span>'+esc(t.rest)+'</span>');
+    if(t.deleted&&t.updated_at) m.push('<span>נמחקה '+esc(new Date(t.updated_at).toLocaleDateString('he-IL'))+'</span>');
     if(t.by_claude) m.push('<span title="נוסף או עודכן על ידי קלוד לפי בקשה שלך">🤖 קלוד</span>');
     if(t.done&&t.done_at) m.push('<span>בוצע '+esc(new Date(t.done_at).toLocaleDateString('he-IL'))+'</span>');
-    var h='<article class="tk-item'+(t.done?' done':'')+(tkDue(t)||tkLate(t)?' due':'')+'" data-tk="'+t.id+'">';
-    h+='<button class="tk-chk" data-tka="tog" aria-label="'+(t.done?'החזרה לפתוחות':'סימון כבוצע')+'" title="'+(t.done?'החזרה לפתוחות':'בוצע')+'">'+(t.done?'✓':'')+'</button>';
+    var h='<article class="tk-item'+(t.done?' done':'')+(t.deleted?' del':'')+(!t.deleted&&(tkDue(t)||tkLate(t))?' due':'')+'" data-tk="'+t.id+'">';
+    if(t.deleted) h+='<span class="tk-chk" aria-hidden="true" style="border-style:dashed">'+(t.done?'✓':'')+'</span>'; else h+='<button class="tk-chk" data-tka="tog" aria-label="'+(t.done?'החזרה לפתוחות':'סימון כבוצע')+'" title="'+(t.done?'החזרה לפתוחות':'בוצע')+'">'+(t.done?'✓':'')+'</button>';
     h+='<div class="tk-b"><button class="tk-t" data-tka="edit">'+esc(t.title)+'</button>';
     if(m.length) h+='<div class="tk-m">'+m.join('')+'</div>';
     if(t.detail) h+='<div class="tk-d">'+esc(t.detail)+'</div>';
     h+='</div><div class="tk-a">';
+    if(t.deleted){ h+='<button class="btn ghost" data-tka="undel">↩ שחזור</button></div></article>'; return h; }
     if(!t.done&&(t.remind_at||t.due)) h+='<button class="btn ghost" data-tka="cal" title="פותח את יומן גוגל עם המשימה — לשמור שם, והיומן יקפיץ תזכורת בטלפון">📅 ליומן</button>';
     h+='<button class="btn ghost" data-tka="edit">עריכה</button></div></article>';
     return h;
@@ -1282,13 +1468,14 @@ function tkEdit(t){
     '<div class="fld-row"><label class="fld"><span>תאריך יעד</span><input id="tkDue" type="date" value="'+esc(t.due||'')+'"></label>'+
     '<label class="fld"><span>תזכורת (יום ושעה)</span><input id="tkR" type="datetime-local" value="'+esc(tkLocal(t.remind_at))+'"></label></div>'+
     '<div class="tk-cal">כדי שהתזכורת תקפוץ בטלפון: לשמור, ואז «📅 ליומן» ← «שמירה» ביומן גוגל. <button type="button" id="tkIcs">יומן אחר (אייפון / אאוטלוק)</button></div>'+
-    '<div class="fld-row"><label class="fld"><span>מסעדה</span><select id="tkRest"><option value="">—</option>'+RESTS.map(function(r){ return '<option'+(r.nm===t.rest?' selected':'')+'>'+esc(r.nm)+'</option>'; }).join('')+'</select></label></div>'+
+    '<div class="fld-row"><label class="fld"><span>מסעדה</span><select id="tkRest"><option value="">—</option>'+RESTS.map(function(r){ return '<option'+(r.nm===t.rest?' selected':'')+'>'+esc(r.nm)+'</option>'; }).join('')+'</select></label>'+
+    '<label class="fld"><span>נושא (לבחור או לכתוב חדש)</span><input id="tkTp" list="tkTpL" value="'+esc(t.topic||'')+'"><datalist id="tkTpL">'+tkTopics().map(function(x){ return '<option value="'+esc(x)+'">'; }).join('')+'</datalist></label></div>'+
     '<label class="fld-chk"><input type="checkbox" id="tkU"'+(t.urgent?' checked':'')+'> דחוף</label>'+
     '</div><div class="dlg-f"><button class="btn" id="tkS">שמירה</button><button class="btn ghost" id="tkC">ביטול</button>'+
     (isNew?'':'<button class="btn ghost" id="tkDel" style="margin-inline-start:auto;color:var(--bad)">מחיקה</button>')+'</div></div>');
   var val=function(){ var r=$('tkR').value;
     return {title:$('tkT').value.trim(),detail:$('tkD').value.trim(),due:$('tkDue').value||null,remind_at:r?new Date(r).toISOString():null,
-      rest:$('tkRest').value,urgent:$('tkU').checked}; };
+      rest:$('tkRest').value,topic:$('tkTp').value.trim(),urgent:$('tkU').checked}; };
   $('tkX').onclick=$('tkC').onclick=closeLayer;
   $('tkIcs').onclick=function(){ var v=val(); if(!v.due&&!v.remind_at){ toast('קודם לבחור תאריך יעד או תזכורת'); return; } v.id=t.id||'new'; tkIcs(v); };
   $('tkS').onclick=function(){
@@ -1303,14 +1490,22 @@ function tkEdit(t){
 $('tkAdd').addEventListener('submit',function(e){
   e.preventDefault(); var v=$('tkNew').value.trim(); if(!v) return;
   $('tkNew').value='';
-  tkAdd({title:v}).then(function(){ toast('נוספה — «עריכה» להוספת תאריך ותזכורת'); },function(err){ $('tkNew').value=v; toast('לא נשמר: '+err.message); });
+  var nf={title:v}; if(TKF.r&&TKF.r!=='-') nf.rest=TKF.r; if(TKF.t&&TKF.t!=='-') nf.topic=TKF.t;
+  tkAdd(nf).then(function(){ toast('נוספה — «עריכה» להוספת תאריך ותזכורת'); },function(err){ $('tkNew').value=v; toast('לא נשמר: '+err.message); });
 });
-$('tkTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-tkt]'); if(!b) return; tkTab=b.getAttribute('data-tkt'); renderTK(); });
+$('tkTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-tkt]'); if(!b) return; var v=b.getAttribute('data-tkt');
+  if(v==='clr'){ TKF.q='';TKF.r='';TKF.t='';TKF.u=false; $('tkQ').value=''; tkKeep(); } else tkTab=v; renderTK(); });
+$('tkQ').addEventListener('input',function(){ TKF.q=this.value.trim(); renderTK(); });
+$('tkFR').addEventListener('change',function(){ TKF.r=this.value; tkKeep(); renderTK(); });
+$('tkFT').addEventListener('change',function(){ TKF.t=this.value; tkKeep(); renderTK(); });
+$('tkSort').addEventListener('change',function(){ TKF.sort=this.value; tkKeep(); renderTK(); });
+$('tkFU').addEventListener('change',function(){ TKF.u=this.checked; tkKeep(); renderTK(); });
 $('tkList').addEventListener('click',function(e){
   var b=e.target.closest('[data-tka]'); if(!b) return; var t=tkFind(b.closest('[data-tk]').getAttribute('data-tk')); if(!t) return;
   var a=b.getAttribute('data-tka');
   if(a==='tog') tkPatch(t,t.done?{done:false,done_at:null}:{done:true,done_at:new Date().toISOString()},t.done?'הוחזרה לפתוחות':'✓ בוצע');
   else if(a==='cal') tkCal(t);
+  else if(a==='undel') tkPatch(t,{deleted:false},'המשימה שוחזרה');
   else tkEdit(t);
 });
 
@@ -1428,11 +1623,11 @@ function refreshAll(){
   loadTK().catch(function(){});
   return Promise.all([loadKV(),loadFiles(),loadNotes(false),pingPc()]).then(function(){
     var sig=JSON.stringify([KV.sites,KV.rest_files,KV.general,KV.extra_folders])+'|'+FILES.length+'|'+(FILES[0]&&FILES[0].mtime)+'|'+SYNCED+'|'+PC;
-    if(sig!==lastSig&&!$('mask')){ lastSig=sig; renderLinks(); renderRests(); } tick(); },function(){});
+    if(sig!==lastSig&&!$('mask')){ lastSig=sig; renderLinks(); renderRests(); } stkRefresh(); tick(); },function(){});
 }
 function start(){
   $('vLogin').classList.add('hid'); $('vApp').classList.remove('hid'); tick();
-  Promise.all([loadKV(),loadFiles(),pingPc()]).then(function(){ renderLinks(); renderRests(); tick(); })
+  Promise.all([loadKV(),loadFiles(),pingPc()]).then(function(){ renderLinks(); renderRests(); stkInit(); renderStk(); tick(); })
     .catch(function(e){ toast('בעיה בטעינה: '+e.message); });
   loadNotes(true).catch(function(e){ toast('הפתקים לא נטענו: '+e.message); });
   myClear(); loadMy().catch(function(){ myClear(); });
