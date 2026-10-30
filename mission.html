@@ -244,6 +244,9 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .tk-add input:focus{border-color:var(--acc)}
 .tk-add{flex-wrap:wrap}
 .tk-add select{height:42px;border-radius:12px;border:1px solid var(--line2);background:var(--glass2);padding:0 10px;color:var(--ink);font-size:14px;outline:none;max-width:150px}
+.tk-mic{height:42px;width:46px;padding:0;font-size:18px;flex:none}
+.tk-mic.rec{background:var(--bad);border-color:var(--bad);color:#fff;animation:tkRec 1.2s ease-in-out infinite}
+@keyframes tkRec{50%{opacity:.6}}
 .tk-prev{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 2px 10px;font-size:12.5px;color:var(--ink2)}
 .tk-prev span{padding:2px 9px;border-radius:999px;background:var(--glass2);border:1px solid var(--line)}
 .tk-prev b{font-weight:700;color:var(--ink)}
@@ -261,6 +264,20 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .tk-flt input[type=search]{width:150px}
 .tk-flt input:focus,.tk-flt select:focus{border-color:var(--acc)}
 .tk-flt .on{border-color:var(--acc);background:var(--acc-soft)}
+.sec-m,.tk-fbtn{display:none}
+.tk-fbtn{border:1px solid var(--line);background:var(--glass);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--ink2);align-self:flex-start}
+.tk-fbtn.on{border-color:var(--acc);color:var(--acc);font-weight:600}
+@media (max-width:720px){
+  .sec-m{display:flex;margin-bottom:8px}
+  .links{flex-wrap:nowrap;overflow-x:auto;gap:8px;margin:0 -16px 18px;padding:0 16px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .links::-webkit-scrollbar{display:none}
+  .links .lk{flex:none;height:40px;padding:0 12px;font-size:13.5px}
+  .hide-m{display:none}
+  .tk-fbtn{display:inline-block}
+  .tk-flt{display:none}
+  .tk-flt.open{display:flex}
+}
+@media (min-width:721px){ .links.folded{display:flex!important} }
 .tk-push{height:34px;padding:0 12px;font-size:13px;margin-inline-start:auto}
 .tk-push.on{border-color:var(--ok);color:var(--ok)}
 .ios-steps{margin:0;padding-inline-start:20px;line-height:1.9;font-size:14.5px}
@@ -336,7 +353,7 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
   .rests{grid-template-columns:1fr}
   .tk-item{flex-wrap:wrap}
   .tk-flt input[type=search]{flex:1 1 100%;width:auto}
-  .tk-add input{flex:1 1 100%}
+  .tk-add input{flex:1 1 calc(100% - 54px)}
   .tk-add select{flex:1 1 30%;max-width:none;min-width:0}
   .tk-flt select{flex:1 1 40%;min-width:0}
   .tk-a{flex-basis:100%;justify-content:flex-start;padding-inline-start:34px}
@@ -383,6 +400,7 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
     </div>
   </header>
 
+  <div class="sec-h sec-m"><h2>קיצורים</h2></div>
   <nav class="links" id="links" aria-label="קיצורים"></nav>
   <div class="stk-strip hid" id="stkStrip"></div>
 
@@ -393,10 +411,11 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
     <button class="btn ghost" id="bTipCopy">העתקה</button>
   </div>
 
-  <div class="sec-h"><h2>משימות</h2><small>מוסיפים כאן, או כותבים לקלוד «עדכן משימה בדף הבית שלי…»</small></div>
+  <div class="sec-h"><h2>משימות</h2><small class="hide-m">מוסיפים כאן, או כותבים לקלוד «עדכן משימה בדף הבית שלי…»</small></div>
   <section class="tk glass" id="tk">
     <form class="tk-add" id="tkAdd" autocomplete="off">
       <input id="tkNew" placeholder="למשל: פאסטל להתקשר לספק מחר ב-10 דחוף" aria-label="משימה חדשה">
+      <button class="btn ghost tk-mic hid" id="tkMic" type="button" title="להגיד את המשימה בקול" aria-label="הקלטה">🎤</button>
       <select id="tkNR" aria-label="מסעדה למשימה החדשה"></select>
       <select id="tkNT" aria-label="נושא למשימה החדשה"></select>
       <button class="btn" type="submit">+ הוספה</button>
@@ -404,7 +423,8 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
     <div class="tk-prev hid" id="tkPrev"></div>
     <div class="tk-bar">
       <div class="tabs" id="tkTabs"></div>
-      <div class="tk-flt">
+      <button class="tk-fbtn" id="tkFBtn" type="button" aria-expanded="false">סינון ומיון ▾</button>
+      <div class="tk-flt" id="tkFlt">
         <input id="tkQ" type="search" placeholder="חיפוש" aria-label="חיפוש במשימות">
         <select id="tkFR" aria-label="סינון לפי מסעדה"></select>
         <select id="tkFT" aria-label="סינון לפי נושא"></select>
@@ -1404,10 +1424,18 @@ function tkParse(txt){
       day=new Date(x.getFullYear(),x.getMonth(),x.getDate()); hh=x.getHours(); mm=x.getMinutes(); return; }
     day=addD(m[1]==='יומיים'?2:m[1]==='שבועיים'?14:/שבוע/.test(u)?n*7:/חודש/.test(u)?n*30:n); });
   if(!day) cut(new RegExp(' (?:ב?יום |ב)('+TK_DAYS.join('|')+') '),function(m){ var w=TK_DAYS.indexOf(m[1]), k=(w-base.getDay()+7)%7||7; day=addD(k); });
-  /* שעה */
+  /* שעה — גם במילים («בעשר», «בשלוש וחצי», «ברבע לחמש»), ו«בבוקר/בערב» */
+  var per=null, loose=false;
+  cut(/ (בבוקר|בצהריים|בצהרים|אחה"צ|אחר הצהריים|אחרי הצהריים|בערב|בלילה) /,function(m){ per=m[1].replace('בצהרים','בצהריים').replace('אחרי','אחר'); });
   cut(/ (?:ב-?|בשעה |ב-?שעה |עד )?(\d{1,2}):(\d{2}) /,function(m){ if(+m[1]>23||+m[2]>59) return false; hh=+m[1]; mm=+m[2]; });
-  if(hh==null) cut(/ (?:ב-|בשעה |ב)(\d{1,2}) /,function(m){ if(+m[1]>23) return false; hh=+m[1]; mm=0; });
-  if(hh==null) cut(/ (בבוקר|בצהריים|בצהרים|אחה"צ|אחר הצהריים|בערב|בלילה) /,function(m){ hh={'בבוקר':9,'בצהריים':13,'בצהרים':13,'אחה"צ':16,'אחר הצהריים':16,'בערב':19,'בלילה':21}[m[1]]; });
+  if(hh==null) cut(/ (?:ב|בשעה |ב-?שעה |עד )(?:(רבע) ל)?(אחת[ -]עשרה|שתים[ -]עשרה|אחת|שתיים|שתים|שלוש|ארבע|חמש|שש|שבע|שמונה|תשע|עשר)(?: ו(חצי|רבע|עשרים|עשר|חמישה|חמש|ארבעים|שלושים))? /,function(m){
+    var H={'אחת':1,'שתיים':2,'שתים':2,'שלוש':3,'ארבע':4,'חמש':5,'שש':6,'שבע':7,'שמונה':8,'תשע':9,'עשר':10}[m[2]]||(/^אחת/.test(m[2])?11:12);
+    var M={'חצי':30,'רבע':15,'עשרים':20,'עשר':10,'חמישה':5,'חמש':5,'ארבעים':40,'שלושים':30}[m[3]]||0;
+    if(m[1]){ H=H-1||12; M=45; } hh=H; mm=M; loose=true; });
+  if(hh==null) cut(/ (?:ב-|בשעה |ב)(\d{1,2}) /,function(m){ if(+m[1]>23) return false; hh=+m[1]; mm=0; loose=true; });
+  if(per){ if(hh==null) hh={'בבוקר':9,'בצהריים':13,'אחה"צ':16,'אחר הצהריים':16,'בערב':19,'בלילה':21}[per];
+    else if(per!=='בבוקר'&&hh<12&&!(per==='בצהריים'&&hh>=11)) hh+=12; }
+  else if(loose&&hh>=1&&hh<=6) hh+=12;   /* «בשלוש» בלי «בבוקר» = 15:00 */
   if(hh!=null&&!day){ day=new Date(base); if(hh*60+mm<=now.getHours()*60+now.getMinutes()) day=addD(1); }
   if(day){ r.due=day.toLocaleDateString('en-CA'); var at=new Date(day); at.setHours(hh==null?9:hh,mm,0,0); r.remind_at=at.toISOString(); r.timeSet=hh!=null; }
   r.title=t.replace(/\s+/g,' ').replace(/^[\s,–-]+|[\s,–-]+$/g,'').trim();
@@ -1426,6 +1454,22 @@ function tkPrevDraw(){
   el.innerHTML=c.join(''); el.classList.toggle('hid',c.length<2&&p.title===v);
 }
 $('tkNew').addEventListener('input',tkPrevDraw);
+/* 🎤 הכתבה בקול (Chrome במחשב ובאנדרואיד, ספארי). איפה שאין — הכפתור לא מוצג, ומיקרופון המקלדת עובד */
+(function(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return;
+  var b=$('tkMic'), rec=null, before='';
+  b.classList.remove('hid');
+  b.onclick=function(){
+    if(rec){ rec.stop(); return; }
+    rec=new SR(); rec.lang='he-IL'; rec.interimResults=true; rec.continuous=false;
+    before=$('tkNew').value.trim(); b.classList.add('rec'); b.setAttribute('aria-label','עצירת הקלטה');
+    rec.onresult=function(e){ var t=''; for(var i=0;i<e.results.length;i++) t+=e.results[i][0].transcript;
+      $('tkNew').value=(before?before+' ':'')+t.trim(); tkPrevDraw(); };
+    rec.onerror=function(e){ toast(e.error==='not-allowed'||e.error==='service-not-allowed'?'צריך לאשר לדפדפן גישה למיקרופון':e.error==='no-speech'?'לא נשמע דיבור — לנסות שוב':'ההקלטה לא הצליחה'); };
+    rec.onend=function(){ rec=null; b.classList.remove('rec'); b.setAttribute('aria-label','הקלטה'); $('tkNew').focus(); };
+    try{ rec.start(); }catch(err){ rec=null; b.classList.remove('rec'); toast('ההקלטה לא הצליחה'); }
+  };
+})();
 
 /* ---------- משימות (mc_tasks) — איילת מוסיפה כאן, Claude מעדכן לפי בקשה בצ'אט ---------- */
 var TK=[], tkTab='open', tkSig='';
@@ -1457,6 +1501,7 @@ function tkFiltersUI(){
   $('tkNR').innerHTML='<option value="">מסעדה —</option>'+RESTS.map(function(r){ return '<option'+(nr===r.nm?' selected':'')+'>'+esc(r.nm)+'</option>'; }).join('');
   $('tkNT').innerHTML='<option value="">נושא —</option>'+tkTopicOpts(nt);
   $('tkSort').value=TKF.sort; $('tkFU').checked=TKF.u;
+  $('tkFBtn').classList.toggle('on',!!(TKF.q||TKF.r||TKF.t||TKF.u));
   $('tkFR').classList.toggle('on',!!TKF.r); $('tkFT').classList.toggle('on',!!TKF.t); $('tkQ').classList.toggle('on',!!TKF.q);
 }
 function tkMatch(t){
@@ -1598,6 +1643,7 @@ $('tkAdd').addEventListener('submit',function(e){
 });
 $('tkTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-tkt]'); if(!b) return; var v=b.getAttribute('data-tkt');
   if(v==='clr'){ TKF.q='';TKF.r='';TKF.t='';TKF.u=false; $('tkQ').value=''; tkKeep(); } else tkTab=v; renderTK(); });
+$('tkFBtn').onclick=function(){ var o=$('tkFlt').classList.toggle('open'); this.setAttribute('aria-expanded',String(o)); this.textContent=(o?'סינון ומיון ▴':'סינון ומיון ▾'); };
 $('tkQ').addEventListener('input',function(){ TKF.q=this.value.trim(); renderTK(); });
 $('tkFR').addEventListener('change',function(){ TKF.r=this.value; tkKeep(); renderTK(); });
 $('tkFT').addEventListener('change',function(){ if(this.value==='+'){ this.value=TKF.t; tkTopicsDialog(); return; } TKF.t=this.value; tkKeep(); renderTK(); });
