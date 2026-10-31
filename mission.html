@@ -1671,6 +1671,7 @@ function pushSub(){ if(!pushOk) return Promise.resolve(null);
 function pushSave(sub){ var j=sub.toJSON();
   return api('POST','mc_push_subs',{endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,device:pushDevice()},{'Prefer':'resolution=merge-duplicates,return=minimal'}); }
 function pushState(){
+  if(pushOk) navigator.serviceWorker.getRegistration('mission').then(function(r){ if(r) r.update(); }).catch(function(){});   /* שהאייפון יקבל גרסה חדשה של הדף */
   pushSub().then(function(sub){
     var on=!!sub&&Notification.permission==='granted', b=$('tkPush');
     b.classList.toggle('on',on); b.textContent=on?'🔔 התראות פעילות':'🔔 התראות בטלפון';

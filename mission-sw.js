@@ -1,6 +1,12 @@
-/* מרכז הבקרה — רק התראות על משימות (cloud/functions/mc-push). בלי מטמון: הדף תמיד נטען מהרשת. */
+/* מרכז הבקרה — התראות על משימות (cloud/functions/mc-push), ו-mission.html תמיד טרי מהרשת
+   (האייפון שומר את הדף של אפליקציה ממסך הבית יותר מדי זמן). אין מטמון משלנו. */
 self.addEventListener('install', function () { self.skipWaiting(); });
 self.addEventListener('activate', function (e) { e.waitUntil(self.clients.claim()); });
+self.addEventListener('fetch', function (e) {
+  var u = new URL(e.request.url);
+  if (e.request.method !== 'GET' || e.request.mode !== 'navigate' || !/\/mission\.html$/.test(u.pathname)) return;
+  e.respondWith(fetch(u.href, { cache: 'no-store', credentials: 'same-origin' }).catch(function () { return fetch(e.request); }));
+});
 self.addEventListener('push', function (e) {
   var d = {};
   try { d = e.data ? e.data.json() : {}; } catch (_) { d = { body: e.data && e.data.text() }; }
