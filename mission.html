@@ -228,6 +228,8 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .pn-legend b{color:var(--ink2);font-weight:600}
 .pn-tabs{padding:0;flex-wrap:wrap;margin:0 0 10px}
 .pn-main{flex:1;min-width:0}
+.pn-src{font-size:12.5px;color:var(--ink3);margin-top:4px}
+.pn-src summary{margin-top:0}
 .pn-q{display:flex;gap:6px;align-items:baseline;margin-top:6px;font-size:13.5px;color:var(--warn)}
 .pn-q b{flex:none;font-weight:600}
 .pn-qt{flex:1;min-width:0;outline:none;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;border-radius:6px;padding:1px 3px;background:color-mix(in srgb,var(--warn) 8%,transparent)}
@@ -512,7 +514,7 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
   <div class="sec-h"><h2>מסעדות</h2><small id="restsHint"></small></div>
   <section class="rests" id="rests"></section>
 
-  <div class="sec-h"><h2>הערות שכר לחשבת</h2><small class="hide-m">רשימה לכל חודש · «📌 קבועה» עוברת לבד לחודש הבא · «🔒 רק לי» לא נשלח לחשבת</small></div>
+  <div class="sec-h"><h2>הערות שכר לחשבת</h2><small class="hide-m">רשימה לכל חודש · הערות מהוואטסאפ עם רועי נכנסות לכאן לבד (💬)</small></div>
   <section class="pn glass" id="pn">
     <div class="sn-bar">
       <div class="tabs" id="pnRest"></div>
@@ -531,8 +533,9 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
     <input type="file" id="pnFile" multiple hidden>
   </section>
 
-  <div class="sec-h"><h2>הערות שכר פאסטל</h2><small id="snHint">נקלטות לבד מהוואטסאפ עם רועי</small></div>
-  <section class="sn glass" id="sn">
+  <!-- הרשימה הנפרדת הוסתרה (01.11.2026): הערות מהוואטסאפ נכנסות לבד ל«הערות שכר לחשבת» (טריגר mc_sn_to_pay) -->
+  <div class="sec-h hid"><h2>הערות שכר פאסטל</h2><small id="snHint">נקלטות לבד מהוואטסאפ עם רועי</small></div>
+  <section class="sn glass hid" id="sn">
     <div class="sn-bar">
       <div class="tabs" id="snTabs"></div>
       <select class="sn-sel" id="snMonth" aria-label="חודש"></select>
@@ -1221,7 +1224,7 @@ function snMonthOf(n){ if(n.month) return n.month; var d=new Date(n.ts); return 
 function snAmt(a){ return a==null||a===''?'':Number(a).toLocaleString('he-IL')+' ₪'; }
 function loadSN(){
   return api('GET','mc_salary_notes?select=id,ts,sender,from_me,msg_text,emp,topic,amount,month,detail,file_id,file_name,status&order=ts.desc&limit=500')
-    .then(function(rows){ SN=rows||[]; var sig=JSON.stringify(SN); if(sig!==snSig){ snSig=sig; renderSN(); } });
+    .then(function(rows){ SN=rows||[]; var sig=JSON.stringify(SN); if(sig!==snSig){ snSig=sig; renderSN(); if(PN.length&&!pnEditing()) renderPN(); } });
 }
 function snShown(){
   return SN.filter(function(n){ return (snTab==='all'||n.status===snTab) && (!snMon||String(snMonthOf(n))===snMon); });
@@ -1403,6 +1406,7 @@ function renderPN(){
     var st=n.state||'';
     var fs=PF.filter(function(f){ return f.note_id===n.id; });
     return '<div class="pn-row'+(n.for_acc?'':' mine')+(st?' '+st:'')+'" data-pn="'+n.id+'"><div class="pn-main"><div class="pn-t" contenteditable="true" spellcheck="false">'+esc(n.text)+'</div>'+
+      pnOrig(n)+
       (st==='roy'||n.roy_q?'<div class="pn-q"><b>❓ לרועי:</b><div class="pn-qt" contenteditable="true" spellcheck="false">'+esc(n.roy_q||'')+'</div></div>':'')+'<div class="pn-files">'+
       fs.map(function(f){ return '<span class="pn-f" data-pf="'+f.id+'"><button data-pfa="open" title="פתיחה">📎 '+esc(f.name)+'</button><button data-pfa="dl" title="הורדה" aria-label="הורדה">⬇</button><button class="pn-fx" data-pfa="del" title="הסרת הקובץ" aria-label="הסרת הקובץ">✕</button></span>'; }).join('')+
       '</div></div><div class="pn-b">'+
@@ -1438,6 +1442,13 @@ function renderPN(){
   }
   $('pnBody').innerHTML=h;
   if(pnNewId){ var el=document.querySelector('[data-pn="'+pnNewId+'"] .pn-t'); pnNewId=null; if(el) el.focus(); }
+}
+function pnOrig(n){
+  if(!n.sn_id) return '';
+  var o=SN.find(function(x){ return x.id===n.sn_id; });
+  if(!o) return '<div class="pn-src">💬 מהוואטסאפ</div>';
+  var d=new Date(o.ts), who=o.from_me?'את':(o.sender||'רועי');
+  return '<details class="sn-orig pn-src"><summary>💬 '+esc(who)+' · '+esc(d.toLocaleDateString('he-IL',{day:'numeric',month:'numeric'}))+' — ההודעה המקורית</summary><div>'+esc(o.msg_text||'')+'</div></details>';
 }
 function pnFind(id){ return PN.find(function(n){ return String(n.id)===String(id); }); }
 function pnPatch(n,fields,undoMsg){
