@@ -104,6 +104,15 @@
     return _refreshing; }
   function fresh(){ syncS(); if(!S) return Promise.reject(new Error('אין חיבור')); if((S.expires_at||0)-Date.now()/1000 < 120) return refresh(); return Promise.resolve(S); }
   function hdr(){ return {'apikey':KEY,'Authorization':'Bearer '+(S&&S.access_token||''),'Content-Type':'application/json'}; }
+  /* 01.11.2026: גישה לטבלאות הענן מתוך התזרים (כרגע: חשבוניות הקופה הקטנה, taz_petty_files) — עם החיבור של איילת, לפי ה-RLS */
+  function rest(path, init, retried){ init=init||{};
+    return fresh().then(function(){ var h=hdr(); var x=init.headers||{}; Object.keys(x).forEach(function(k){ h[k]=x[k]; });
+        return fetch(SB+'/rest/v1/'+path,{method:init.method||'GET',headers:h,body:init.body}); })
+      .then(function(r){
+        if(r.status===401 && !retried) return refresh().then(function(){ return rest(path, init, true); });
+        return r.text().then(function(t){ if(!r.ok){ var e=new Error('שגיאה '+r.status+': '+t.slice(0,200)); e.status=r.status; throw e; } return t?JSON.parse(t):null; });
+      });
+  }
   function rpc(fn, body, retried){
     return fresh().then(function(){ return fetch(SB+'/rest/v1/rpc/'+fn,{method:'POST',headers:hdr(),body:JSON.stringify(body||{})}); })
       .then(function(r){
@@ -384,7 +393,7 @@
       html=patch(html);
       return rpc('taz_inbox_load',{}).then(function(IN){ return applyInbox(html, IN||{}); }, function(){ return html; });
     }).then(function(html){
-      window.__TAZ={stateGet:stateGet, stateSet:stateSet, pending:pending, flush:flush, who:who, inbox:INBOX_USED,
+      window.__TAZ={stateGet:stateGet, stateSet:stateSet, pending:pending, flush:flush, who:who, inbox:INBOX_USED, rest:rest,
         _view:function(){ return VIEW; }, _mem:function(){ return MEM; },
         _dirty:function(){ var n=0; Object.keys(MEM).forEach(function(k){ if(/^tazrim-cinc-BAK-autover-/.test(k)) return; var ns=nsOf(k); try{ n+=diff(ns, ns==='ls'?lsVal(MEM[k]):JSON.parse(MEM[k]), k).length; }catch(_){ n++; } }); return n; }};
       try{ Object.defineProperty(window,'localStorage',{configurable:true,get:function(){ return VLS; }}); }catch(e){ throw new Error('הדפדפן לא מאפשר את שכבת השמירה: '+e.message); }
