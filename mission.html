@@ -230,6 +230,7 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .pn-main{flex:1;min-width:0}
 .pn-src{font-size:12.5px;color:var(--ink3);margin-top:4px}
 .pn-src summary{margin-top:0}
+.pn-tk{border:0;background:var(--acc-soft);color:var(--acc);border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:600}
 .pn-q{display:flex;gap:6px;align-items:baseline;margin-top:6px;font-size:13.5px;color:var(--warn)}
 .pn-q b{flex:none;font-weight:600}
 .pn-qt{flex:1;min-width:0;outline:none;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;border-radius:6px;padding:1px 3px;background:color-mix(in srgb,var(--warn) 8%,transparent)}
@@ -1382,7 +1383,7 @@ function pnEditing(){ var a=document.activeElement; return !!(a&&a.classList&&(a
 function loadPN(){
   api('GET','mc_pay_files?deleted=eq.false&select=id,note_id,name,mime,bytes&order=id.asc&limit=3000').then(function(r){
     var sig=JSON.stringify(r||[]); if(sig!==JSON.stringify(PF)){ PF=r||[]; if(!pnEditing()) renderPN(); } },function(){});
-  return api('GET','mc_pay_notes?deleted=eq.false&select=id,rest,month,sec,text,for_acc,keep,state,roy_q,sort,sn_id&order=month.desc,sort.asc,id.asc&limit=2000')
+  return api('GET','mc_pay_notes?deleted=eq.false&select=id,rest,month,sec,text,for_acc,keep,state,roy_q,sort,sn_id,task_id&order=month.desc,sort.asc,id.asc&limit=2000')
     .then(function(rows){ PN=rows||[]; var sig=JSON.stringify(PN); if(sig!==pnSig&&!pnEditing()){ pnSig=sig; renderPN(); } if(typeof renderSN==='function'&&SN.length) renderSN(); });
 }
 function renderPN(){
@@ -1407,6 +1408,7 @@ function renderPN(){
     var fs=PF.filter(function(f){ return f.note_id===n.id; });
     return '<div class="pn-row'+(n.for_acc?'':' mine')+(st?' '+st:'')+'" data-pn="'+n.id+'"><div class="pn-main"><div class="pn-t" contenteditable="true" spellcheck="false">'+esc(n.text)+'</div>'+
       pnOrig(n)+
+      (n.task_id?'<div class="pn-src"><button class="pn-tk" data-pna="opentask">📋 יש משימה'+(function(){ var t=TK.find(function(x){ return x.id===n.task_id; }); return t?(t.done?' (בוצעה)':t.deleted?' (נמחקה)':''):''; })()+'</button></div>':'')+
       (st==='roy'||n.roy_q?'<div class="pn-q"><b>❓ לרועי:</b><div class="pn-qt" contenteditable="true" spellcheck="false">'+esc(n.roy_q||'')+'</div></div>':'')+'<div class="pn-files">'+
       fs.map(function(f){ return '<span class="pn-f" data-pf="'+f.id+'"><button data-pfa="open" title="פתיחה">📎 '+esc(f.name)+'</button><button data-pfa="dl" title="הורדה" aria-label="הורדה">⬇</button><button class="pn-fx" data-pfa="del" title="הסרת הקובץ" aria-label="הסרת הקובץ">✕</button></span>'; }).join('')+
       '</div></div><div class="pn-b">'+
@@ -1416,6 +1418,7 @@ function renderPN(){
       (st===''?'<button class="pn-roy" data-pna="roy" title="לבדוק עם רועי">❓ עם רועי</button>':'')+
       (st==='roy'&&pnTab==='all'?'<span class="pn-roy on" style="height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:999px;font-size:12.5px">❓ עם רועי</span>':'')+
       (st?'<button data-pna="back" title="מחזיר לרשימת הבדיקה">↩ לבדיקה</button>':'')+
+      '<button data-pna="totask" title="ליצור משימה מההערה">📋 למשימה</button>'+
       '<button data-pna="file" title="צירוף קובץ או צילום מסך" aria-label="צירוף קובץ">📎</button>'+
       '<button class="pn-del" data-pna="del" title="מחיקה" aria-label="מחיקה">🗑</button></div></div>';
   }
@@ -1449,6 +1452,17 @@ function pnOrig(n){
   if(!o) return '<div class="pn-src">💬 מהוואטסאפ</div>';
   var d=new Date(o.ts), who=o.from_me?'את':(o.sender||'רועי');
   return '<details class="sn-orig pn-src"><summary>💬 '+esc(who)+' · '+esc(d.toLocaleDateString('he-IL',{day:'numeric',month:'numeric'}))+' — ההודעה המקורית</summary><div>'+esc(o.msg_text||'')+'</div></details>';
+}
+/* 📋 הערת שכר → משימה (גם וגם, או רק משימה) */
+function pnToTask(n){
+  var lines=String(n.text||'').split('\n'), rest=RESTS.some(function(r){ return r.nm===n.rest; })?n.rest:'';
+  tkEdit({title:lines[0].slice(0,140),detail:lines.slice(1).join('\n')+(n.roy_q?'\n❓ '+n.roy_q:''),rest:rest,topic:'שכר'},{
+    keepNote:true,
+    saved:function(t,keep){
+      if(!t) return;
+      if(keep) pnPatch(n,{task_id:t.id}).then(function(){ toast('נוספה משימה — ההערה נשארה ברשימה'); });
+      else { PN=PN.filter(function(x){ return x!==n; }); pnPatch(n,{task_id:t.id,deleted:true},'נוספה משימה, וההערה הוסרה מהרשימה'); }
+    }});
 }
 function pnFind(id){ return PN.find(function(n){ return String(n.id)===String(id); }); }
 function pnPatch(n,fields,undoMsg){
@@ -1543,6 +1557,8 @@ $('pnBody').addEventListener('click',function(e){
   var b=e.target.closest('[data-pna]'); if(!b) return; var n=pnFind(b.closest('[data-pn]').getAttribute('data-pn')); if(!n) return;
   var a=b.getAttribute('data-pna');
   if(a==='file'){ pnFileFor=n.id; $('pnFile').click(); return; }
+  if(a==='totask'){ pnToTask(n); return; }
+  if(a==='opentask'){ var tt=TK.find(function(x){ return x.id===n.task_id; }); if(tt&&!tt.deleted) tkEdit(tt); else toast('המשימה לא נמצאה'); return; }
   if(a==='acc1'||a==='acc0'){ var fa=a==='acc1'; if(n.for_acc!==fa) pnPatch(n,{for_acc:fa}); }
   else if(a==='keep') pnPatch(n,{keep:!n.keep});
   else if(a==='ok') pnPatch(n,{state:'ok'},pnTab==='all'?null:'סומן «נבדק» — עבר ל«מוכן»');
@@ -1927,8 +1943,8 @@ function tkIcs(t){   /* ליומן של אייפון / אאוטלוק — עם �
     'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+esc2(t.title),sp[2]?'TRIGGER:PT9H':'TRIGGER:PT0M','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
   snSave(new Blob([ics],{type:'text/calendar'}),'משימה - '+t.title.slice(0,40).replace(/[\\\/:*?"<>|]/g,'')+'.ics');
 }
-function tkEdit(t){
-  var isNew=!t.id;
+function tkEdit(t,opt){
+  var isNew=!t.id; opt=opt||{};
   var m=dialog('<div class="dlg glass" role="dialog" aria-label="משימה"><div class="dlg-h"><b>'+(isNew?'משימה חדשה':'עריכת משימה')+'</b><button class="ibtn" id="tkX" aria-label="סגירה">'+xSvg+'</button></div>'+
     '<div class="dlg-b" style="padding:14px 16px">'+
     '<label class="fld"><span>משימה</span><input id="tkT" value="'+esc(t.title)+'"></label>'+
@@ -1940,6 +1956,7 @@ function tkEdit(t){
     '<label class="fld"><span>נושא (לבחור או לכתוב חדש)</span><input id="tkTp" list="tkTpL" value="'+esc(t.topic||'')+'"><datalist id="tkTpL">'+tkTopics().map(function(x){ return '<option value="'+esc(x)+'">'; }).join('')+'</datalist></label></div>'+
     '<div class="fld-row"><label class="fld"><span>חזרה</span><select id="tkRep"><option value="">בלי חזרה</option>'+Object.keys(TK_REP).map(function(k){ return '<option value="'+k+'"'+(t.repeat===k?' selected':'')+'>'+TK_REP[k]+'</option>'; }).join('')+'</select></label></div>'+
     '<label class="fld-chk"><input type="checkbox" id="tkU"'+(t.urgent?' checked':'')+'> דחוף</label>'+
+    (opt.keepNote?'<label class="fld-chk"><input type="checkbox" id="tkKeepN" checked> להשאיר גם בהערות השכר</label>':'')+
     '</div><div class="dlg-f"><button class="btn" id="tkS">שמירה</button><button class="btn ghost" id="tkC">ביטול</button>'+
     (isNew?'':'<button class="btn ghost" id="tkDel" style="margin-inline-start:auto;color:var(--bad)">מחיקה</button>')+'</div></div>');
   var val=function(){ var r=$('tkR').value;
@@ -1949,8 +1966,9 @@ function tkEdit(t){
   $('tkIcs').onclick=function(){ var v=val(); if(!v.due&&!v.remind_at){ toast('קודם לבחור תאריך יעד או תזכורת'); return; } v.id=t.id||'new'; tkIcs(v); };
   $('tkS').onclick=function(){
     var v=val(); if(!v.title){ toast('צריך לכתוב מה המשימה'); return; }
+    var keepN=opt.keepNote?$('tkKeepN').checked:true;
     closeLayer();
-    if(isNew) tkAdd(v).then(function(){ toast('המשימה נוספה'); },function(e){ toast('לא נשמר: '+e.message); });
+    if(isNew) tkAdd(v).then(function(nt){ if(opt.saved) opt.saved(nt,keepN); else toast('המשימה נוספה'); },function(e){ toast('לא נשמר: '+e.message); });
     else tkPatch(t,v).then(function(){ toast('נשמר'); });
   };
   if(!isNew) $('tkDel').onclick=function(){ closeLayer(); tkPatch(t,{deleted:true},'המשימה נמחקה'); };
