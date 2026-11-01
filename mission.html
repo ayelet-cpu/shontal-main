@@ -1508,13 +1508,45 @@ function pnShow(mine){
     '<div class="dlg-b"><textarea class="pn-pre" id="pnTxt" aria-label="הטקסט">'+esc(t)+'</textarea>'+
     (open?'<div class="pn-sum" style="color:var(--warn)">שימי לב: '+open+' מהשורות האלה עוד לא סומנו «✓ נבדק».</div>':'')+
     (mine?'':'<div class="pn-sum">אפשר לתקן כאן לפני ההעתקה — התיקון לא נשמר ברשימה.</div>')+'</div>'+
-    '<div class="dlg-f"><button class="btn" id="pnCp">העתקה</button>'+(pfOfList.length?'<button class="btn ghost" id="pnFl">⬇ הקבצים ('+pfOfList.length+')</button>':'')+(canShare?'<button class="btn ghost" id="pnSh">שיתוף…</button>':'')+'<button class="btn ghost" id="pnC">סגירה</button></div></div>');
+    '<div class="dlg-f" style="flex-wrap:wrap"><button class="btn" id="pnCp" title="להדביק בוואטסאפ או במייל">העתקה לוואטסאפ</button>'+
+    '<button class="btn ghost" id="pnXl" title="קובץ אקסל להורדה">⬇ אקסל</button><button class="btn ghost" id="pnPr">🖨 הדפסה</button>'+(pfOfList.length?'<button class="btn ghost" id="pnFl">⬇ הקבצים ('+pfOfList.length+')</button>':'')+(canShare?'<button class="btn ghost" id="pnSh">שיתוף…</button>':'')+'<button class="btn ghost" id="pnC">סגירה</button></div></div>');
   $('pnX').onclick=$('pnC').onclick=closeLayer;
   $('pnCp').onclick=function(){ var v=$('pnTxt').value;
     (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(function(){ toast('הועתק — אפשר להדביק בוואטסאפ או במייל'); },function(){ $('pnTxt').select(); toast('ההעתקה לא הצליחה — הטקסט מסומן, להעתיק ידנית'); }); };
   if(pfOfList.length) $('pnFl').onclick=function(){ pfOfList.reduce(function(p,f){ return p.then(function(){ return pfGet(f.id); }).then(function(x){
       snSave(new Blob([x.bytes],{type:x.mime}),x.name); return new Promise(function(r){ setTimeout(r,600); }); }); },Promise.resolve()).catch(function(e){ toast(e.message); }); };
   if(canShare) $('pnSh').onclick=function(){ navigator.share({text:$('pnTxt').value}).catch(function(){}); };
+  var title=roy?'לבדוק עם רועי — '+pnRest+' '+pnMonName(pnMon):'הערות שכר '+pnRest+' — '+pnMonName(pnMon)+(mine?' (רק לי)':'');
+  $('pnXl').onclick=function(){
+    toast('מכינה קובץ אקסל…');
+    loadLib('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','XLSX').then(function(X){
+      var srt=list.slice().sort(function(a,b){ var i=PN_SECS.indexOf(a.sec), j=PN_SECS.indexOf(b.sec); return (i<0?99:i)-(j<0?99:j)||a.sort-b.sort||a.id-b.id; });
+      var head=roy?['כותרת','הערה','שאלה לרועי']:['כותרת','הערה','קובץ מצורף'];
+      var rows=srt.map(function(n){ var k=PF.filter(function(f){ return f.note_id===n.id; }).map(function(f){ return f.name; }).join(', ');
+        return [n.sec,n.text.trim(),roy?(n.roy_q||''):k]; });
+      var ws=X.utils.aoa_to_sheet([[title],[]].concat([head]).concat(rows));
+      ws['!cols']=[{wch:22},{wch:90},{wch:30}];
+      var wb=X.utils.book_new(); X.utils.book_append_sheet(wb,ws,'הערות שכר'); wb.Workbook={Views:[{RTL:true}]};
+      X.writeFile(wb,title.replace(/[\\\/:*?"<>|]/g,'-')+'.xlsx');
+    }).catch(function(e){ toast(e.message); });
+  };
+  $('pnPr').onclick=function(){
+    var h='', ul=false;
+    $('pnTxt').value.split('\n').forEach(function(l,i){
+      var t=l.trim();
+      if(i===0){ h+='<h1>'+esc(t)+'</h1>'; return; }
+      if(!t){ if(ul){ h+='</ul>'; ul=false; } return; }
+      if(/^[•\-]/.test(t)){ if(!ul){ h+='<ul>'; ul=true; } h+='<li>'+esc(t.replace(/^[•\-]\s*/,''))+'</li>'; return; }
+      if(/:$/.test(t)){ if(ul){ h+='</ul>'; ul=false; } h+='<h2>'+esc(t.replace(/:$/,''))+'</h2>'; return; }
+      if(ul){ h=h.replace(/<\/li>$/,(/^❓/.test(t)?'<div class="q">'+esc(t)+'</div>':'<br>'+esc(t))+'</li>'); return; }
+      h+='<p>'+esc(t)+'</p>';
+    });
+    if(ul) h+='</ul>';
+    var f=document.createElement('iframe'); f.style.cssText='position:fixed;width:0;height:0;border:0;left:0;bottom:0';
+    f.srcdoc='<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>body{font-family:Arial,sans-serif;margin:28px;color:#111;line-height:1.5}h1{font-size:20px;margin:0 0 14px}h2{font-size:15px;margin:16px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px}ul{margin:0;padding-inline-start:20px}li{margin:4px 0;white-space:pre-wrap}.q{color:#a35d00;font-size:13px}</style></head><body>'+h+'</body></html>';
+    f.onload=function(){ setTimeout(function(){ f.contentWindow.focus(); f.contentWindow.print(); setTimeout(function(){ f.remove(); },60000); },100); };
+    document.body.appendChild(f);
+  };
 }
 function pnPrevShow(){
   var prev=pnMonths().filter(function(m){ return m<pnMon; })[0]; if(!prev) return;
