@@ -234,6 +234,8 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .pn-q{display:flex;gap:6px;align-items:baseline;margin-top:6px;font-size:13.5px;color:var(--warn)}
 .pn-q b{flex:none;font-weight:600}
 .pn-qt{flex:1;min-width:0;outline:none;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;border-radius:6px;padding:1px 3px;background:color-mix(in srgb,var(--warn) 8%,transparent)}
+.pn-qx{flex:none;border:0;background:none;color:var(--ink3);font-size:13px;padding:0 4px;border-radius:6px;cursor:pointer}
+.pn-qx:hover{color:var(--bad)}
 .pn-qt:empty::before{content:"מה לשאול את רועי?";color:var(--ink3)}
 .pn-files{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .pn-files:empty{display:none}
@@ -1409,7 +1411,7 @@ function renderPN(){
     return '<div class="pn-row'+(n.for_acc?'':' mine')+(st?' '+st:'')+'" data-pn="'+n.id+'"><div class="pn-main"><div class="pn-t" contenteditable="true" spellcheck="false">'+esc(n.text)+'</div>'+
       pnOrig(n)+
       (n.task_id?'<div class="pn-src"><button class="pn-tk" data-pna="opentask">📋 יש משימה'+(function(){ var t=TK.find(function(x){ return x.id===n.task_id; }); return t?(t.done?' (בוצעה)':t.deleted?' (נמחקה)':''):''; })()+'</button></div>':'')+
-      (st==='roy'||n.roy_q?'<div class="pn-q"><b>❓ לרועי:</b><div class="pn-qt" contenteditable="true" spellcheck="false">'+esc(n.roy_q||'')+'</div></div>':'')+'<div class="pn-files">'+
+      (st==='roy'||n.roy_q?'<div class="pn-q"><b>❓ לרועי:</b><div class="pn-qt" contenteditable="true" spellcheck="false">'+esc(n.roy_q||'')+'</div><button class="pn-qx" data-pna="noq" title="להסיר את השאלה לרועי" aria-label="להסיר את השאלה לרועי">✕</button></div>':'')+'<div class="pn-files">'+
       fs.map(function(f){ return '<span class="pn-f" data-pf="'+f.id+'"><button data-pfa="open" title="פתיחה">📎 '+esc(f.name)+'</button><button data-pfa="dl" title="הורדה" aria-label="הורדה">⬇</button><button class="pn-fx" data-pfa="del" title="הסרת הקובץ" aria-label="הסרת הקובץ">✕</button></span>'; }).join('')+
       '</div></div><div class="pn-b">'+
       '<span class="pn-seg" role="group" aria-label="למי"><button class="pn-acc'+(n.for_acc?' on':'')+'" data-pna="acc1" aria-pressed="'+n.for_acc+'">לחשבת</button><button class="pn-acc mine'+(n.for_acc?'':' on')+'" data-pna="acc0" aria-pressed="'+!n.for_acc+'">🔒 רק לי</button></span>'+
@@ -1609,7 +1611,8 @@ $('pnBody').addEventListener('click',function(e){
   if(a==='opentask'){ var tt=TK.find(function(x){ return x.id===n.task_id; }); if(tt&&!tt.deleted) tkEdit(tt); else toast('המשימה לא נמצאה'); return; }
   if(a==='acc1'||a==='acc0'){ var fa=a==='acc1'; if(n.for_acc!==fa) pnPatch(n,{for_acc:fa}); }
   else if(a==='keep') pnPatch(n,{keep:!n.keep});
-  else if(a==='ok') pnPatch(n,{state:'ok'},pnTab==='all'?null:'סומן «נבדק» — עבר ל«מוכן»');
+  else if(a==='ok') pnPatch(n,{state:'ok',roy_q:''},pnTab==='all'?null:'סומן «נבדק» — עבר ל«מוכן»');
+  else if(a==='noq') pnPatch(n,{roy_q:'',state:n.state==='roy'?'':n.state},'השאלה לרועי הוסרה');
   else if(a==='roy') pnAskRoy(n);
   else if(a==='back') pnPatch(n,{state:''},pnTab==='all'?null:'הוחזר לבדיקה');
   else if(a==='del'){ PN=PN.filter(function(x){ return x!==n; }); pnPatch(n,{deleted:true},'השורה נמחקה'); }
