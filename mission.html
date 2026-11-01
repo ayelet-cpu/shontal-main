@@ -224,6 +224,29 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .pn-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:-2px 0 12px}
 .pn-tools .btn{height:34px;padding:0 14px;font-size:13.5px}
 .pn-sum{font-size:12.5px;color:var(--ink3)}
+.pn-legend{font-size:12.5px;color:var(--ink3);margin:-4px 0 12px;line-height:1.6}
+.pn-legend b{color:var(--ink2);font-weight:600}
+.pn-tabs{padding:0;flex-wrap:wrap;margin:0 0 10px}
+.pn-main{flex:1;min-width:0}
+.pn-q{display:flex;gap:6px;align-items:baseline;margin-top:6px;font-size:13.5px;color:var(--warn)}
+.pn-q b{flex:none;font-weight:600}
+.pn-qt{flex:1;min-width:0;outline:none;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;border-radius:6px;padding:1px 3px;background:color-mix(in srgb,var(--warn) 8%,transparent)}
+.pn-qt:empty::before{content:"מה לשאול את רועי?";color:var(--ink3)}
+.pn-files{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pn-files:empty{display:none}
+.pn-f{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);background:var(--glass);border-radius:999px;font-size:12.5px;max-width:100%}
+.pn-f button{border:0;background:none;color:var(--ink2);padding:3px 8px;font-size:12.5px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pn-f button:hover{color:var(--acc)}
+.pn-f .pn-fx{padding:3px 8px 3px 6px;color:var(--ink3)}
+.pn-f .pn-fx:hover{color:var(--bad)}
+.pn-row.drop{outline:2px dashed var(--acc);outline-offset:2px}
+.pn-row.ok{border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
+.pn-row.roy{border-color:color-mix(in srgb,var(--warn) 55%,transparent)}
+.pn-b .pn-go{background:color-mix(in srgb,var(--ok) 14%,transparent);border-color:transparent;color:var(--ok);font-weight:600}
+.pn-b .pn-roy{color:var(--warn)}
+.pn-b .pn-roy.on{background:color-mix(in srgb,var(--warn) 16%,transparent);border-color:transparent;font-weight:600}
+.pn-grp{margin:4px 0 8px;font-size:15px;font-weight:700;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.pn-grp small{font-weight:400;color:var(--ink3);font-size:12.5px;margin-inline-start:6px}
 .pn-sec{margin-bottom:14px}
 .pn-sh{display:flex;align-items:center;gap:8px;margin:0 0 6px}
 .pn-sh h3{margin:0;font-size:14.5px;font-weight:700}
@@ -237,7 +260,10 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .pn-t:empty::before{content:"כתבי כאן…";color:var(--ink3)}
 .pn-b{display:flex;flex-wrap:wrap;gap:4px;flex:none;justify-content:flex-end}
 .pn-b button{height:28px;border:1px solid var(--line);background:var(--glass);border-radius:999px;padding:0 10px;font-size:12.5px;color:var(--ink2);white-space:nowrap}
-.pn-b .pn-acc.on{background:var(--acc-soft);border-color:transparent;color:var(--acc);font-weight:600}
+.pn-seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--glass)}
+.pn-b .pn-seg button{border:0;border-radius:0;background:transparent;color:var(--ink3)}
+.pn-b .pn-acc.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.pn-b .pn-acc.mine.on{background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--ink);font-weight:600}
 .pn-b .pn-keep.on{background:color-mix(in srgb,var(--warn) 16%,transparent);border-color:transparent;color:var(--warn);font-weight:600}
 .pn-b .pn-del{width:28px;padding:0;color:var(--ink3)}
 .pn-b .pn-del:hover{color:var(--bad)}
@@ -496,9 +522,13 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
     <div class="pn-tools">
       <button class="btn" id="pnSend" title="רק השורות שמסומנות «לחשבת», מסודרות לפי הכותרות">📋 לשליחה לחשבת השכר</button>
       <button class="btn ghost" id="pnMine">🔒 מה שרק לי</button>
+      <button class="btn ghost" id="pnRoy">❓ לשאול את רועי</button>
       <span class="pn-sum" id="pnSum"></span>
     </div>
+    <div class="tabs pn-tabs" id="pnTabs"></div>
+    <div class="pn-legend">ליד כל שורה: <b>לחשבת | 🔒 רק לי</b> — ללחוץ על מה שמתאים · <b>📌 קבועה</b> / <b>חד פעמית</b> — האם עוברת לחודש הבא · <b>✓ נבדק</b> — עוברת ל«מוכן» · <b>❓ עם רועי</b> — לבדוק איתו · <b>📎</b> — לצרף קובץ (או להדביק צילום מסך בתוך השורה).</div>
     <div id="pnBody"><div class="sn-empty">טוענת…</div></div>
+    <input type="file" id="pnFile" multiple hidden>
   </section>
 
   <div class="sec-h"><h2>הערות שכר פאסטל</h2><small id="snHint">נקלטות לבד מהוואטסאפ עם רועי</small></div>
@@ -1334,7 +1364,9 @@ function snCopy(){
   (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){ toast('הועתק — אפשר להדביק בוואטסאפ או במייל'); },function(){ toast('ההעתקה לא הצליחה'); });
 }
 /* ---------- הערות שכר לחשבת (mc_pay_notes) — רשימה חודשית, במקום קובץ ה-RTF ---------- */
-var PN=[], pnRest='פאסטל', pnMon='', pnSig='', pnNewId=null;
+var PF=[], PN=[], pnRest='פאסטל', pnMon='', pnSig='', pnNewId=null, pnTab='';
+var PN_TABS=[['','לבדיקה'],['roy','❓ עם רועי'],['ok','✓ מוכן'],['all','הכל']];
+try{ var _pt=localStorage.getItem('mc-pn-tab'); if(_pt!=null&&PN_TABS.some(function(t){ return t[0]===_pt; })) pnTab=_pt; }catch(e){}
 var PN_RESTS=['פאסטל','אריאלה וטופול'];
 var PN_SECS=['הערות שוטפות','עדכוני שכר','בונוסים חד פעמיים','גמר חשבון','עובדים חדשים פלור ואירוח','עובדים חדשים מטבח','עובד חדש שטיפת כלים','מילואים'];
 try{ var _pr=localStorage.getItem('mc-pn-rest'); if(PN_RESTS.indexOf(_pr)>=0) pnRest=_pr; }catch(e){}
@@ -1343,9 +1375,11 @@ function pnNext(m){ var a=m.split('-'), y=+a[0], n=+a[1]+1; if(n>12){ n=1; y++; 
 function pnNow(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1); }
 function pnMonths(r){ var o={}; PN.forEach(function(n){ if(n.rest===(r||pnRest)) o[n.month]=1; }); return Object.keys(o).sort().reverse(); }
 function pnOf(m){ return PN.filter(function(n){ return n.rest===pnRest&&n.month===m; }).sort(function(a,b){ return a.sort-b.sort||a.id-b.id; }); }
-function pnEditing(){ var a=document.activeElement; return !!(a&&a.classList&&a.classList.contains('pn-t')); }
+function pnEditing(){ var a=document.activeElement; return !!(a&&a.classList&&(a.classList.contains('pn-t')||a.classList.contains('pn-qt'))); }
 function loadPN(){
-  return api('GET','mc_pay_notes?deleted=eq.false&select=id,rest,month,sec,text,for_acc,keep,sort,sn_id&order=month.desc,sort.asc,id.asc&limit=2000')
+  api('GET','mc_pay_files?deleted=eq.false&select=id,note_id,name,mime,bytes&order=id.asc&limit=3000').then(function(r){
+    var sig=JSON.stringify(r||[]); if(sig!==JSON.stringify(PF)){ PF=r||[]; if(!pnEditing()) renderPN(); } },function(){});
+  return api('GET','mc_pay_notes?deleted=eq.false&select=id,rest,month,sec,text,for_acc,keep,state,roy_q,sort,sn_id&order=month.desc,sort.asc,id.asc&limit=2000')
     .then(function(rows){ PN=rows||[]; var sig=JSON.stringify(PN); if(sig!==pnSig&&!pnEditing()){ pnSig=sig; renderPN(); } if(typeof renderSN==='function'&&SN.length) renderSN(); });
 }
 function renderPN(){
@@ -1357,24 +1391,51 @@ function renderPN(){
   $('pnMonth').innerHTML='<option value="+">＋ פתיחת '+esc(pnMonName(nx))+(ms.length?' (עם הקבועות)':'')+'</option>'+
     opts.map(function(m){ return '<option value="'+m+'"'+(m===pnMon?' selected':'')+'>'+esc(pnMonName(m))+'</option>'; }).join('');
   $('pnPrev').disabled=!ms.filter(function(m){ return m<pnMon; }).length;
-  var list=pnOf(pnMon), acc=list.filter(function(n){ return n.for_acc; }).length;
-  $('pnSum').textContent=list.length?(list.length+' שורות · '+acc+' לחשבת · '+(list.length-acc)+' רק לי · '+list.filter(function(n){ return n.keep; }).length+' קבועות'):'';
-  var secs=PN_SECS.slice(); list.forEach(function(n){ if(secs.indexOf(n.sec)<0) secs.push(n.sec); });
-  var h='', empty=[];
-  secs.forEach(function(sec){
-    var rows=list.filter(function(n){ return n.sec===sec; });
-    if(!rows.length){ empty.push(sec); return; }
-    h+='<div class="pn-sec"><div class="pn-sh"><h3>'+esc(sec)+'</h3><small>'+rows.length+'</small><button class="pn-add" data-pnadd="'+esc(sec)+'">＋ שורה</button></div>';
-    rows.forEach(function(n){
-      h+='<div class="pn-row'+(n.for_acc?'':' mine')+'" data-pn="'+n.id+'"><div class="pn-t" contenteditable="true" spellcheck="false">'+esc(n.text)+'</div><div class="pn-b">'+
-        '<button class="pn-acc'+(n.for_acc?' on':'')+'" data-pna="acc" title="'+(n.for_acc?'נשלח לחשבת — ללחוץ כדי שיהיה רק לך':'רק לך — ללחוץ כדי לשלוח לחשבת')+'">'+(n.for_acc?'לחשבת':'🔒 רק לי')+'</button>'+
-        '<button class="pn-keep'+(n.keep?' on':'')+'" data-pna="keep" title="'+(n.keep?'עוברת לבד לחודש הבא — ללחוץ כדי שתהיה חד פעמית':'רק החודש — ללחוץ כדי שתעבור לחודש הבא')+'">'+(n.keep?'📌 קבועה':'חד פעמית')+'</button>'+
-        '<button class="pn-del" data-pna="del" title="מחיקה" aria-label="מחיקה">🗑</button></div></div>';
+  var all=pnOf(pnMon), cnt={'':0,roy:0,ok:0,all:all.length};
+  all.forEach(function(n){ cnt[n.state||'']++; });
+  $('pnTabs').innerHTML=PN_TABS.map(function(t){ return '<button class="tab'+(pnTab===t[0]?' on':'')+'" data-pnt="'+t[0]+'">'+t[1]+' ('+cnt[t[0]]+')</button>'; }).join('');
+  var okN=all.filter(function(n){ return n.state==='ok'; }), okAcc=okN.filter(function(n){ return n.for_acc; }).length;
+  $('pnSum').textContent=all.length?('מוכן: '+okAcc+' לחשבת · '+(okN.length-okAcc)+' רק לי · '+all.filter(function(n){ return n.keep; }).length+' קבועות'):'';
+  $('pnRoy').classList.toggle('hid',!cnt.roy);
+  var list=pnTab==='all'?all:all.filter(function(n){ return (n.state||'')===pnTab; });
+  var canAdd=pnTab===''||pnTab==='all';
+  function rowH(n){
+    var st=n.state||'';
+    var fs=PF.filter(function(f){ return f.note_id===n.id; });
+    return '<div class="pn-row'+(n.for_acc?'':' mine')+(st?' '+st:'')+'" data-pn="'+n.id+'"><div class="pn-main"><div class="pn-t" contenteditable="true" spellcheck="false">'+esc(n.text)+'</div>'+
+      (st==='roy'||n.roy_q?'<div class="pn-q"><b>❓ לרועי:</b><div class="pn-qt" contenteditable="true" spellcheck="false">'+esc(n.roy_q||'')+'</div></div>':'')+'<div class="pn-files">'+
+      fs.map(function(f){ return '<span class="pn-f" data-pf="'+f.id+'"><button data-pfa="open" title="פתיחה">📎 '+esc(f.name)+'</button><button data-pfa="dl" title="הורדה" aria-label="הורדה">⬇</button><button class="pn-fx" data-pfa="del" title="הסרת הקובץ" aria-label="הסרת הקובץ">✕</button></span>'; }).join('')+
+      '</div></div><div class="pn-b">'+
+      '<span class="pn-seg" role="group" aria-label="למי"><button class="pn-acc'+(n.for_acc?' on':'')+'" data-pna="acc1" aria-pressed="'+n.for_acc+'">לחשבת</button><button class="pn-acc mine'+(n.for_acc?'':' on')+'" data-pna="acc0" aria-pressed="'+!n.for_acc+'">🔒 רק לי</button></span>'+
+      '<button class="pn-keep'+(n.keep?' on':'')+'" data-pna="keep" title="'+(n.keep?'עוברת לבד לחודש הבא — ללחוץ כדי שתהיה חד פעמית':'רק החודש — ללחוץ כדי שתעבור לחודש הבא')+'">'+(n.keep?'📌 קבועה':'חד פעמית')+'</button>'+
+      (st!=='ok'?'<button class="pn-go" data-pna="ok" title="בדקתי — עוברת ל«מוכן»">✓ נבדק</button>':'')+
+      (st===''?'<button class="pn-roy" data-pna="roy" title="לבדוק עם רועי">❓ עם רועי</button>':'')+
+      (st==='roy'&&pnTab==='all'?'<span class="pn-roy on" style="height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:999px;font-size:12.5px">❓ עם רועי</span>':'')+
+      (st?'<button data-pna="back" title="מחזיר לרשימת הבדיקה">↩ לבדיקה</button>':'')+
+      '<button data-pna="file" title="צירוף קובץ או צילום מסך" aria-label="צירוף קובץ">📎</button>'+
+      '<button class="pn-del" data-pna="del" title="מחיקה" aria-label="מחיקה">🗑</button></div></div>';
+  }
+  function secsH(rows,add){
+    var secs=PN_SECS.slice(); rows.forEach(function(n){ if(secs.indexOf(n.sec)<0) secs.push(n.sec); });
+    var h='', empty=[];
+    secs.forEach(function(sec){
+      var rs=rows.filter(function(n){ return n.sec===sec; });
+      if(!rs.length){ empty.push(sec); return; }
+      h+='<div class="pn-sec"><div class="pn-sh"><h3>'+esc(sec)+'</h3><small>'+rs.length+'</small>'+(add?'<button class="pn-add" data-pnadd="'+esc(sec)+'">＋ שורה</button>':'')+'</div>'+rs.map(rowH).join('')+'</div>';
     });
-    h+='</div>';
-  });
-  if(!list.length) h='<div class="sn-empty">אין עדיין הערות ל'+esc(pnMonName(pnMon))+' — להוסיף מתחת לכותרת המתאימה</div>';
-  if(empty.length) h+='<div class="pn-more"><span>הוספה תחת:</span>'+empty.map(function(sec){ return '<button class="pn-add" data-pnadd="'+esc(sec)+'">＋ '+esc(sec)+'</button>'; }).join('')+'</div>';
+    if(add&&empty.length) h+='<div class="pn-more"><span>הוספה תחת:</span>'+empty.map(function(sec){ return '<button class="pn-add" data-pnadd="'+esc(sec)+'">＋ '+esc(sec)+'</button>'; }).join('')+'</div>';
+    return h;
+  }
+  var h;
+  if(pnTab==='ok'){
+    var ra=list.filter(function(n){ return n.for_acc; }), rm=list.filter(function(n){ return !n.for_acc; });
+    h=(ra.length?'<div class="pn-grp">מוכן לשליחה לחשבת<small>'+ra.length+' שורות</small></div>'+secsH(ra,false):'')+
+      (rm.length?'<div class="pn-grp">🔒 רק לי<small>'+rm.length+' שורות</small></div>'+secsH(rm,false):'');
+    if(!list.length) h='<div class="sn-empty">עוד אין שורות שסומנו «✓ נבדק»</div>';
+  } else {
+    h=list.length?'':'<div class="sn-empty">'+(pnTab===''?(all.length?'הכול נבדק 🎉 — אפשר לשלוח לחשבת':'אין עדיין הערות ל'+esc(pnMonName(pnMon))+' — להוסיף מתחת לכותרת המתאימה'):pnTab==='roy'?'אין כרגע מה לבדוק עם רועי':'אין שורות')+'</div>';
+    h+=secsH(list,canAdd);
+  }
   $('pnBody').innerHTML=h;
   if(pnNewId){ var el=document.querySelector('[data-pn="'+pnNewId+'"] .pn-t'); pnNewId=null; if(el) el.focus(); }
 }
@@ -1408,21 +1469,26 @@ function pnText(list,title){
   var t=title+'\n', secs=[];
   list.forEach(function(n){ if(secs.indexOf(n.sec)<0) secs.push(n.sec); });
   secs.sort(function(a,b){ var i=PN_SECS.indexOf(a), j=PN_SECS.indexOf(b); return (i<0?99:i)-(j<0?99:j); });
-  secs.forEach(function(sec){ t+='\n'+sec+':\n'+list.filter(function(n){ return n.sec===sec&&n.text.trim(); }).map(function(n){ return '• '+n.text.trim(); }).join('\n')+'\n'; });
+  secs.forEach(function(sec){ t+='\n'+sec+':\n'+list.filter(function(n){ return n.sec===sec&&n.text.trim(); }).map(function(n){ var k=PF.filter(function(f){ return f.note_id===n.id; }).length; return '• '+n.text.trim()+(k?' (📎 מצורף)':''); }).join('\n')+'\n'; });
   return t;
 }
 function pnShow(mine){
-  var list=pnOf(pnMon).filter(function(n){ return mine?!n.for_acc:n.for_acc; });
-  if(!list.length){ toast(mine?'אין החודש שורות «רק לי»':'אין שורות לחשבת'); return; }
-  var t=pnText(list,'הערות שכר '+pnRest+' — '+pnMonName(pnMon)+(mine?' (רק לי)':''));
-  var canShare=!!navigator.share;
-  dialog('<div class="dlg glass" role="dialog" aria-label="הערות שכר"><div class="dlg-h"><b>'+(mine?'🔒 מה שרק לי — לא נשלח לחשבת':'לשליחה לחשבת השכר ('+list.length+' שורות)')+'</b><button class="ibtn" id="pnX" aria-label="סגירה">'+xSvg+'</button></div>'+
+  var roy=mine==='roy'; if(roy) mine=false;
+  var list=pnOf(pnMon).filter(function(n){ return roy?n.state==='roy':mine?!n.for_acc:n.for_acc; });
+  if(!list.length){ toast(roy?'אין מה לבדוק עם רועי':mine?'אין החודש שורות «רק לי»':'אין שורות לחשבת'); return; }
+  var open=roy||mine?0:list.filter(function(n){ return n.state!=='ok'; }).length;
+  var t=roy?'רועי, צריכה לבדוק איתך:\n'+list.map(function(n){ return '• '+n.text.trim()+(n.roy_q?'\n   ❓ '+n.roy_q:''); }).join('\n'):pnText(list,'הערות שכר '+pnRest+' — '+pnMonName(pnMon)+(mine?' (רק לי)':''));
+  var canShare=!!navigator.share, ids=list.map(function(n){ return n.id; }), pfOfList=PF.filter(function(f){ return ids.indexOf(f.note_id)>=0; });
+  dialog('<div class="dlg glass" role="dialog" aria-label="הערות שכר"><div class="dlg-h"><b>'+(roy?'❓ לשאול את רועי ('+list.length+')':mine?'🔒 מה שרק לי — לא נשלח לחשבת':'לשליחה לחשבת השכר ('+list.length+' שורות)')+'</b><button class="ibtn" id="pnX" aria-label="סגירה">'+xSvg+'</button></div>'+
     '<div class="dlg-b"><textarea class="pn-pre" id="pnTxt" aria-label="הטקסט">'+esc(t)+'</textarea>'+
+    (open?'<div class="pn-sum" style="color:var(--warn)">שימי לב: '+open+' מהשורות האלה עוד לא סומנו «✓ נבדק».</div>':'')+
     (mine?'':'<div class="pn-sum">אפשר לתקן כאן לפני ההעתקה — התיקון לא נשמר ברשימה.</div>')+'</div>'+
-    '<div class="dlg-f"><button class="btn" id="pnCp">העתקה</button>'+(canShare?'<button class="btn ghost" id="pnSh">שיתוף…</button>':'')+'<button class="btn ghost" id="pnC">סגירה</button></div></div>');
+    '<div class="dlg-f"><button class="btn" id="pnCp">העתקה</button>'+(pfOfList.length?'<button class="btn ghost" id="pnFl">⬇ הקבצים ('+pfOfList.length+')</button>':'')+(canShare?'<button class="btn ghost" id="pnSh">שיתוף…</button>':'')+'<button class="btn ghost" id="pnC">סגירה</button></div></div>');
   $('pnX').onclick=$('pnC').onclick=closeLayer;
   $('pnCp').onclick=function(){ var v=$('pnTxt').value;
     (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(function(){ toast('הועתק — אפשר להדביק בוואטסאפ או במייל'); },function(){ $('pnTxt').select(); toast('ההעתקה לא הצליחה — הטקסט מסומן, להעתיק ידנית'); }); };
+  if(pfOfList.length) $('pnFl').onclick=function(){ pfOfList.reduce(function(p,f){ return p.then(function(){ return pfGet(f.id); }).then(function(x){
+      snSave(new Blob([x.bytes],{type:x.mime}),x.name); return new Promise(function(r){ setTimeout(r,600); }); }); },Promise.resolve()).catch(function(e){ toast(e.message); }); };
   if(canShare) $('pnSh').onclick=function(){ navigator.share({text:$('pnTxt').value}).catch(function(){}); };
 }
 function pnPrevShow(){
@@ -1449,23 +1515,88 @@ $('pnMonth').addEventListener('change',function(){ var v=this.value; if(v==='+')
 $('pnPrev').addEventListener('click',pnPrevShow);
 $('pnSend').addEventListener('click',function(){ pnShow(false); });
 $('pnMine').addEventListener('click',function(){ pnShow(true); });
+$('pnRoy').addEventListener('click',function(){ pnShow('roy'); });
+$('pnTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-pnt]'); if(!b) return; pnTab=b.getAttribute('data-pnt');
+  try{ localStorage.setItem('mc-pn-tab',pnTab); }catch(_){} renderPN(); });
 $('pnBody').addEventListener('click',function(e){
   var ad=e.target.closest('[data-pnadd]');
   if(ad){ pnAdd(ad.getAttribute('data-pnadd'),'').then(function(r){ pnNewId=r[0]&&r[0].id; renderPN(); },function(er){ toast('לא נוסף: '+er.message); }); return; }
+  var fb=e.target.closest('[data-pfa]');
+  if(fb){ var fid=+fb.closest('[data-pf]').getAttribute('data-pf'), fa=fb.getAttribute('data-pfa');
+    if(fa==='del'){ var fo=PF.find(function(x){ return x.id===fid; }); PF=PF.filter(function(x){ return x.id!==fid; }); renderPN();
+      api('PATCH','mc_pay_files?id=eq.'+fid,{deleted:true},{'Prefer':'return=minimal'}).then(function(){
+        toast('הקובץ הוסר',function(){ api('PATCH','mc_pay_files?id=eq.'+fid,{deleted:false},{'Prefer':'return=minimal'}).then(function(){ PF.push(fo); renderPN(); }); }); },
+        function(er){ toast('לא הוסר: '+er.message); loadPN(); }); }
+    else pfOpen(fid,fa==='dl');
+    return; }
   var b=e.target.closest('[data-pna]'); if(!b) return; var n=pnFind(b.closest('[data-pn]').getAttribute('data-pn')); if(!n) return;
   var a=b.getAttribute('data-pna');
-  if(a==='acc') pnPatch(n,{for_acc:!n.for_acc});
+  if(a==='file'){ pnFileFor=n.id; $('pnFile').click(); return; }
+  if(a==='acc1'||a==='acc0'){ var fa=a==='acc1'; if(n.for_acc!==fa) pnPatch(n,{for_acc:fa}); }
   else if(a==='keep') pnPatch(n,{keep:!n.keep});
+  else if(a==='ok') pnPatch(n,{state:'ok'},pnTab==='all'?null:'סומן «נבדק» — עבר ל«מוכן»');
+  else if(a==='roy') pnAskRoy(n);
+  else if(a==='back') pnPatch(n,{state:''},pnTab==='all'?null:'הוחזר לבדיקה');
   else if(a==='del'){ PN=PN.filter(function(x){ return x!==n; }); pnPatch(n,{deleted:true},'השורה נמחקה'); }
 });
+function pnAskRoy(n){
+  dialog('<div class="dlg glass" role="dialog" aria-label="שאלה לרועי"><div class="dlg-h"><b>❓ לבדוק עם רועי</b><button class="ibtn" id="pnX" aria-label="סגירה">'+xSvg+'</button></div>'+
+    '<div class="dlg-b"><div class="pn-sum" style="margin-bottom:8px">'+esc(n.text)+'</div><label class="fld"><span>מה לשאול אותו? (לא חובה)</span><textarea id="pnQ" rows="3" style="width:100%">'+esc(n.roy_q||'')+'</textarea></label></div>'+
+    '<div class="dlg-f"><button class="btn" id="pnQS">שמירה</button><button class="btn ghost" id="pnC">ביטול</button></div></div>');
+  $('pnX').onclick=$('pnC').onclick=closeLayer; setTimeout(function(){ $('pnQ').focus(); },50);
+  $('pnQS').onclick=function(){ var q=$('pnQ').value.trim(); closeLayer(); pnPatch(n,{state:'roy',roy_q:q},pnTab==='all'?null:'עבר ל«עם רועי»'); };
+}
+/* קבצים לכל שורה (mc_pay_files): 📎, הדבקת צילום מסך בתוך השורה, או גרירה לשורה */
+var pfCache={}, pnFileFor=null;
+function pfUpload(noteId,files){
+  files=[].slice.call(files||[]).filter(function(f){ return f&&f.size; }); if(!files.length) return;
+  var big=files.filter(function(f){ return f.size>10*1024*1024; });
+  if(big.length){ toast('קובץ גדול מדי (עד 10MB): '+big[0].name); files=files.filter(function(f){ return big.indexOf(f)<0; }); }
+  files.reduce(function(p,f){ return p.then(function(){
+    return new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){ res(String(r.result).split(',')[1]||''); }; r.onerror=rej; r.readAsDataURL(f); })
+      .then(function(b64){
+        var nm=f.name&&f.name!=='image.png'?f.name:'צילום מסך '+new Date().toLocaleString('he-IL').replace(/[\/:]/g,'-')+'.'+((f.type||'image/png').split('/')[1]||'png');
+        return api('POST','mc_pay_files',{note_id:noteId,name:nm,mime:f.type||'application/octet-stream',bytes:f.size,content:b64},{'Prefer':'return=representation'})
+          .then(function(r){ var x=r&&r[0]; if(x){ delete x.content; PF.push(x); } });
+      });
+  }); },Promise.resolve()).then(function(){ renderPN(); toast(files.length>1?'צורפו '+files.length+' קבצים':'הקובץ צורף'); },function(e){ toast('הקובץ לא נשמר: '+e.message); renderPN(); });
+}
+function pfGet(id){
+  if(pfCache[id]) return Promise.resolve(pfCache[id]);
+  return api('GET','mc_pay_files?id=eq.'+id+'&select=name,mime,content').then(function(r){
+    var f=r&&r[0]; if(!f) throw new Error('הקובץ לא נמצא');
+    var bin=atob(f.content), u=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+    return (pfCache[id]={name:f.name,mime:f.mime,bytes:u});
+  });
+}
+function pfOpen(id,dl){
+  var w=dl?null:window.open('','_blank');
+  pfGet(id).then(function(f){ var b=new Blob([f.bytes],{type:f.mime});
+    if(dl||!w){ snSave(b,f.name); if(w) w.close(); return; }
+    w.location.href=URL.createObjectURL(b); },function(e){ if(w) w.close(); toast(e.message); });
+}
+$('pnFile').addEventListener('change',function(){ if(pnFileFor) pfUpload(pnFileFor,this.files); pnFileFor=null; this.value=''; });
+$('pnBody').addEventListener('paste',function(e){
+  var row=e.target.closest&&e.target.closest('[data-pn]'); if(!row) return;
+  var fs=[].slice.call((e.clipboardData&&e.clipboardData.files)||[]); if(!fs.length) return;
+  e.preventDefault(); pfUpload(+row.getAttribute('data-pn'),fs);
+});
+$('pnBody').addEventListener('dragover',function(e){ var row=e.target.closest('[data-pn]'); if(!row||!e.dataTransfer||[].indexOf.call(e.dataTransfer.types,'Files')<0) return;
+  e.preventDefault(); document.querySelectorAll('.pn-row.drop').forEach(function(x){ if(x!==row) x.classList.remove('drop'); }); row.classList.add('drop'); });
+$('pnBody').addEventListener('dragleave',function(e){ var row=e.target.closest('[data-pn]'); if(row&&!row.contains(e.relatedTarget)) row.classList.remove('drop'); });
+$('pnBody').addEventListener('drop',function(e){ var row=e.target.closest('[data-pn]'); if(!row) return; e.preventDefault(); row.classList.remove('drop');
+  pfUpload(+row.getAttribute('data-pn'),e.dataTransfer.files); });
 $('pnBody').addEventListener('focusout',function(e){
-  var el=e.target; if(!el.classList||!el.classList.contains('pn-t')) return;
+  var el=e.target;
+  if(el.classList&&el.classList.contains('pn-qt')){ var nq=pnFind(el.closest('[data-pn]').getAttribute('data-pn')); if(!nq) return;
+    var q=el.innerText.replace(/\u00a0/g,' ').trim(); if(q!==(nq.roy_q||'')) pnPatch(nq,{roy_q:q}); return; }
+  if(!el.classList||!el.classList.contains('pn-t')) return;
   var n=pnFind(el.closest('[data-pn]').getAttribute('data-pn')); if(!n) return;
   var v=el.innerText.replace(/\u00a0/g,' ').replace(/\n+$/,'').trim();
   if(!v){ PN=PN.filter(function(x){ return x!==n; }); pnPatch(n,{deleted:true},n.text?'השורה נמחקה':null); return; }
   if(v!==n.text) pnPatch(n,{text:v});
 });
-$('pnBody').addEventListener('keydown',function(e){ if(e.key==='Escape'&&e.target.classList.contains('pn-t')) e.target.blur(); });
+$('pnBody').addEventListener('keydown',function(e){ if(e.key==='Escape'&&(e.target.classList.contains('pn-t')||e.target.classList.contains('pn-qt'))) e.target.blur(); });
 $('snTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-snt]'); if(!b) return; snTab=b.getAttribute('data-snt'); renderSN(); });
 $('snMonth').addEventListener('change',function(){ snMon=this.value; renderSN(); });
 $('snCopy').addEventListener('click',snCopy);
