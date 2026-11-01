@@ -287,11 +287,15 @@
   }
   function keep(j){ saveS({access_token:j.access_token, refresh_token:j.refresh_token, expires_at:(j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600)), email:(j.user&&j.user.email)||(S&&S.email)||''}); }
   var _refreshing=null;
-  function refresh(){ if(!S||!S.refresh_token) return Promise.reject(new Error('אין חיבור'));
+  /* 1.11.2026: שונטל ותזרים חולקים את אותה התחברות (אותו מפתח בדפדפן). כשאחד מהם מחדש את ההתחברות, הקוד הישן
+     של השני כבר לא תקף («Refresh Token Not Found») — לכן קודם קוראים מהדפדפן את ההתחברות העדכנית. */
+  function syncS(){ try{ var t=JSON.parse(localStorage.getItem(SK)||'null'); if(t&&t.refresh_token&&(!S||t.refresh_token!==S.refresh_token)) S=t; }catch(_){} }
+  function refresh(){ syncS(); if(S&&S.refresh_token&&(S.expires_at||0)-Date.now()/1000 >= 120) return Promise.resolve(S);
+    if(!S||!S.refresh_token) return Promise.reject(new Error('אין חיבור'));
     if(_refreshing) return _refreshing;
-    _refreshing=auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token}).then(function(j){ keep(j); _refreshing=null; return S; },function(e){ _refreshing=null; throw e; });
+    _refreshing=auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token}).then(function(j){ keep(j); _refreshing=null; return S; },function(e){ _refreshing=null; var was=S&&S.refresh_token; syncS(); if(S&&S.refresh_token&&S.refresh_token!==was) return S; e.auth=true; throw e; });
     return _refreshing; }
-  function fresh(){ if(!S) return Promise.reject(new Error('אין חיבור')); if((S.expires_at||0)-Date.now()/1000 < 120) return refresh(); return Promise.resolve(S); }
+  function fresh(){ syncS(); if(!S) return Promise.reject(new Error('אין חיבור')); if((S.expires_at||0)-Date.now()/1000 < 120) return refresh(); return Promise.resolve(S); }
   function hdr(){ return {'apikey':KEY,'Authorization':'Bearer '+(S&&S.access_token||''),'Content-Type':'application/json'}; }
 
   /* ---- כניסה בקוד מהמייל ---- */
