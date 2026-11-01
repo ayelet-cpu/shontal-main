@@ -1419,6 +1419,7 @@ function renderPN(){
       (st==='roy'&&pnTab==='all'?'<span class="pn-roy on" style="height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:999px;font-size:12.5px">❓ עם רועי</span>':'')+
       (st?'<button data-pna="back" title="מחזיר לרשימת הבדיקה">↩ לבדיקה</button>':'')+
       '<button data-pna="totask" title="ליצור משימה מההערה">📋 למשימה</button>'+
+      '<button data-pna="move" title="להעביר את ההערה לחודש אחר">📅 לחודש אחר</button>'+
       '<button data-pna="file" title="צירוף קובץ או צילום מסך" aria-label="צירוף קובץ">📎</button>'+
       '<button class="pn-del" data-pna="del" title="מחיקה" aria-label="מחיקה">🗑</button></div></div>';
   }
@@ -1452,6 +1453,20 @@ function pnOrig(n){
   if(!o) return '<div class="pn-src">💬 מהוואטסאפ</div>';
   var d=new Date(o.ts), who=o.from_me?'את':(o.sender||'רועי');
   return '<details class="sn-orig pn-src"><summary>💬 '+esc(who)+' · '+esc(d.toLocaleDateString('he-IL',{day:'numeric',month:'numeric'}))+' — ההודעה המקורית</summary><div>'+esc(o.msg_text||'')+'</div></details>';
+}
+/* 📅 העברת הערה לחודש אחר (למשל מה שהגיע בתחילת נובמבר — לשכר אוקטובר) */
+function pnPrevM(m){ var a=m.split('-'), y=+a[0], k=+a[1]-1; if(k<1){ k=12; y--; } return y+'-'+(k<10?'0':'')+k; }
+function pnMove(n){
+  var o={}; [pnPrevM(pnPrevM(n.month)),pnPrevM(n.month),pnNext(n.month),pnNext(pnNext(n.month))].concat(pnMonths()).forEach(function(m){ if(m!==n.month) o[m]=1; });
+  var ms=Object.keys(o).sort().reverse(), def=pnPrevM(n.month);
+  dialog('<div class="dlg glass" role="dialog" aria-label="העברה לחודש אחר"><div class="dlg-h"><b>📅 העברה לחודש אחר</b><button class="ibtn" id="pnX" aria-label="סגירה">'+xSvg+'</button></div>'+
+    '<div class="dlg-b"><div class="pn-sum" style="margin-bottom:8px">'+esc(String(n.text).split('\n')[0])+' — עכשיו ב'+esc(pnMonName(n.month))+'</div>'+
+    '<label class="fld"><span>לאיזה חודש?</span><select id="pnMv">'+ms.map(function(m){ return '<option value="'+m+'"'+(m===def?' selected':'')+'>'+esc(pnMonName(m))+'</option>'; }).join('')+'</select></label></div>'+
+    '<div class="dlg-f"><button class="btn" id="pnMvS">העברה</button><button class="btn ghost" id="pnC">ביטול</button></div></div>');
+  $('pnX').onclick=$('pnC').onclick=closeLayer;
+  $('pnMvS').onclick=function(){ var m=$('pnMv').value, mx=0; closeLayer();
+    PN.forEach(function(x){ if(x.rest===n.rest&&x.month===m&&x.sec===n.sec&&x.sort>mx) mx=x.sort; });
+    pnPatch(n,{month:m,sort:mx+1},'הועבר ל'+pnMonName(m)); };
 }
 /* 📋 הערת שכר → משימה (גם וגם, או רק משימה) */
 function pnToTask(n){
@@ -1590,6 +1605,7 @@ $('pnBody').addEventListener('click',function(e){
   var a=b.getAttribute('data-pna');
   if(a==='file'){ pnFileFor=n.id; $('pnFile').click(); return; }
   if(a==='totask'){ pnToTask(n); return; }
+  if(a==='move'){ pnMove(n); return; }
   if(a==='opentask'){ var tt=TK.find(function(x){ return x.id===n.task_id; }); if(tt&&!tt.deleted) tkEdit(tt); else toast('המשימה לא נמצאה'); return; }
   if(a==='acc1'||a==='acc0'){ var fa=a==='acc1'; if(n.for_acc!==fa) pnPatch(n,{for_acc:fa}); }
   else if(a==='keep') pnPatch(n,{keep:!n.keep});
