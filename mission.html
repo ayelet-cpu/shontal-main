@@ -219,6 +219,36 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 .mfa-qr{display:block;width:180px;height:180px;margin:10px 0;background:#fff;border-radius:var(--r2);padding:6px}
 /* הערות שכר פאסטל */
 .sn{padding:14px;margin-bottom:22px}
+/* הערות שכר לחשבת — חודשי */
+.pn{padding:14px;margin-bottom:22px}
+.pn-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:-2px 0 12px}
+.pn-tools .btn{height:34px;padding:0 14px;font-size:13.5px}
+.pn-sum{font-size:12.5px;color:var(--ink3)}
+.pn-sec{margin-bottom:14px}
+.pn-sh{display:flex;align-items:center;gap:8px;margin:0 0 6px}
+.pn-sh h3{margin:0;font-size:14.5px;font-weight:700}
+.pn-sh small{color:var(--ink3);font-size:12px}
+.pn-add{border:1px solid var(--line);background:var(--glass);border-radius:999px;padding:2px 10px;font-size:12.5px;color:var(--ink2)}
+.pn-add:hover{border-color:var(--acc);color:var(--acc)}
+.pn-row{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r2);background:var(--glass2);margin-bottom:6px}
+.pn-row.mine{border-style:dashed;background:transparent}
+.pn-t{flex:1;min-width:0;outline:none;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;font-size:14.5px;padding:2px 2px;border-radius:6px}
+.pn-t:focus{background:var(--glass)}
+.pn-t:empty::before{content:"כתבי כאן…";color:var(--ink3)}
+.pn-b{display:flex;flex-wrap:wrap;gap:4px;flex:none;justify-content:flex-end}
+.pn-b button{height:28px;border:1px solid var(--line);background:var(--glass);border-radius:999px;padding:0 10px;font-size:12.5px;color:var(--ink2);white-space:nowrap}
+.pn-b .pn-acc.on{background:var(--acc-soft);border-color:transparent;color:var(--acc);font-weight:600}
+.pn-b .pn-keep.on{background:color-mix(in srgb,var(--warn) 16%,transparent);border-color:transparent;color:var(--warn);font-weight:600}
+.pn-b .pn-del{width:28px;padding:0;color:var(--ink3)}
+.pn-b .pn-del:hover{color:var(--bad)}
+.pn-more{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12.5px;color:var(--ink3);margin-top:4px}
+.pn-pre{width:100%;min-height:300px;font:inherit;font-size:14px;line-height:1.55}
+.pn-prev h4{margin:12px 0 4px;font-size:13.5px}
+.pn-prev div{font-size:13.5px;color:var(--ink2);padding:3px 0;border-bottom:1px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere}
+@media (max-width:720px){
+  .pn-row{flex-direction:column;gap:6px}
+  .pn-b{justify-content:flex-start}
+}
 .tk{padding:14px;margin-bottom:22px}
 .folded{display:none!important}
 .sec-h h2{cursor:pointer}
@@ -455,6 +485,21 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
 
   <div class="sec-h"><h2>מסעדות</h2><small id="restsHint"></small></div>
   <section class="rests" id="rests"></section>
+
+  <div class="sec-h"><h2>הערות שכר לחשבת</h2><small class="hide-m">רשימה לכל חודש · «📌 קבועה» עוברת לבד לחודש הבא · «🔒 רק לי» לא נשלח לחשבת</small></div>
+  <section class="pn glass" id="pn">
+    <div class="sn-bar">
+      <div class="tabs" id="pnRest"></div>
+      <select class="sn-sel" id="pnMonth" aria-label="חודש"></select>
+      <button class="btn ghost" id="pnPrev" title="ההערות של החודש הקודם, להשוואה">החודש הקודם</button>
+    </div>
+    <div class="pn-tools">
+      <button class="btn" id="pnSend" title="רק השורות שמסומנות «לחשבת», מסודרות לפי הכותרות">📋 לשליחה לחשבת השכר</button>
+      <button class="btn ghost" id="pnMine">🔒 מה שרק לי</button>
+      <span class="pn-sum" id="pnSum"></span>
+    </div>
+    <div id="pnBody"><div class="sn-empty">טוענת…</div></div>
+  </section>
 
   <div class="sec-h"><h2>הערות שכר פאסטל</h2><small id="snHint">נקלטות לבד מהוואטסאפ עם רועי</small></div>
   <section class="sn glass" id="sn">
@@ -1170,6 +1215,8 @@ function renderSN(){
     if(n.msg_text && n.msg_text!==n.detail) h+='<details class="sn-orig"><summary>ההודעה המקורית</summary><div>'+esc(n.msg_text)+'</div></details>';
     h+='<div class="sn-act">';
     if(n.file_id) h+='<button class="btn ghost" data-sna="file" title="פתיחה">📎 '+esc(n.file_name||'קובץ')+'</button><button class="btn ghost" data-sna="dl" title="הורדת הקובץ" aria-label="הורדת הקובץ">⬇</button>';
+    var inPn=PN.some(function(p){ return p.sn_id===n.id; });
+    h+=inPn?'<span class="sn-tag">✓ ברשימה לחשבת</span>':'<button class="btn ghost" data-sna="topn" title="מוסיף שורה להערות השכר של החודש">➕ לרשימה לחשבת</button>';
     if(n.status==='pending') h+='<button class="btn" data-sna="done">✓ הועבר לשכר</button><button class="btn ghost" data-sna="edit">עריכה</button><button class="btn ghost" data-sna="dismissed">לא רלוונטי</button>';
     else h+='<button class="btn ghost" data-sna="pending">↩ החזרה לממתינות</button><button class="btn ghost" data-sna="edit">עריכה</button>';
     return h+'</div></article>';
@@ -1286,6 +1333,139 @@ function snCopy(){
   }).join('\n');
   (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){ toast('הועתק — אפשר להדביק בוואטסאפ או במייל'); },function(){ toast('ההעתקה לא הצליחה'); });
 }
+/* ---------- הערות שכר לחשבת (mc_pay_notes) — רשימה חודשית, במקום קובץ ה-RTF ---------- */
+var PN=[], pnRest='פאסטל', pnMon='', pnSig='', pnNewId=null;
+var PN_RESTS=['פאסטל','אריאלה וטופול'];
+var PN_SECS=['הערות שוטפות','עדכוני שכר','בונוסים חד פעמיים','גמר חשבון','עובדים חדשים פלור ואירוח','עובדים חדשים מטבח','עובד חדש שטיפת כלים','מילואים'];
+try{ var _pr=localStorage.getItem('mc-pn-rest'); if(PN_RESTS.indexOf(_pr)>=0) pnRest=_pr; }catch(e){}
+function pnMonName(m){ var a=String(m).split('-'); return HEB_M[+a[1]]+' '+a[0]; }
+function pnNext(m){ var a=m.split('-'), y=+a[0], n=+a[1]+1; if(n>12){ n=1; y++; } return y+'-'+(n<10?'0':'')+n; }
+function pnNow(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1); }
+function pnMonths(r){ var o={}; PN.forEach(function(n){ if(n.rest===(r||pnRest)) o[n.month]=1; }); return Object.keys(o).sort().reverse(); }
+function pnOf(m){ return PN.filter(function(n){ return n.rest===pnRest&&n.month===m; }).sort(function(a,b){ return a.sort-b.sort||a.id-b.id; }); }
+function pnEditing(){ var a=document.activeElement; return !!(a&&a.classList&&a.classList.contains('pn-t')); }
+function loadPN(){
+  return api('GET','mc_pay_notes?deleted=eq.false&select=id,rest,month,sec,text,for_acc,keep,sort,sn_id&order=month.desc,sort.asc,id.asc&limit=2000')
+    .then(function(rows){ PN=rows||[]; var sig=JSON.stringify(PN); if(sig!==pnSig&&!pnEditing()){ pnSig=sig; renderPN(); } if(typeof renderSN==='function'&&SN.length) renderSN(); });
+}
+function renderPN(){
+  $('pnRest').innerHTML=PN_RESTS.map(function(r){ return '<button class="tab'+(pnRest===r?' on':'')+'" data-pnr="'+esc(r)+'">'+esc(r)+'</button>'; }).join('');
+  var ms=pnMonths();
+  if(!pnMon||ms.indexOf(pnMon)<0) pnMon=ms[0]||pnNow();
+  var opts=ms.slice(); if(opts.indexOf(pnMon)<0) opts.unshift(pnMon);
+  var nx=pnNext(opts[0]);
+  $('pnMonth').innerHTML='<option value="+">＋ פתיחת '+esc(pnMonName(nx))+(ms.length?' (עם הקבועות)':'')+'</option>'+
+    opts.map(function(m){ return '<option value="'+m+'"'+(m===pnMon?' selected':'')+'>'+esc(pnMonName(m))+'</option>'; }).join('');
+  $('pnPrev').disabled=!ms.filter(function(m){ return m<pnMon; }).length;
+  var list=pnOf(pnMon), acc=list.filter(function(n){ return n.for_acc; }).length;
+  $('pnSum').textContent=list.length?(list.length+' שורות · '+acc+' לחשבת · '+(list.length-acc)+' רק לי · '+list.filter(function(n){ return n.keep; }).length+' קבועות'):'';
+  var secs=PN_SECS.slice(); list.forEach(function(n){ if(secs.indexOf(n.sec)<0) secs.push(n.sec); });
+  var h='', empty=[];
+  secs.forEach(function(sec){
+    var rows=list.filter(function(n){ return n.sec===sec; });
+    if(!rows.length){ empty.push(sec); return; }
+    h+='<div class="pn-sec"><div class="pn-sh"><h3>'+esc(sec)+'</h3><small>'+rows.length+'</small><button class="pn-add" data-pnadd="'+esc(sec)+'">＋ שורה</button></div>';
+    rows.forEach(function(n){
+      h+='<div class="pn-row'+(n.for_acc?'':' mine')+'" data-pn="'+n.id+'"><div class="pn-t" contenteditable="true" spellcheck="false">'+esc(n.text)+'</div><div class="pn-b">'+
+        '<button class="pn-acc'+(n.for_acc?' on':'')+'" data-pna="acc" title="'+(n.for_acc?'נשלח לחשבת — ללחוץ כדי שיהיה רק לך':'רק לך — ללחוץ כדי לשלוח לחשבת')+'">'+(n.for_acc?'לחשבת':'🔒 רק לי')+'</button>'+
+        '<button class="pn-keep'+(n.keep?' on':'')+'" data-pna="keep" title="'+(n.keep?'עוברת לבד לחודש הבא — ללחוץ כדי שתהיה חד פעמית':'רק החודש — ללחוץ כדי שתעבור לחודש הבא')+'">'+(n.keep?'📌 קבועה':'חד פעמית')+'</button>'+
+        '<button class="pn-del" data-pna="del" title="מחיקה" aria-label="מחיקה">🗑</button></div></div>';
+    });
+    h+='</div>';
+  });
+  if(!list.length) h='<div class="sn-empty">אין עדיין הערות ל'+esc(pnMonName(pnMon))+' — להוסיף מתחת לכותרת המתאימה</div>';
+  if(empty.length) h+='<div class="pn-more"><span>הוספה תחת:</span>'+empty.map(function(sec){ return '<button class="pn-add" data-pnadd="'+esc(sec)+'">＋ '+esc(sec)+'</button>'; }).join('')+'</div>';
+  $('pnBody').innerHTML=h;
+  if(pnNewId){ var el=document.querySelector('[data-pn="'+pnNewId+'"] .pn-t'); pnNewId=null; if(el) el.focus(); }
+}
+function pnFind(id){ return PN.find(function(n){ return String(n.id)===String(id); }); }
+function pnPatch(n,fields,undoMsg){
+  var old={}; for(var k in fields){ old[k]=n[k]; n[k]=fields[k]; }
+  pnSig=JSON.stringify(PN); if(!('text' in fields)) renderPN();
+  return api('PATCH','mc_pay_notes?id=eq.'+n.id,fields,{'Prefer':'return=minimal'}).then(function(){
+    if(undoMsg) toast(undoMsg,function(){ if(fields.deleted) PN.push(n); pnPatch(n,old); });
+  },function(e){ toast('לא נשמר: '+e.message); loadPN(); });
+}
+function pnInsert(rows){
+  return api('POST','mc_pay_notes',rows,{'Prefer':'return=representation'}).then(function(r){ PN=PN.concat(r||[]); pnSig=JSON.stringify(PN); return r||[]; });
+}
+function pnAdd(sec,text,extra){
+  var mx=0; pnOf(pnMon).forEach(function(n){ if(n.sec===sec&&n.sort>mx) mx=n.sort; });
+  var row={rest:pnRest,month:pnMon,sec:sec,text:text||'',sort:mx+1};
+  for(var k in extra||{}) row[k]=extra[k];
+  return pnInsert([row]);
+}
+function pnOpenMonth(m){
+  var prev=pnMonths().filter(function(x){ return x<m; })[0];
+  var keep=prev?pnOf(prev).filter(function(n){ return n.keep; }):[];
+  pnMon=m;
+  if(!keep.length){ renderPN(); toast('נפתח '+pnMonName(m)+' — אפשר להוסיף שורות'); return; }
+  pnInsert(keep.map(function(n){ return {rest:n.rest,month:m,sec:n.sec,text:n.text,for_acc:n.for_acc,keep:true,sort:n.sort}; }))
+    .then(function(){ renderPN(); toast('נפתח '+pnMonName(m)+' עם '+keep.length+' ההערות הקבועות מ'+pnMonName(prev)); },
+      function(e){ toast('לא נפתח: '+e.message); renderPN(); });
+}
+function pnText(list,title){
+  var t=title+'\n', secs=[];
+  list.forEach(function(n){ if(secs.indexOf(n.sec)<0) secs.push(n.sec); });
+  secs.sort(function(a,b){ var i=PN_SECS.indexOf(a), j=PN_SECS.indexOf(b); return (i<0?99:i)-(j<0?99:j); });
+  secs.forEach(function(sec){ t+='\n'+sec+':\n'+list.filter(function(n){ return n.sec===sec&&n.text.trim(); }).map(function(n){ return '• '+n.text.trim(); }).join('\n')+'\n'; });
+  return t;
+}
+function pnShow(mine){
+  var list=pnOf(pnMon).filter(function(n){ return mine?!n.for_acc:n.for_acc; });
+  if(!list.length){ toast(mine?'אין החודש שורות «רק לי»':'אין שורות לחשבת'); return; }
+  var t=pnText(list,'הערות שכר '+pnRest+' — '+pnMonName(pnMon)+(mine?' (רק לי)':''));
+  var canShare=!!navigator.share;
+  dialog('<div class="dlg glass" role="dialog" aria-label="הערות שכר"><div class="dlg-h"><b>'+(mine?'🔒 מה שרק לי — לא נשלח לחשבת':'לשליחה לחשבת השכר ('+list.length+' שורות)')+'</b><button class="ibtn" id="pnX" aria-label="סגירה">'+xSvg+'</button></div>'+
+    '<div class="dlg-b"><textarea class="pn-pre" id="pnTxt" aria-label="הטקסט">'+esc(t)+'</textarea>'+
+    (mine?'':'<div class="pn-sum">אפשר לתקן כאן לפני ההעתקה — התיקון לא נשמר ברשימה.</div>')+'</div>'+
+    '<div class="dlg-f"><button class="btn" id="pnCp">העתקה</button>'+(canShare?'<button class="btn ghost" id="pnSh">שיתוף…</button>':'')+'<button class="btn ghost" id="pnC">סגירה</button></div></div>');
+  $('pnX').onclick=$('pnC').onclick=closeLayer;
+  $('pnCp').onclick=function(){ var v=$('pnTxt').value;
+    (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(function(){ toast('הועתק — אפשר להדביק בוואטסאפ או במייל'); },function(){ $('pnTxt').select(); toast('ההעתקה לא הצליחה — הטקסט מסומן, להעתיק ידנית'); }); };
+  if(canShare) $('pnSh').onclick=function(){ navigator.share({text:$('pnTxt').value}).catch(function(){}); };
+}
+function pnPrevShow(){
+  var prev=pnMonths().filter(function(m){ return m<pnMon; })[0]; if(!prev) return;
+  var list=pnOf(prev), h='', secs=[];
+  list.forEach(function(n){ if(secs.indexOf(n.sec)<0) secs.push(n.sec); });
+  secs.forEach(function(sec){ h+='<h4>'+esc(sec)+'</h4>'+list.filter(function(n){ return n.sec===sec; }).map(function(n){ return '<div>'+(n.for_acc?'':'🔒 ')+(n.keep?'📌 ':'')+esc(n.text)+'</div>'; }).join(''); });
+  dialog('<div class="dlg glass" role="dialog" aria-label="החודש הקודם"><div class="dlg-h"><b>'+esc(pnRest+' — '+pnMonName(prev))+'</b><button class="ibtn" id="pnX" aria-label="סגירה">'+xSvg+'</button></div>'+
+    '<div class="dlg-b pn-prev">'+h+'</div><div class="dlg-f"><button class="btn ghost" id="pnC">סגירה</button></div></div>');
+  $('pnX').onclick=$('pnC').onclick=closeLayer;
+}
+/* מהוואטסאפ לרשימה — תמיד לפאסטל */
+var SN2SEC={'בונוס':'בונוסים חד פעמיים','העלאת שכר':'עדכוני שכר','עזיבה':'גמר חשבון','מילואים':'מילואים'};
+function pnFromSN(n){
+  var rest='פאסטל', ms=pnMonths(rest), m=(pnRest===rest&&pnMon)?pnMon:(ms[0]||pnNow());
+  var text=[n.emp,n.topic,n.amount!=null?snAmt(n.amount):'',n.detail].filter(Boolean).join(' - ');
+  var save={r:pnRest,m:pnMon}; pnRest=rest; pnMon=m;
+  pnAdd(SN2SEC[n.topic]||'הערות שוטפות',text,{sn_id:n.id}).then(function(){ renderPN(); renderSN(); toast('נוסף להערות של '+pnMonName(m)); },
+    function(e){ pnRest=save.r; pnMon=save.m; toast('לא נוסף: '+e.message); });
+}
+$('pnRest').addEventListener('click',function(e){ var b=e.target.closest('[data-pnr]'); if(!b) return; pnRest=b.getAttribute('data-pnr'); pnMon='';
+  try{ localStorage.setItem('mc-pn-rest',pnRest); }catch(_){} renderPN(); });
+$('pnMonth').addEventListener('change',function(){ var v=this.value; if(v==='+') pnOpenMonth(pnNext(pnMonths()[0]||pnMon)); else { pnMon=v; renderPN(); } });
+$('pnPrev').addEventListener('click',pnPrevShow);
+$('pnSend').addEventListener('click',function(){ pnShow(false); });
+$('pnMine').addEventListener('click',function(){ pnShow(true); });
+$('pnBody').addEventListener('click',function(e){
+  var ad=e.target.closest('[data-pnadd]');
+  if(ad){ pnAdd(ad.getAttribute('data-pnadd'),'').then(function(r){ pnNewId=r[0]&&r[0].id; renderPN(); },function(er){ toast('לא נוסף: '+er.message); }); return; }
+  var b=e.target.closest('[data-pna]'); if(!b) return; var n=pnFind(b.closest('[data-pn]').getAttribute('data-pn')); if(!n) return;
+  var a=b.getAttribute('data-pna');
+  if(a==='acc') pnPatch(n,{for_acc:!n.for_acc});
+  else if(a==='keep') pnPatch(n,{keep:!n.keep});
+  else if(a==='del'){ PN=PN.filter(function(x){ return x!==n; }); pnPatch(n,{deleted:true},'השורה נמחקה'); }
+});
+$('pnBody').addEventListener('focusout',function(e){
+  var el=e.target; if(!el.classList||!el.classList.contains('pn-t')) return;
+  var n=pnFind(el.closest('[data-pn]').getAttribute('data-pn')); if(!n) return;
+  var v=el.innerText.replace(/\u00a0/g,' ').replace(/\n+$/,'').trim();
+  if(!v){ PN=PN.filter(function(x){ return x!==n; }); pnPatch(n,{deleted:true},n.text?'השורה נמחקה':null); return; }
+  if(v!==n.text) pnPatch(n,{text:v});
+});
+$('pnBody').addEventListener('keydown',function(e){ if(e.key==='Escape'&&e.target.classList.contains('pn-t')) e.target.blur(); });
 $('snTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-snt]'); if(!b) return; snTab=b.getAttribute('data-snt'); renderSN(); });
 $('snMonth').addEventListener('change',function(){ snMon=this.value; renderSN(); });
 $('snCopy').addEventListener('click',snCopy);
@@ -1295,6 +1475,7 @@ $('snList').addEventListener('click',function(e){
   var a=b.getAttribute('data-sna');
   if(a==='file'||a==='dl') snFile(n,a==='dl');
   else if(a==='edit') snEdit(n);
+  else if(a==='topn') pnFromSN(n);
   else snPatch(n,{status:a},a==='done'?'סומן «הועבר לשכר»':a==='dismissed'?'סומן «לא רלוונטי»':'הוחזר לממתינות');
 });
 
@@ -1826,6 +2007,7 @@ var pollT=null, lastSig='';
 function refreshAll(){
   if(document.hidden) return Promise.resolve();
   loadSN().catch(function(){});
+  loadPN().catch(function(){});
   loadTK().catch(function(){});
   return Promise.all([loadKV(),loadFiles(),loadNotes(false),pingPc()]).then(function(){
     var sig=JSON.stringify([KV.sites,KV.rest_files,KV.general,KV.extra_folders])+'|'+FILES.length+'|'+(FILES[0]&&FILES[0].mtime)+'|'+SYNCED+'|'+PC;
@@ -1839,6 +2021,7 @@ function start(){
   myClear(); loadMy().catch(function(){ myClear(); });
   pushState();
   loadTK().catch(function(e){ $('tkList').innerHTML='<div class="sn-empty">המשימות לא נטענו: '+esc(e.message)+'</div>'; });
+  loadPN().catch(function(e){ $('pnBody').innerHTML='<div class="sn-empty">הערות השכר החודשיות לא נטענו: '+esc(e.message)+'</div>'; });
   loadSN().catch(function(e){ $('snList').innerHTML='<div class="sn-empty">הערות השכר לא נטענו: '+esc(e.message)+'</div>'; });
   clearInterval(pollT); pollT=setInterval(refreshAll,30000);
   setInterval(tick,20000);
