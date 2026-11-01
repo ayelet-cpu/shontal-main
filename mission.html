@@ -532,6 +532,8 @@ kbd{font-family:inherit;font-size:11.5px;padding:2px 7px;border-radius:6px;borde
       <button class="btn" id="pnSend" title="רק השורות שמסומנות «לחשבת», מסודרות לפי הכותרות">📋 לשליחה לחשבת השכר</button>
       <button class="btn ghost" id="pnMine">🔒 מה שרק לי</button>
       <button class="btn ghost" id="pnRoy">❓ לשאול את רועי</button>
+      <button class="btn ghost" id="pnXlTop" title="מה שנשלח לחשבת — קובץ אקסל">⬇ אקסל</button>
+      <button class="btn ghost" id="pnPrTop" title="מה שנשלח לחשבת — הדפסה או PDF">🖨 הדפסה</button>
       <span class="pn-sum" id="pnSum"></span>
     </div>
     <div class="tabs pn-tabs" id="pnTabs"></div>
@@ -1562,16 +1564,7 @@ function pnShow(mine){
   var title=roy?'לבדוק עם רועי — '+pnRest+' '+pnMonName(pnMon):'הערות שכר '+pnRest+' — '+pnMonName(pnMon)+(mine?' (רק לי)':'');
   $('pnXl').onclick=function(){
     toast('מכינה קובץ אקסל…');
-    loadLib('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','XLSX').then(function(X){
-      var srt=list.slice().sort(function(a,b){ var i=PN_SECS.indexOf(a.sec), j=PN_SECS.indexOf(b.sec); return (i<0?99:i)-(j<0?99:j)||a.sort-b.sort||a.id-b.id; });
-      var head=roy?['כותרת','הערה','שאלה לרועי']:['כותרת','הערה','קובץ מצורף'];
-      var rows=srt.map(function(n){ var k=PF.filter(function(f){ return f.note_id===n.id; }).map(function(f){ return f.name; }).join(', ');
-        return [n.sec,n.text.trim(),roy?(n.roy_q||''):k]; });
-      var ws=X.utils.aoa_to_sheet([[title],[]].concat([head]).concat(rows));
-      ws['!cols']=[{wch:22},{wch:90},{wch:30}];
-      var wb=X.utils.book_new(); X.utils.book_append_sheet(wb,ws,'הערות שכר'); wb.Workbook={Views:[{RTL:true}]};
-      X.writeFile(wb,title.replace(/[\\\/:*?"<>|]/g,'-')+'.xlsx');
-    }).catch(function(e){ toast(e.message); });
+    pnXlsLib().then(function(X){ X.writeFile(pnXlsBook(X,list,title,roy),title.replace(/[\\\/:*?"<>|]/g,'-')+'.xlsx'); }).catch(function(e){ toast(e.message); });
   };
   $('pnPr').onclick=function(){
     var h='', ul=false;
@@ -1590,6 +1583,46 @@ function pnShow(mine){
     f.onload=function(){ setTimeout(function(){ f.contentWindow.focus(); f.contentWindow.print(); setTimeout(function(){ f.remove(); },60000); },100); };
     document.body.appendChild(f);
   };
+}
+/* אקסל מעוצב להערות השכר (xlsx-js-style — כמו SheetJS, עם עיצוב תאים): כותרת, כותרת לכל חלק, עובד | הערה, שורות שנשברות */
+function pnXlsLib(){
+  if(window.XLSXS) return Promise.resolve(window.XLSXS);
+  var old=window.XLSX;
+  return new Promise(function(ok,bad){ var t=document.createElement('script'); t.src='https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
+    t.onload=function(){ window.XLSXS=window.XLSX; if(old) window.XLSX=old; ok(window.XLSXS); };
+    t.onerror=function(){ bad(new Error('הכלי לא נטען — בדקי חיבור לאינטרנט')); }; document.head.appendChild(t); });
+}
+function pnSplitName(txt){
+  var t=String(txt||'').trim(), nl=t.indexOf('\n');
+  if(nl>0&&nl<=50) return [t.slice(0,nl).trim(),t.slice(nl+1).trim()];
+  var m=/^(.{2,40}?)\s*[-–—]\s*(.+)$/s.exec(t);
+  if(m&&!/\d{3,}/.test(m[1])) return [m[1].trim(),m[2].replace(/^[-–—\s]+/,'').trim()];
+  return ['',t];
+}
+function pnXlsBook(X,list,title,roy){
+  var cols=roy?3:2, srt=list.slice().sort(function(a,b){ var i=PN_SECS.indexOf(a.sec), j=PN_SECS.indexOf(b.sec); return (i<0?99:i)-(j<0?99:j)||a.sort-b.sort||a.id-b.id; });
+  var line={style:'thin',color:{rgb:'D9D4EA'}}, box={top:line,bottom:line,left:line,right:line};
+  var base={font:{name:'Arial',sz:11},alignment:{horizontal:'right',vertical:'top',wrapText:true,readingOrder:2},border:box};
+  function st(extra){ var o=JSON.parse(JSON.stringify(base)); for(var k in extra) o[k]=Object.assign(o[k]||{},extra[k]); return o; }
+  var aoa=[], sty=[], rows=[], merges=[];
+  function push(vals,style,h,merge){ var r=aoa.length; aoa.push(vals); sty.push(style); rows.push({hpt:h}); if(merge) merges.push({s:{r:r,c:0},e:{r:r,c:cols-1}}); }
+  push([title].concat(cols>2?['','']:['']),[st({font:{bold:true,sz:15,color:{rgb:'3B2F7A'}},fill:{fgColor:{rgb:'EEE8FF'}}})],28,true);
+  push(roy?['עובד','הערה','שאלה לרועי']:['עובד','הערה'],[st({font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'6B5BD6'}}})],20,false);
+  var lastSec=null;
+  srt.forEach(function(n){
+    if(n.sec!==lastSec){ lastSec=n.sec; push([n.sec].concat(cols>2?['','']:['']),[st({font:{bold:true,sz:12,color:{rgb:'3B2F7A'}},fill:{fgColor:{rgb:'F4F1FF'}}})],22,true); }
+    var sp=pnSplitName(n.text), has=PF.some(function(f){ return f.note_id===n.id; });
+    var det=sp[1].replace(/^בנק:\s*(.+?)\s*·\s*סניף\s*(.+?)\s*·\s*חשבון\s*(.+)$/m,'בנק: $1\nסניף: $2\nחשבון: $3')+(has?'\n📎 יש קובץ מצורף':''), q=roy?(n.roy_q||''):'';
+    var lines=0; det.split('\n').forEach(function(l){ lines+=Math.max(1,Math.ceil(l.length/75)); });
+    if(roy) lines=Math.max(lines,Math.ceil(q.length/35));
+    push(roy?[sp[0],det,q]:[sp[0],det],[st({font:{bold:true}}),st({})].concat(roy?[st({font:{color:{rgb:'A35D00'}}})]:[]),Math.max(20,lines*15+5),false);
+  });
+  var ws=X.utils.aoa_to_sheet(aoa);
+  aoa.forEach(function(r,ri){ for(var c=0;c<cols;c++){ var a=X.utils.encode_cell({r:ri,c:c}); if(!ws[a]) ws[a]={t:'s',v:''}; ws[a].s=sty[ri][Math.min(c,sty[ri].length-1)]; } });
+  ws['!cols']=roy?[{wch:24},{wch:70},{wch:36}]:[{wch:24},{wch:85}];
+  ws['!rows']=rows; ws['!merges']=merges;
+  var wb=X.utils.book_new(); X.utils.book_append_sheet(wb,ws,'הערות שכר'); wb.Workbook={Views:[{RTL:true}]};
+  return wb;
 }
 function pnPrevShow(){
   var prev=pnMonths().filter(function(m){ return m<pnMon; })[0]; if(!prev) return;
@@ -1617,6 +1650,8 @@ $('pnPrev').addEventListener('click',pnPrevShow);
 $('pnSend').addEventListener('click',function(){ pnShow(false); });
 $('pnMine').addEventListener('click',function(){ pnShow(true); });
 $('pnRoy').addEventListener('click',function(){ pnShow('roy'); });
+/* ייצוא ישר מהשורה העליונה — אותו דבר כמו בחלון «לשליחה לחשבת השכר» */
+['pnXl','pnPr'].forEach(function(id){ $(id+'Top').addEventListener('click',function(){ pnShow(false); if($(id)){ $(id).click(); closeLayer(); } }); });
 $('pnTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-pnt]'); if(!b) return; pnTab=b.getAttribute('data-pnt');
   try{ localStorage.setItem('mc-pn-tab',pnTab); }catch(_){} renderPN(); });
 $('pnBody').addEventListener('click',function(e){
