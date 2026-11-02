@@ -1321,6 +1321,35 @@ function snRows(list){
   });
 }
 function snStamp(){ return 'הערות שכר פאסטל'+(snMon?' - '+HEB_M[snMon]:'')+' '+new Date().toLocaleDateString('he-IL').replace(/\./g,'-'); }
+/* 2.11.2026 איילת: «תתקן שלא יקרה שוב ביצוא דוחות» — ב-PDF המאוחד לחשבת אישור הקרן של בר שם טוב יצא 3 עמודים לבנים
+   (pdf-lib העתיק את העמודים, אבל התוכן שלהם לא נקרא). עכשיו: מעתיקים, מציירים כל עמוד שהועתק ומשווים למקור (pdf.js);
+   עמוד שיצא ריק/שבור — נכנס כתמונה של העמוד המקורי. אם pdf.js לא נטען — מעתיקים כמו קודם. */
+var _PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+function _pdfJs(){ if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);
+  return new Promise(function(res,rej){ var s=document.createElement('script'); s.src=_PDFJS+'pdf.min.js';
+    s.onload=function(){ window.pdfjsLib.GlobalWorkerOptions.workerSrc=_PDFJS+'pdf.worker.min.js'; res(window.pdfjsLib); };
+    s.onerror=function(){ rej(new Error('pdf.js')); }; document.head.appendChild(s); }); }
+function _pdfInk(pdf,i,scale){ return pdf.getPage(i).then(function(pg){ var vp=pg.getViewport({scale:scale}), v1=pg.getViewport({scale:1}), c=document.createElement('canvas');
+  c.width=Math.ceil(vp.width); c.height=Math.ceil(vp.height); var cx=c.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,c.width,c.height);
+  return pg.render({canvasContext:cx,viewport:vp}).promise.then(function(){ var d=cx.getImageData(0,0,c.width,c.height).data, n=0;
+    for(var k=0;k<d.length;k+=16)if(d[k]<200||d[k+1]<200||d[k+2]<200)n++; return {n:n,c:c,w:v1.width,h:v1.height}; }); }); }
+function _pdfCopySafe(P,doc,u8){
+  return P.PDFDocument.load(u8,{ignoreEncryption:true}).then(function(src){
+    var idx=src.getPageIndices();
+    function plain(){ return doc.copyPages(src,idx).then(function(pp){ pp.forEach(function(p){ doc.addPage(p); }); return pp.length; }); }
+    return P.PDFDocument.create().then(function(tmp){ return tmp.copyPages(src,idx).then(function(pp){ pp.forEach(function(p){ tmp.addPage(p); }); return tmp.save({useObjectStreams:false}); }); })
+      .then(function(copied){ return _pdfJs().then(function(J){ return Promise.all([J.getDocument({data:u8.slice()}).promise, J.getDocument({data:copied}).promise]); }); })
+      .then(function(two){ var o=two[0], c=two[1];
+        return idx.reduce(function(pr,i){ return pr.then(function(){
+          return Promise.all([_pdfInk(o,i+1,0.5), _pdfInk(c,i+1,0.5).catch(function(){ return {n:-1}; })]).then(function(r){
+            function keep(){ return doc.copyPages(src,[i]).then(function(pg){ doc.addPage(pg[0]); }); }
+            if(!r[0].n||(r[1].n>=0&&r[1].n>=r[0].n*0.8)) return keep();
+            return _pdfInk(o,i+1,2).then(function(big){ if(big.n<r[0].n) return keep(); /* גם הציור של המקור לא הצליח — לא מכניסים תמונה ריקה */
+              return doc.embedJpg(big.c.toDataURL('image/jpeg',0.85)).then(function(img){
+              doc.addPage([big.w,big.h]).drawImage(img,{x:0,y:0,width:big.w,height:big.h}); }); }); }); }); },Promise.resolve()).then(function(){ return idx.length; }); },
+        function(){ return plain(); });
+  });
+}
 function snExport(kind){
   var list=snShown(); if(!list.length){ toast('אין הערות בתצוגה'); return; }
   if(kind==='xcopy'){
@@ -1355,14 +1384,13 @@ function snExport(kind){
       return Promise.all(withF.map(function(n){ return snGetFile(n.file_id); }));
     }).then(function(fs){ files=fs; return L.PDFDocument.create(); }).then(function(doc){ out=doc;
       return files.reduce(function(p,f){ return p.then(function(){
-        if(/pdf/.test(f.mime)||/\.pdf$/i.test(f.name)) return L.PDFDocument.load(f.bytes,{ignoreEncryption:true}).then(function(src){
-          return out.copyPages(src,src.getPageIndices()); }).then(function(pg){ pg.forEach(function(x){ out.addPage(x); }); });
+        if(/pdf/.test(f.mime)||/\.pdf$/i.test(f.name)) return _pdfCopySafe(L,out,new Uint8Array(f.bytes));
         if(/image\/(jpe?g|png)/.test(f.mime)) return (/png/.test(f.mime)?out.embedPng(f.bytes):out.embedJpg(f.bytes)).then(function(img){
           var w=595,h=842,sc=Math.min((w-40)/img.width,(h-40)/img.height,1),pg=out.addPage([w,h]);
           pg.drawImage(img,{x:(w-img.width*sc)/2,y:(h-img.height*sc)/2,width:img.width*sc,height:img.height*sc}); });
         skipped.push(f.name);
       }).catch(function(){ skipped.push(f.name); }); },Promise.resolve());
-    }).then(function(){ if(!out.getPageCount()) throw new Error('לא היה מסמך שאפשר לאחד'); return out.save(); })
+    }).then(function(){ if(!out.getPageCount()) throw new Error('לא היה מסמך שאפשר לאחד'); return out.save({useObjectStreams:false}); })
     .then(function(b){ snSave(new Blob([b],{type:'application/pdf'}),snStamp()+' - מסמכים.pdf');
       toast(skipped.length?'הורד. לא אוחדו (סוג קובץ אחר): '+skipped.join(', '):'הורד קובץ אחד עם '+files.length+' מסמכים'); })
     .catch(function(e){ toast('לא אוחד: '+e.message); });
