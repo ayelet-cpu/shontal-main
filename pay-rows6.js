@@ -112,6 +112,8 @@
         var v=nstOf(e.name,n&&n.t);
         if(v==='done') return {ok:true,t:'✓ סימנת שטופל'};
         if(v==='me') return {ok:null,t:'🔒 לעצמי'};
+        /* תיקון/הערה שכתבת אחרי התלוש — לא «טופל» לבד גם אם יש בתלוש שורה דומה (איילת 3.11: «אתה לא מעביר על דעת עצמך»). רק ✓ שלך */
+        if(n&&(n.r||1)===2&&!n.done){ var o=oldNS(e,n); if(o&&o.ok===true) return {ok:null,t:'ℹ בתלוש: '+String(o.t||'').replace(/^[✓✔]\s*(טופל\s*—\s*)?/,'')}; return o; }
         try{ var s=e.slip, t=String(n&&n.t||'');
           if(s&&/להוריד|לנכות|ניכוי|לקזז|קיזוז/.test(t)&&!/ברוטו|נטו|שכר|שעות|תעריף/.test(t)){
             var nums=(t.replace(/,/g,'').match(/\d+(\.\d+)?/g)||[]).map(Number).filter(function(x){ return x>=10; });
@@ -122,6 +124,28 @@
         return oldNS(e,n);
       };
     }
+    /* «✅ טופלו» בחלון הערות השכר — רק מה שסימנת ✓ בעצמך, אף פעם לא לבד */
+    if(typeof noteHandled==="function") window.noteHandled=function(n){ return !!(n&&n.done); };
+    /* «❓ לשאול את רועי» (איילת 3.11): הערה שנשמרת כשאלה למנהל — לא לחשבת. בחלון הערות השכר: כפתור בכל שורה + «📋 שאלות לרועי» */
+    (function(){
+      var list=document.getElementById('notesList'); if(!list||typeof NOTES2==='undefined') return;
+      var deco=function(){ list.querySelectorAll('button[data-nme]').forEach(function(b){
+        if(b.parentNode.querySelector('.r6roy')) return; var n=NOTES2.find(function(x){ return x.id===b.dataset.nme; }); if(!n) return;
+        var r=document.createElement('button'); r.className='who r6roy'+(n.roy?' on':''); r.dataset.nroy=n.id; r.title='שאלה לרועי / למנהל — לא נשלח לחשבת';
+        r.textContent=n.roy?'❓ לרועי ✓':'❓ לרועי'; b.after(' ',r); }); };
+      new MutationObserver(deco).observe(list,{childList:true,subtree:true}); deco();
+      list.addEventListener('click',function(ev){ var b=ev.target.closest('[data-nroy]'); if(!b) return; ev.stopPropagation();
+        var n=NOTES2.find(function(x){ return x.id===b.dataset.nroy; }); if(!n) return;
+        n.roy=!n.roy; if(n.roy) n.me=true; syncNotesFrom2(); renderNotes(); },true);
+      var me=document.getElementById('notesCopyMe');
+      if(me&&!document.getElementById('notesCopyRoy')){ var c=document.createElement('button'); c.className='tbtn'; c.id='notesCopyRoy'; c.textContent='📋 שאלות לרועי';
+        c.onclick=function(){ var L=NOTES2.filter(function(n){ return n.roy&&!n.done&&String(n.t||'').trim(); });
+          var t=L.length?'שאלות לרועי — שכר '+(DATA.month||'')+'\n\n'+L.map(function(n){ return '• '+(n.emp||'כללי')+' — '+n.t; }).join('\n'):'';
+          if(!t){ c.textContent='אין שאלות לרועי'; setTimeout(function(){ c.textContent='📋 שאלות לרועי'; },1500); return; }
+          try{ navigator.clipboard.writeText(t); c.textContent='✓ הועתק — '+L.length+' שאלות'; }catch(_){ prompt('להעתקה:',t); }
+          setTimeout(function(){ c.textContent='📋 שאלות לרועי'; },2000); };
+        me.after(' ',c); }
+    })();
     function isMe(n){ return !!n.me||n.for_acc===false||/לא\s+בתלוש/.test(String(n.t||''))||nstOf(n.emp,n.t)==='me'; }
     function isFirst(n){ return /^o\d/.test(String(n.id||''))||/דף הבית|הערות שכר לחשבת/.test(String(n.src||'')); }
     function afterNotes(e){
