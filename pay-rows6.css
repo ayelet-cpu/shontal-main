@@ -122,3 +122,12 @@ html:has(#payTheme) .explainbox .exbad{color:#fda4af!important}
 html:has(#payTheme) .r6lines{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12)}
 html:has(#payTheme) .r6lines>summary{background:rgba(255,255,255,.06)}
 html:has(#payTheme) .r6lr.crit{background:rgba(192,57,43,.25);color:#ffb4aa}html:has(#payTheme) .r6lr.warn{background:rgba(185,119,31,.25);color:#ffd8a0}
+.row.r6 .r6days{background:#f4f8fb;border:1px solid #dbe7f0;border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.row.r6 .r6days h4{margin:0 0 6px;font-size:14.5px}
+.row.r6 .r6dl{padding:4px 0;border-top:1px dashed #dbe7f0;font-size:14px}.row.r6 .r6dl:first-of-type{border-top:0}
+.row.r6 .r6dl b:first-child{display:block}.row.r6 .r6dl small{display:block;color:#7a8a96;font-size:12.5px}
+.row.r6 .r6db{margin-top:6px;font-size:13.5px;line-height:1.6}
+html:has(#payTheme) .row.r6 .r6days{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12)}
+.row.r6 .r6ex.ok .ex{background:#f1f9f4;border-color:#cfe9d9}
+.row.r6 .r6ex.ok .exc.ok{display:none}
+.row.r6 .r6todo.ok.big{font-size:15.5px;padding:10px 14px;margin:6px 0}

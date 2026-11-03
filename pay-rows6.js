@@ -65,7 +65,7 @@
           +'<span class="go"><button class="r6btn" data-addnote="'+nm+'" data-suggest="'+EMO(sug)+'">➕ להוסיף לחשבת</button>'
           +'<button class="r6btn lite" data-lane="pay" data-emp="'+nm+'">✓ ידוע לי</button></span></div>';
       }
-      else if(a.st.k==='ok'||a.st.sev==='good') out='<div class="r6todo ok">✓ <span><b>תקין</b>'+(empNotesFull(e).some(function(n){ return noteStatus(e,n).ok===true; })?' — גם ההערות שלנו בוצעו בתלוש':'')+'</span></div>';
+      else if(a.st.k==='ok'||a.st.sev==='good') out='<div class="r6todo ok">✓ <span>'+okText(e,a)+'</span></div>';
       flagsOf(e).forEach(function(x){ var f=x.f, by=f.by||'רועי';
         if(f.done){ return; }
         out='<div class="r6todo bad">🔎 <span><b>'+esc(by)+' כתב אחרי התלוש:</b> «'+esc(f.t)+'»'+(f.at?' <span class="r6d">('+esc(f.at)+')</span>':'')+'<br><span class="r6d">עוד לא נשלח לחשבת — את מחליטה מה לכתוב לה.</span></span>'
@@ -155,7 +155,10 @@
     if(typeof issuesOf==="function"){ var oldIss=issuesOf;
       window.issuesOf=function(e,a){ var r=oldIss(e,a)||[]; try{ oddLines(e.slip).forEach(function(x){ if(r.indexOf(x.t)<0) r.push(x.t); }); }catch(_){} return r; }; }
     if(typeof assess==="function"){ var oldAs2=assess;
-      window.assess=function(e){ var a=oldAs2(e); try{ if(a&&a.st&&a.st.sev!=='crit'&&laneOf(e)!=='pay'&&oddLines(e.slip).some(function(x){ return x.sev==='crit'; })) a.st={k:'gap',sev:'crit',label:'❗ שורה במינוס בתלוש'}; }catch(_){} return a; }; }
+      window.assess=function(e){ var a=oldAs2(e); try{ if(a&&a.st&&a.st.sev!=='crit'&&laneOf(e)!=='pay'&&oddLines(e.slip).some(function(x){ return x.sev==='crit'; })) a.st={k:'gap',sev:'crit',label:'❗ שורה במינוס בתלוש'};
+        /* «תקין» רק כשאין שום דבר ב«מה לא בסדר» — גם כשהסה"כ מתאים, פער ברכיב (שעות מארחת מול 150%) = לבדוק (איילת 3.11: «למה רשמת שהעובד תקין») */
+        else if(a&&a.st&&(a.st.sev==='good'||a.st.k==='ok')&&laneOf(e)!=='pay'&&e.slip){ var iss=(issuesOf(e,a)||[]).filter(function(x){ return !/^ℹ/.test(String(x).replace(/<[^>]+>/g,'')); });
+          if(iss.length) a.st={k:'gap',sev:'warn',label:'⚠ '+iss.length+(iss.length>1?' פערים ברכיבים':' פער ברכיב')}; } }catch(_){} return a; }; }
     function slipLinesHtml(s){ if(!s||!(s.lines||[]).length) return '';
       var odd=oddLines(s), isOdd=function(l){ return odd.find(function(x){ return x.l===l; }); };
       return '<details class="r6lines"'+(odd.length?' open':'')+'><summary>📄 כל שורות התלוש ('+s.lines.length+')'+(odd.length?' · <b class="r6bad">'+odd.length+' חריגות</b>':'')+'</summary>'
@@ -163,6 +166,29 @@
           return '<div class="r6lr'+(o?' '+o.sev:'')+'"><span>'+esc(l[0])+(o?' <b>'+(o.sev==='crit'?'❗':'⚠')+'</b>':'')+'</span><span class="q">'+q+'</span><span class="v">'+(l[4]?F0(l[4]):(l[1]==='meals'||l[1]==='study'?'שווי':'0'))+'</span></div>'; }).join('')
         +'<div class="r6lr tot"><span>סה״כ תשלומים</span><span></span><span class="v">'+F0(s.total!=null?s.total:s.gross)+'</span></div>'
         +((s.vol||[]).length?'<div class="r6lr sub"><span>ניכויי רשות: '+s.vol.map(function(v){ return esc(v[0])+' '+F0(v[1]); }).join(' · ')+'</span><span></span><span></span></div>':'')+'</div></details>'; }
+    /* «תקין» ברור (איילת 3.11): מה נבדק ומה המצב — התלוש מול השיפט, הערות שכר, שורות חריגות */
+    function okText(e,a){ var N=empNotesFull(e).filter(function(n){ return !isMe(n); }), done=N.filter(function(n){ return noteStatus(e,n).ok===true||handled(e,n); }).length;
+      return '<b>תקין</b> — התלוש תואם לשיפט'+(a&&a.tg!=null&&a.exp!=null?' ('+F0(a.exp)+' מול '+F0(a.tg)+')':'')
+        +' · '+(N.length?(done===N.length?'הערות השכר בוצעו בתלוש ('+N.length+')':'הערות שכר: '+done+' מתוך '+N.length+' בוצעו'):'אין הערות שכר החודש')
+        +' · אין שורות חריגות בתלוש'; }
+    function daysHtml(e){ var s=e.slip; if(!s) return '';
+      var L=(s.lines||[]).filter(function(l){ return l[1]==='pidyon'||l[1]==='sick'||/פדיון|תמורת חופשה|מחלה|חופשה/.test(String(l[0]||'')); }).filter(function(l){ return Math.abs(+l[4]||0)>0.5; });
+      if(!L.length) return '';
+      var hr=+s.rate||0, rows='';
+      L.forEach(function(l){ var q=+l[2]||0, r=+l[3]||0, a=+l[4]||0, isS=l[1]==='sick'||/מחלה/.test(l[0]);
+        var per=q&&r?r:(q?a/q:0), pm=String(l[0]).match(/(\d+)%/), pf=pm?(+pm[1]/100):1, hpd=hr&&per?per/pf/hr:0;
+        rows+='<div class="r6dl"><b>'+esc(l[0])+'</b><span>'+(q?F1(q)+(isS?' ימים':' ימים')+' × '+F0(per)+' ₪ ליום':'')+' = <b>'+F0(a)+' ₪</b></span>'
+          +(hpd?'<small>'+F0(per)+' ₪ ליום = '+(pf!==1?Math.round(pf*100)+'% × '+F0(per/pf)+' ₪ (':'')+F1(hpd)+' שעות × '+F1(hr)+' ₪ לשעה'+(pf!==1?')':'')+'</small>':'')+'</div>'; });
+      var bal=[], B=null; try{ B=(JSON.parse(localStorage.getItem('pay-bal-v1')||'{}')[DATA.month||'']||{})[e.slipname]||null; }catch(_){}
+      var bl=function(lbl,x,fb){ if(x&&x[2]!=null) return lbl+': יתרה לפני <b>'+F1(+x[0]||0)+'</b> · נוצלו/נפדו <b>'+F1(+x[1]||0)+'</b> · נשארו <b>'+F1(+x[2]||0)+'</b> ימים'; return fb!=null?lbl+' — נשארו <b>'+F1(+fb||0)+'</b> ימים':''; };
+      if(L.some(function(l){ return l[1]==='pidyon'||/חופש/.test(l[0]); })) bal.push(bl('חופשה',B&&B.v,s.vacBal));
+      if(L.some(function(l){ return l[1]==='sick'||/מחלה/.test(l[0]); })){ bal.push(bl('מחלה',B&&B.s,s.sickBal));
+        var pd=L.filter(function(l){ return l[1]==='sick'||/מחלה/.test(l[0]); }).reduce(function(t,l){ return t+(+l[2]||0); },0);
+        if(B&&B.s){ var dd=(+B.s[1]||0)-pd;
+          if(Math.abs(dd-1)<0.01) bal.push('שולמו '+F1(pd)+' ימים + יום ראשון ללא תשלום (לפי החוק) = ירדו '+F1(+B.s[1]||0)+' מהיתרה');
+          else if(Math.abs(dd)>0.01) bal.push('<span class="r6bad">שולמו '+F1(pd)+' ימי מחלה, אבל ירדו מהיתרה '+F1(+B.s[1]||0)+'</span>'); } }
+      bal=bal.filter(Boolean);
+      return '<div class="r6days"><h4>🏖 פדיון חופשה / מחלה — פירוט</h4>'+rows+(bal.length?'<div class="r6db">'+bal.join(' · ')+'</div>':'')+'</div>'; }
     /* הערות שסימנת שטופלו — מוסתרות; לחיצה פותחת, ובריחוף על כל אחת — כל ההשתלשלות (איילת 3.11) */
     function doneGrp(D){ return '<details class="r6donegrp"><summary>✓ '+D.length+(D.length>1?' הערות שסימנת שטופלו':' הערה שסימנת שטופלה')+' — לחיצה להצגה</summary>'+D.join('')+'</details>'; }
     function handled(e,n){ return !!n.done||nstOf(e.name,n.t)==='done'; }
@@ -230,7 +256,9 @@
           var sug=F.length?e.name+' — '+F.map(function(x){ return x.f.t; }).join(' · '):(typeof gapSuggestion==='function'?gapSuggestion(e,a):'');
           var extra='<button class="rvbtn r6wr" data-addnote="'+EMO(e.name)+'" data-suggest="'+EMO(sug)+'">✍️ לכתוב לחשבת</button>'
             +(F.length?'<button class="rvbtn" onclick="event.stopPropagation();'+F.map(function(x){ return '__r6flagDone('+x.i+')'; }).join(';')+'">✓ '+esc(F[0].f.by||'רועי')+' — טופל / לא רלוונטי</button>':'');
-          try{ issHtml+='<div class="r6ex">'+explainHtml(e,a)+'</div>'; }catch(_){}
+          try{ var okk=(a.st.k==='ok'||a.st.sev==='good')&&laneOf(e)!=='pay';
+            if(okk&&!empNotesFull(e).length) issHtml+='<div class="r6todo ok big">✓ <span>'+okText(e,a)+'</span></div>';
+            else issHtml+='<div class="r6ex'+(okk?' ok':'')+'">'+(okk?'<div class="r6todo ok big">✓ <span>'+okText(e,a)+'</span></div>':'')+explainHtml(e,a)+'</div>'; }catch(_){}
           rv=rv.replace('<div class="rvrow">','<div class="rvrow">'+extra); }
         return '<div class="row r6 sev-'+a.st.sev+' lane-'+laneOf(e)+'" data-id="'+encodeURIComponent(id)+'">'
           +'<div class="r6h">'
@@ -283,6 +311,8 @@
         try{ var ex=explainHtml(e,a); if(ex) h=h.replace(ex,''); }catch(_){}
         var pi=h.indexOf('<div class="panel"><h4>הערה לחשבת שכר</h4>'), pj=h.lastIndexOf('\n    </div>\n  </div>'); if(pi>0&&pj>pi) h=h.slice(0,pi)+h.slice(pj);
         try{ h=h.replace('</div>\n    <div class="detrow">',slipLinesHtml(e.slip)+'</div>\n    <div class="detrow">'); }catch(_){}
+        /* פדיון חופשה / מחלה — פירוט: ימים × תשלום ליום, והיתרה (איילת 3.11) */
+        try{ var ds=daysHtml(e); if(ds) h=h.replace('<h4>מס ופנסיה</h4>',ds+'<h4>מס ופנסיה</h4>'); }catch(_){}
         var sl=e.slip; if(sl){
           /* הבראה וקרן השתלמות — החודש מול החודש הקודם (איילת 3.11) */
           var P=null; try{ P=(JSON.parse(localStorage.getItem('pay-prev-v1')||'{}')[DATA.month||'']||{})[e.slipname]||null; }catch(_){}
