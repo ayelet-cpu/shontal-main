@@ -1,0 +1,47 @@
+/* מראה «קריסטל לילה» (F) לבקרת השכר — 03.11.2026, בחירת איילת.
+   מוזרק ע"י pay/index.html לתוך כל חודש. רק מראה: לא נוגע בחישובים ובנתונים. רק למסך (לא בהדפסה/PDF). */
+@media screen{
+:root,:root[data-theme],:root:not([data-theme="light"]){
+  --ground:#17122b; --surface:rgba(255,255,255,.075); --surface-2:rgba(255,255,255,.11); --raise:rgba(255,255,255,.09);
+  --ink:#ece8ff; --muted:#b9b2dc; --faint:#8f88b5; --border:rgba(255,255,255,.16); --border-2:rgba(255,255,255,.24);
+  --accent:#a78bfa; --accent-ink:#d8ccff; --accent-bg:rgba(167,139,250,.18); --accent-soft:rgba(167,139,250,.16); --surface2:rgba(255,255,255,.1);
+  --good:#34d399; --good-bg:rgba(52,211,153,.14); --warn:#fbbf24; --warn-bg:rgba(251,191,36,.14); --crit:#fb7185; --crit-bg:rgba(251,113,133,.15);
+  --neutral:#a5a0c4; --neutral-bg:rgba(255,255,255,.08); --card:rgba(255,255,255,.08); --bg-2:rgba(255,255,255,.05);
+  --shadow:10px 12px 26px rgba(0,0,0,.35),inset 1px 1px 2px rgba(255,255,255,.22),inset -4px -6px 12px rgba(0,0,0,.22);
+  --shadow-lg:0 18px 50px rgba(0,0,0,.55);
+  color-scheme:dark;
+}
+html{background:#17122b}
+body{background:radial-gradient(1200px 700px at 85% -10%,#3b2a6b 0%,transparent 60%),radial-gradient(900px 600px at 0% 100%,#2a1f55 0%,transparent 60%),#17122b fixed!important;color:var(--ink)}
+/* משטחי הזכוכית */
+.tile,.utile,.row,.cmp,.revbox,.recrow.rechd,.fixitem,.ci,.cmpc,.notebox,.reconbox,.crow,.setcard,.editwrap,.qlbox,.empedit,.draftbanner,
+#viewZarim .zr-card,#viewZarim .zr-wrap,#viewZarim .zr-form{
+  background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.04))!important;
+  border:1px solid rgba(255,255,255,.17)!important;border-radius:18px;
+  box-shadow:var(--shadow)}   /* בלי backdrop-filter: בדף עם מאות שורות זה מאט מאוד */
+.tile{border-radius:22px}
+.tbtn,.unitbtn,.fchip,.notebtn,.rvbtn,.nfilt button,.stab,#viewZarim .zr-rest button{
+  background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.2)!important;color:var(--ink);border-radius:12px;
+  box-shadow:inset 1px 1px 2px rgba(255,255,255,.2),4px 6px 14px rgba(0,0,0,.25)}
+.tbtn.primary,.unitbtn.on,.fchip.on,.stab.on{background:linear-gradient(145deg,#8b5cf6,#6d28d9)!important;border-color:#a78bfa!important;color:#fff!important}
+.fchip.crit.on{background:linear-gradient(145deg,#fb7185,#e11d48)!important;border-color:#fb7185!important}
+.rvf{background:rgba(255,255,255,.07)!important;border-color:rgba(255,255,255,.2)!important;color:var(--ink)!important}
+.rvf.on{background:linear-gradient(145deg,#8b5cf6,#6d28d9)!important;border-color:#a78bfa!important;color:#fff!important}
+.rvf.b-bad:not(.on){color:#fda4af!important;border-color:rgba(251,113,133,.5)!important}
+.rvf.b-ok:not(.on),.rvf.b-approve{color:#6ee7b7!important;border-color:rgba(52,211,153,.5)!important}
+.rvrow{background:rgba(255,255,255,.05)!important}
+.exrow{background:rgba(251,191,36,.1)!important;border-color:rgba(251,191,36,.35)!important;color:#fde68a!important}
+.exrow.ok{background:rgba(52,211,153,.1)!important;border-color:rgba(52,211,153,.35)!important;color:#a7f3d0!important}
+html body tr.dt-sub td{background:rgba(167,139,250,.16)!important;color:#e9e2ff!important;border-color:rgba(167,139,250,.4)!important}
+.rec .recrow.tfix{background:rgba(251,191,36,.08)!important}
+.ftag{background:rgba(251,191,36,.18);color:#fde68a}
+.bt thead .gA{color:var(--accent-ink)}
+input,select,textarea{background:rgba(255,255,255,.07);color:var(--ink);border-color:rgba(255,255,255,.2)}
+select option{background:#231b40;color:#ece8ff}
+/* חלונות קופצים — כמעט אטומים, שיהיה קל לקרוא */
+.modal{background:linear-gradient(145deg,rgba(46,36,86,.97),rgba(30,23,58,.97))!important;border:1px solid rgba(255,255,255,.2)!important;border-radius:20px;box-shadow:var(--shadow-lg)}
+th,.ntbl th,.miltbl th,#viewZarim th,.bt thead .bt-hd th{background:rgba(255,255,255,.08)!important;color:var(--accent-ink)}
+.bt tbody tr:hover,.row:hover{background:rgba(255,255,255,.1)!important}
+a{color:#c4b5fd}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:10px}::-webkit-scrollbar-track{background:transparent}
+}
