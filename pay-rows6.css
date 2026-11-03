@@ -1,0 +1,25 @@
+/* שורת עובד «דוגמה 6» — ראו rows6.js. עובד גם במראה הבהיר וגם בקריסטל הכהה (משתני הצבע של החודש). */
+html.rows6 .tablehead{display:none}
+html.rows6 .row.r6{display:block;padding:10px 14px}
+.row.r6 .r6h{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap}
+.row.r6 .nm{font-weight:700;font-size:17px;white-space:nowrap}
+.row.r6 .r6sub{font-size:14px;color:var(--muted,#6f6886)}
+.row.r6 .r6sub b{color:var(--accent-ink,#5b21b6);font-weight:600}
+.row.r6 .r6note{display:inline-flex;gap:6px;align-items:center}
+.row.r6 .r6note .notechip{font-size:13.5px;max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.r6 .r6note .notebtn{font-size:13px;padding:2px 8px}
+.row.r6 .r6chips{display:flex;gap:6px;margin-inline-start:auto;align-items:center;flex-wrap:wrap}
+.row.r6 .r6c{border:1px solid var(--border,#ece6dc);border-radius:10px;padding:2px 10px;font-size:15.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.row.r6 .r6c i{font-style:normal;color:var(--muted,#6f6886);font-size:12.5px;margin-inline-end:5px}
+.row.r6 .r6c.gap{border-color:rgba(220,38,38,.45);background:var(--crit-bg,#fdecec);color:var(--crit,#c2410c)}
+.row.r6 .pill{font-size:14px}
+.row.r6 ul.r6iss{margin:6px 0 0;padding-inline-start:20px;columns:2;column-gap:28px}
+.row.r6 ul.r6iss li{font-size:15px;line-height:1.45;color:var(--crit,#c2410c);break-inside:avoid;margin:1px 0}
+.row.r6 ul.r6iss li.info{color:var(--muted,#6f6886)}
+.row.r6 .rvrow{margin-top:6px;padding:5px 8px}
+.row.r6 .rvbtn{font-size:14px;padding:4px 11px}
+@media (max-width:760px){
+  .row.r6 .r6chips{margin-inline-start:0}
+  .row.r6 ul.r6iss{columns:1}
+  .row.r6 .r6note .notechip{max-width:220px}
+}

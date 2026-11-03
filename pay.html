@@ -127,13 +127,18 @@ var PRE='<script>/* ענן: הזיכרון של הדפדפן = הענן */(funct
   'Object.defineProperty(window,"localStorage",{value:ls,configurable:true});window.__PAY_CLOUD=1;}catch(e){window.__PAY_FAIL=String(e);}})();<\/script>';
 function inject(html){
   var i=html.search(/<script[\s>]/i); if(i<0) throw new Error('החודש בענן לא תקין');
-  return html.slice(0,i)+PRE+html.slice(i)+(themed()?'<style id="payTheme">'+THEME+'</style>':'');
+  return html.slice(0,i)+PRE+html.slice(i)+(themed()?'<style id="payTheme">'+THEME+'</style>':'')
+    +(SYS!=='hz'&&ROWS_CSS&&ROWS_JS?'<style id="payRows">'+ROWS_CSS+'</style><script id="payRowsJs">'+ROWS_JS.replace(/<\/script/gi,'<\\/script')+'<\/script>':'');
 }
 /* מראה «קריסטל לילה» (בחירת איילת 03.11.2026) — רק מראה, מוזרק בסוף החודש; «🎨» בסרגל מחזיר למראה הרגיל */
 var THEME='';
 function useTheme(){ try{ return localStorage.getItem('pay-look')!=='plain'; }catch(_){ return true; } }
 function themed(){ return SYS!=='hz'&&useTheme()&&!!THEME; }   /* התקזזויות — מערכת אחרת, נשארת כמו שהיא */
 function loadTheme(){ return fetch('pay-theme.css',{cache:'no-cache'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){ THEME=t; },function(){}); }
+/* שורת עובד «דוגמה 6» (איילת 3.11) — rows6.css + rows6.js מוזרקים לכל חודש; אם לא נטענו — השורה הרגילה */
+var ROWS_CSS='', ROWS_JS='';
+function txt(u){ return fetch(u,{cache:'no-cache'}).then(function(r){ return r.ok?r.text():''; },function(){ return ''; }); }
+function loadRows(){ return Promise.all([txt('pay-rows6.css'),txt('pay-rows6.js')]).then(function(r){ ROWS_CSS=r[0]; ROWS_JS=r[1]; }); }
 
 /* ---------- טעינה ---------- */
 var FILES=[], SYS=null, MON=null;
@@ -180,7 +185,7 @@ function pull(){
 }
 function start(){
   var p=new URLSearchParams(location.search); SYS=p.get('s'); MON=p.get('m');
-  Promise.all([rpc('pay_list'),rpc('pay_kv_load'),loadTheme()]).then(function(res){
+  Promise.all([rpc('pay_list'),rpc('pay_kv_load'),loadTheme(),loadRows()]).then(function(res){
     FILES=res[0]||[]; KV=res[1]||{}; lastPull=new Date().toISOString();
     setInterval(pull,60000);
     if(!SYS) return list();
