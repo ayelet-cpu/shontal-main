@@ -159,9 +159,11 @@
         /* «תקין» רק כשאין שום דבר ב«מה לא בסדר» — גם כשהסה"כ מתאים, פער ברכיב (שעות מארחת מול 150%) = לבדוק (איילת 3.11: «למה רשמת שהעובד תקין») */
         else if(a&&a.st&&(a.st.sev==='good'||a.st.k==='ok')&&laneOf(e)!=='pay'&&e.slip){ var iss=(issuesOf(e,a)||[]).filter(function(x){ return !/^ℹ/.test(String(x).replace(/<[^>]+>/g,'')); });
           if(iss.length) a.st={k:'gap',sev:'warn',label:'⚠ '+iss.length+(iss.length>1?' פערים ברכיבים':' פער ברכיב')}; } }catch(_){} return a; }; }
-    function slipLinesHtml(s){ if(!s||!(s.lines||[]).length) return '';
+    function slipLinesHtml(s,e){ if(!s||!(s.lines||[]).length) return '';
       var odd=oddLines(s), isOdd=function(l){ return odd.find(function(x){ return x.l===l; }); };
-      return '<details class="r6lines"'+(odd.length?' open':'')+'><summary>📄 כל שורות התלוש ('+s.lines.length+')'+(odd.length?' · <b class="r6bad">'+odd.length+' חריגות</b>':'')+'</summary>'
+      /* מנהל משמרת / גלובלי / נטו — הטבלה למעלה מאחדת הכול לשורה אחת, אז כאן הפירוט המלא פתוח (איילת 4.11: «למה אין פירוט של הבונוס?») */
+      var lump=e&&(e.basis==='manager'||e.glob||e.net);
+      return '<details class="r6lines"'+(odd.length||lump?' open':'')+'><summary>📄 '+(lump?'פירוט רכיבי התלוש':'כל שורות התלוש')+' ('+s.lines.length+')'+(odd.length?' · <b class="r6bad">'+odd.length+' חריגות</b>':'')+'</summary>'
         +'<div class="r6lt">'+s.lines.map(function(l){ var o=isOdd(l), q=l[2]!=null&&l[3]!=null?F1(l[2])+' × '+F1(l[3]):'';
           return '<div class="r6lr'+(o?' '+o.sev:'')+'"><span>'+esc(l[0])+(o?' <b>'+(o.sev==='crit'?'❗':'⚠')+'</b>':'')+'</span><span class="q">'+q+'</span><span class="v">'+(l[4]?F0(l[4]):(l[1]==='meals'||l[1]==='study'?'שווי':'0'))+'</span></div>'; }).join('')
         +'<div class="r6lr tot"><span>סה״כ תשלומים</span><span></span><span class="v">'+F0(s.total!=null?s.total:s.gross)+'</span></div>'
@@ -319,7 +321,7 @@
         /* «מה לא בסדר» עבר למעלה (מתחת להערה של רועי); «הערה לחשבת שכר» הוסר — יש «✍️ לכתוב לחשבת» אחד בשורת הכפתורים */
         try{ var ex=explainHtml(e,a); if(ex) h=h.replace(ex,''); }catch(_){}
         var pi=h.indexOf('<div class="panel"><h4>הערה לחשבת שכר</h4>'), pj=h.lastIndexOf('\n    </div>\n  </div>'); if(pi>0&&pj>pi) h=h.slice(0,pi)+h.slice(pj);
-        try{ h=h.replace('</div>\n    <div class="detrow">',slipLinesHtml(e.slip)+'</div>\n    <div class="detrow">'); }catch(_){}
+        try{ h=h.replace('</div>\n    <div class="detrow">',slipLinesHtml(e.slip,e)+'</div>\n    <div class="detrow">'); }catch(_){}
         /* פדיון חופשה / מחלה — פירוט: ימים × תשלום ליום, והיתרה (איילת 3.11) */
         try{ var ds=daysHtml(e); if(ds) h=h.replace('<h4>מס ופנסיה</h4>',ds+'<h4>מס ופנסיה</h4>'); }catch(_){}
         var sl=e.slip; if(sl){
