@@ -163,8 +163,12 @@
           var A=empNotesFull(e); if(!A.length) return '<div class="exl exm">אין הערות שכר לעובד/ת זה החודש.</div>';
           return A.map(function(n){ var st=noteStatus(e,n);
             if(isMe(n)) return '<div class="exl r6n"><span class="r6st me">🔒 לעצמי — לא בתלוש</span> «'+esc(n.t)+'»'+(n.topic?' <span class="exm">('+esc(n.topic)+')</span>':'')+'<div class="r6why">הערה בשבילך — לא לחשבת, ולא אמורה להופיע בתלוש</div></div>';
-            var tag=st.ok===true?'<span class="r6st done">✓ בוצע בתלוש</span>':st.ok===false?'<span class="r6st miss">❗ לא בוצע בתלוש</span>':'<span class="r6st wait">⏳ מחכה לחשבת</span>';
-            var why=st.ok===true?'':st.ok===false?(st.t||'ביקשנו, והתלוש הגיע בלי זה — לבקש תיקון'):'אין במה לבדוק את זה בתלוש — מחכים שהחשבת תאשר שטיפלה';
+            if(!isFirst(n)){ var dn=!!n.done||st.ok===true;
+              return '<div class="exl r6n">'+(dn?'<span class="r6st done">✓ החשבת טיפלה</span>':'<span class="r6st wait">⏳ ביקשת אחרי התלוש</span>')+' «'+esc(n.t)+'»'
+                +'<div class="r6why">'+(dn?'סומן שהחשבת טיפלה':'כתבת לחשבת אחרי שהתלוש הגיע — מחכים לתשובה או לתלוש מתוקן')+'</div></div>'; }
+            if(!e.slip) return '<div class="exl r6n"><span class="r6st miss">✗ לא בוצע — אין תלוש</span> «'+esc(n.t)+'»'+(n.topic?' <span class="exm">('+esc(n.topic)+')</span>':'')+'</div>';
+            var tag=st.ok===true?'<span class="r6st done">✓ בוצע בתלוש</span>':st.ok===false?'<span class="r6st miss">❗ לא בוצע בתלוש</span>':'<span class="r6st info">ℹ אין במה לבדוק בתלוש</span>';
+            var why=st.ok===true?'':st.ok===false?(st.t||'ביקשנו, והתלוש הגיע בלי זה — לבקש תיקון'):'נשלח לחשבת לפני התלוש — אין שורה בתלוש שמראה שבוצע';
             return '<div class="exl r6n">'+tag+' «'+esc(n.t)+'»'+(n.topic?' <span class="exm">('+esc(n.topic)+(n.me?' · לעצמי':'')+')</span>':'')+(why?'<div class="r6why">'+esc(why)+'</div>':'')+'</div>';
           }).join('');
         }catch(err){ return oldNotes(e); }
