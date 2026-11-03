@@ -30,7 +30,11 @@
       if(/חשבונית/.test((e.rateNote||'')+(e.gold_status||''))&&!s) return '<div class="r6todo ok">✓ <span><b>עובד/ת חשבונית</b> — לא מקבל/ת תלוש, אין מה לבדוק</span></div>';
       var lane=laneOf(e), nm=EMO(e.name), out='';
       var openQ=aqOf(e.name).map(function(q,i){ return {q:q,i:i}; }).filter(function(x){ return !x.q.a; });
-      if(lane==='pay') out='<div class="r6todo ok">✓ <span><b>אישרת</b>'+(iss.length?' — למרות: '+iss.slice(0,2).join(' · '):'')+'</span></div>';
+      var asked=afterNotes(e).filter(function(n){ return !n.done; });
+      var waitLine=asked.length?'<div class="r6todo wait">⏳ <span><b>'+(!s?'ביקשת מהחשבת תלוש':'ביקשת תיקון מהחשבת')+'</b> — מחכים לתשובה או לתלוש '+(!s?'':'מתוקן')+'. את לא צריכה לעשות כלום כרגע.</span>'
+        +'<span class="go"><button class="r6btn lite" data-note="'+nm+'">✏️ לערוך מה שביקשת</button></span></div>':'';
+      if(asked.length&&lane!=='pay'&&(!s||a.st.sev==='crit'||a.st.sev==='warn')) out=waitLine;
+      else if(lane==='pay') out='<div class="r6todo ok">✓ <span><b>אישרת</b>'+(iss.length?' — למרות: '+iss.slice(0,2).join(' · '):'')+'</span></div>';
       else if(!s&&a.worked){
         var msg=e.name+' — אין תלוש. עבד/ה '+F1(e.hours||0)+' שעות'+(e.days?' ב-'+e.days+' ימים':'')+' — לבדוק ולהוציא תלוש';
         out='<div class="r6todo bad">❗ <span><b>אין תלוש</b> — עבד/ה '+F1(e.hours||0)+' שעות'+(e.days?' ('+e.days+' ימים)':'')+'</span>'
@@ -53,26 +57,41 @@
       });
       return out;
     }
-    /* כל הערה בשורה קצרה עם המצב העדכני; מה קרה איתה — רק בריחוף (בטלפון: בלחיצה) */
-    function notesLines(e){
-      var L=[], s=e.slip;
-      empNotesFull(e).forEach(function(n){ var st=noteStatus(e,n);
-        var tag=st.ok===true?'<span class="r6st done">✓ בוצע בתלוש</span>':st.ok===false?'<span class="r6st miss">❗ לא בוצע</span>':'<span class="r6st wait">⏳ נשלח לחשבת</span>';
-        var h='<div>📝 נכתב בהערות השכר'+(n.topic?' · '+esc(n.topic):'')+(n.me?' · <b>לעצמי — לא נשלח לחשבת</b>':' · נשלח לחשבת')+'</div>'
-          +(n.src?'<div class="r6d">מקור: '+esc(n.src)+'</div>':'')
-          +'<div>'+(!s?'⏳ אין תלוש — אי אפשר לבדוק אם בוצע':st.ok===true?'✓ בתלוש: '+esc(String(st.t).replace(/^✓\s*/,'')):st.ok===false?'❗ בתלוש: '+esc(String(st.t).replace(/^✗\s*/,''))+' — לבקש תיקון':'⏳ אין במה לבדוק את זה בתלוש — מחכים שהחשבת תאשר')+'</div>';
-        if(n.me) tag='<span class="r6st me">🔒 לעצמי</span>';
-        L.push('<div class="r6n">'+tag+'<span class="r6t">'+esc(noteTxt(n.t))+'</span><div class="r6hist">'+h+'</div></div>');
-      });
-      var mine=noteGet(e.name);
+    /* שני סוגי הערות (איילת 3.11: «לא ברור מה לפני מה ולמה אני ממתינה»):
+       1. נשלחו עם הערות השכר — לפני שהתלוש הגיע (מדף הבית). המצב: בוצע / לא בוצע בתלוש / אין תלוש.
+       2. נכתבו בבקרה אחרי שהתלוש הגיע (תיקונים, «לבקש תלוש»). המצב: מחכים לתשובה או לתלוש מתוקן / החשבת טיפלה. */
+    function isFirst(n){ return /^o\d/.test(String(n.id||''))||/דף הבית|הערות שכר לחשבת/.test(String(n.src||'')); }
+    function afterNotes(e){
+      var R=[], mine=noteGet(e.name);
+      empNotesFull(e).filter(function(n){ return !isFirst(n)&&!n.me; }).forEach(function(n){ R.push({t:n.t,done:!!n.done||noteStatus(e,n).ok===true}); });
       /* ההערה בבקרה שנבנתה מאותן הערות שכר — לא להציג פעמיים */
-      if(mine&&empNotesFull(e).some(function(n){ var t=String(n.t||'').replace(/\s+/g,' ').trim().slice(0,30); return t&&String(mine).replace(/\s+/g,' ').indexOf(t)>=0; })) mine='';
-      if(mine){ var dn=noteDoneOf(e.name);
-        L.push('<div class="r6n">'+(dn?'<span class="r6st done">✓ החשבת טיפלה</span>':'<span class="r6st wait">⏳ ההערה שלך לחשבת</span>')+'<span class="r6t">'+esc(noteTxt(mine))+'</span>'
-          +'<button class="r6btn lite sm" data-note="'+EMO(e.name)+'">✏️</button><div class="r6hist"><div>📝 ההערה שכתבת בבקרה לחשבת השכר</div><div>'+(dn?'✓ סומן «בוצע»':'⏳ עוד לא סומן «בוצע»')+'</div></div></div>'); }
+      if(mine&&!empNotesFull(e).some(function(n){ var t=String(n.t||'').replace(/\s+/g,' ').trim().slice(0,30); return t&&String(mine).replace(/\s+/g,' ').indexOf(t)>=0; }))
+        R.push({t:mine,done:!!noteDoneOf(e.name),mine:true});
+      return R;
+    }
+    function notesLines(e){
+      var s=e.slip, A=[], B=[];
+      empNotesFull(e).filter(isFirst).forEach(function(n){ var st=noteStatus(e,n), tag, now;
+        if(n.me){ tag='<span class="r6st me">🔒 לעצמי</span>'; now='רק לך — לא נשלח לחשבת'; }
+        else if(!s){ tag='<span class="r6st miss">✗ לא בוצע — אין תלוש</span>'; now='אין תלוש, אז ההערה לא בוצעה. מחכים לתלוש'; }
+        else if(st.ok===true){ tag='<span class="r6st done">✓ בוצע בתלוש</span>'; now='בתלוש: '+String(st.t).replace(/^✓\s*(טופל\s*—\s*)?/,''); }
+        else if(st.ok===false){ tag='<span class="r6st miss">❗ לא בוצע בתלוש</span>'; now=String(st.t).replace(/^✗\s*/,'')+' — לבקש תיקון'; }
+        else { tag='<span class="r6st info">ℹ אין במה לבדוק בתלוש</span>'; now='זה מידע לחשבת (למשל פרטי עובד חדש) — אין שורה בתלוש שמראה שבוצע'; }
+        A.push('<div class="r6n">'+tag+'<span class="r6t">'+esc(noteTxt(n.t))+'</span><div class="r6hist">'
+          +'<div>1️⃣ נשלח לחשבת עם הערות השכר'+(n.topic?' · '+esc(n.topic):'')+'</div>'
+          +'<div>2️⃣ '+(s?'התלוש הגיע':'התלוש עוד לא הגיע')+'</div><div>3️⃣ <b>'+esc(now)+'</b></div></div></div>');
+      });
+      afterNotes(e).forEach(function(n){
+        B.push('<div class="r6n">'+(n.done?'<span class="r6st done">✓ החשבת טיפלה</span>':'<span class="r6st wait">⏳ מחכים לתשובה או לתלוש מתוקן</span>')
+          +'<span class="r6t">'+esc(noteTxt(n.t))+'</span>'+(n.mine?'<button class="r6btn lite sm" data-note="'+EMO(e.name)+'">✏️</button>':'')
+          +'<div class="r6hist"><div>1️⃣ '+(s?'התלוש הגיע':'התלוש לא הגיע')+'</div><div>2️⃣ כתבת לחשבת אחרי זה (בבקרה)</div><div>3️⃣ <b>'+(n.done?'סומן שהחשבת טיפלה':'עוד לא — מחכים שהחשבת תענה או תשלח תלוש מתוקן')+'</b></div></div></div>');
+      });
       aqOf(e.name).filter(function(q){ return q.a; }).forEach(function(q){
-        L.push('<div class="r6n"><span class="r6st done">💬 ענית לחשבת</span><span class="r6t">'+esc(noteTxt(q.a))+'</span><div class="r6hist"><div>❓ החשבת שאלה'+(q.at?' ('+esc(q.at)+')':'')+': «'+esc(q.q)+'»</div><div>💬 ענית'+(q.aat?' ('+esc(q.aat)+')':'')+': «'+esc(q.a)+'»</div></div></div>'); });
-      return L.length?'<div class="r6notes">'+L.join('')+'</div>':'';
+        B.push('<div class="r6n"><span class="r6st done">💬 ענית לחשבת</span><span class="r6t">'+esc(noteTxt(q.a))+'</span><div class="r6hist"><div>1️⃣ החשבת שאלה'+(q.at?' ('+esc(q.at)+')':'')+': «'+esc(q.q)+'»</div><div>2️⃣ <b>ענית'+(q.aat?' ('+esc(q.aat)+')':'')+': «'+esc(q.a)+'»</b></div></div></div>'); });
+      var h='';
+      if(A.length) h+='<div class="r6grp">📤 נשלח עם הערות השכר — לפני התלוש</div>'+A.join('');
+      if(B.length) h+='<div class="r6grp">✍️ אחרי התלוש — מה שביקשת מהחשבת</div>'+B.join('');
+      return h?'<div class="r6notes">'+h+'</div>':'';
     }
     /* בטלפון אין ריחוף — לחיצה על הערה פותחת/סוגרת את ההיסטוריה שלה (בלי לפתוח את הכרטיס) */
     document.addEventListener('click',function(ev){ var n=ev.target.closest&&ev.target.closest('.r6n'); if(!n||ev.target.closest('button')) return; ev.stopPropagation(); n.classList.toggle('show'); },true);
@@ -134,6 +153,50 @@
           .replace('<span class="rn">הפרש</span>','<span class="rn" title="+ חסר בתלוש · − עודף בתלוש">הפרש (+ חסר)</span>');
       };
     }
+    /* 📄 צילום התלוש (איילת 3.11): התמונה נשמרת בענן עם ת"ז / בנק / כתובת מוסתרים (pay/tools/slip_images.py);
+       המעטפת (pay/index.html) נותנת לחודש את window.__paySlipImg(שם בתלוש) שמחזירה {img,page} או null. */
+    function slipFn(){ try{ return window.__paySlipImg||(window.parent!==window&&window.parent.__paySlipImg)||null; }catch(_){ return null; } }
+    if(typeof rvBtns==="function"){
+      var oldBtns=rvBtns;
+      window.rvBtns=function(e){ var h=oldBtns(e);
+        if(!e.slip||!e.slipname||!slipFn()) return h;
+        return h.replace(/<\/div>$/,'<button class="rvbtn" onclick="event.stopPropagation();__r6slip(decodeURIComponent(\''+EMO(e.slipname)+'\'),decodeURIComponent(\''+EMO(e.name)+'\'))">📄 צילום התלוש</button></div>'); };
+    }
+    window.__r6slip=function(slipname,name){
+      var ov=document.createElement('div'); ov.className='r6slipov';
+      ov.innerHTML='<div class="r6slipbox"><div class="r6sliphd"><b>📄 התלוש של '+esc(name)+'</b><span class="r6d">ת"ז, בנק וכתובת מוסתרים</span><button class="r6btn lite" data-z>🔍 הגדלה</button><button class="r6btn lite" data-x>✕ סגירה</button></div><div class="r6slipimg">טוען…</div></div>';
+      document.body.appendChild(ov);
+      var close=function(){ ov.remove(); document.removeEventListener('keydown',esc_); };
+      var esc_=function(k){ if(k.key==='Escape') close(); };
+      document.addEventListener('keydown',esc_);
+      ov.addEventListener('click',function(ev){ if(ev.target===ov||ev.target.closest('[data-x]')) close(); if(ev.target.closest('[data-z]')) ov.classList.toggle('zoom'); });
+      Promise.resolve(slipFn()(slipname)).then(function(r){
+        var box=ov.querySelector('.r6slipimg');
+        box.innerHTML=r&&r.img?'<img alt="תלוש" src="'+r.img+'">':'<div class="r6d" style="padding:30px">אין עדיין צילום לתלוש הזה בענן.</div>';
+      },function(){ ov.querySelector('.r6slipimg').innerHTML='<div class="r6d" style="padding:30px">לא הצלחתי לטעון את הצילום.</div>'; });
+    };
+    /* מעקב מילואים (איילת 3.11: «זה לא מסנן לפי עובדים»): בחירת עובד ברשימה מסננת את הטבלה לעובד הזה;
+       «✕ כל העובדים» מחזיר. הטבלה עצמה נבנית מחדש בקוד החודש — הסינון מוחל שוב אחרי כל בנייה. */
+    (function(){
+      var sel=document.getElementById('milEmp'), tbl=document.getElementById('milTbl'); if(!sel||!tbl) return;
+      var clr=document.createElement('button'); clr.className='tbtn'; clr.id='milClr'; clr.hidden=true; clr.textContent='✕ כל העובדים';
+      sel.insertAdjacentElement('afterend',clr);
+      function norm(s){ return String(s||'').replace(/[^֐-׿a-zA-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+      function apply(){
+        var v=sel.selectedIndex>0?norm(sel.value||sel.options[sel.selectedIndex].text):''; clr.hidden=!v;
+        var rows=[].slice.call(tbl.querySelectorAll('tr')), cur=null;
+        rows.forEach(function(tr){
+          if(tr.querySelector('th')){ tr.style.display=''; return; }
+          var first=norm((tr.cells[0]||{}).textContent).replace(/\s*\d+\s*$/,'');   /* שורת קבוצה «• שם (3)» או שורת טופס */
+          if(tr.cells.length===1||/^\s*•/.test((tr.cells[0]||{}).textContent||'')) cur=first;
+          var who=tr.cells.length===1?cur:(first||cur);
+          tr.style.display=!v||(who&&(who===v||who.indexOf(v)===0||v.indexOf(who)===0))?'':'none';
+        });
+      }
+      sel.addEventListener('change',apply);
+      clr.addEventListener('click',function(){ sel.selectedIndex=0; apply(); });
+      new MutationObserver(function(){ if(sel.selectedIndex>0) apply(); }).observe(tbl,{childList:true,subtree:true});
+    })();
     document.documentElement.classList.add("rows6");
     if(typeof render==="function"&&document.getElementById("list")&&document.getElementById("list").children.length) render();
   }catch(_){}

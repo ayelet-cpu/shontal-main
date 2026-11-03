@@ -138,6 +138,8 @@ function loadTheme(){ return fetch('pay-theme.css',{cache:'no-cache'}).then(func
 /* שורת עובד «דוגמה 6» (איילת 3.11) — rows6.css + rows6.js מוזרקים לכל חודש; אם לא נטענו — השורה הרגילה */
 var ROWS_CSS='', ROWS_JS='';
 function txt(u){ return fetch(u,{cache:'no-cache'}).then(function(r){ return r.ok?r.text():''; },function(){ return ''; }); }
+/* 📄 צילום התלוש — החודש (iframe) קורא לזה דרך parent.__paySlipImg(שם בתלוש) */
+window.__paySlipImg=function(name){ return rpc('pay_slip_img',{p_sys:SYS,p_month:MON,p_name:name}); };
 function loadRows(){ return Promise.all([txt('pay-rows6.css'),txt('pay-rows6.js')]).then(function(r){ ROWS_CSS=r[0]; ROWS_JS=r[1]; }); }
 
 /* ---------- טעינה ---------- */
