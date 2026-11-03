@@ -57,7 +57,10 @@
           +'<span class="go"><button class="r6btn" data-addnote="'+nm+'" data-suggest="'+EMO(msg)+'">➕ לבקש תלוש מהחשבת</button>'
           +'<button class="r6btn lite" data-lane="pay" data-emp="'+nm+'">✓ ידוע לי, לא צריך</button></span></div>';
       }
-      else if(!s) out='';
+      else if(!s&&a.st.k!=='note') out='';
+      else if(a.st.k==='note'&&!iss.length)
+        out='<div class="r6todo wait">📝 <span><b>יש הערות לעובד/ת — לוודא שכל אחת טופלה</b> — ליד כל הערה «✓ טופל», או «✅ בדקתי» אם הכול בסדר</span>'
+          +'<span class="go"><button class="r6btn lite" data-lane="pay" data-emp="'+nm+'">✅ בדקתי — הכול בסדר</button></span></div>';
       else if((a.st.sev==='crit'||a.st.sev==='warn')&&!(a.st.flag&&!iss.length)){
         var head=a.diff!=null&&Math.abs(a.diff)>35&&!redOK(e,a)?(a.diff>0?'חסרים '+F0(a.diff)+' ₪ בתלוש':'עודף '+F0(-a.diff)+' ₪ בתלוש'):(a.st.sev==='crit'?'יש בעיה בתלוש':'לשים לב');
         var sug=(iss.length?e.name+' — '+iss.map(function(x){ return String(x).replace(/<[^>]+>/g,''); }).join('; '):gapSuggestion(e,a));
@@ -160,7 +163,11 @@
       window.assess=function(e){ var a=oldAs2(e); try{ if(a&&a.st&&a.st.sev!=='crit'&&laneOf(e)!=='pay'&&oddLines(e.slip).some(function(x){ return x.sev==='crit'; })) a.st={k:'gap',sev:'crit',label:'❗ שורה במינוס בתלוש'};
         /* «תקין» רק כשאין שום דבר ב«מה לא בסדר» — גם כשהסה"כ מתאים, פער ברכיב (שעות מארחת מול 150%) = לבדוק (איילת 3.11: «למה רשמת שהעובד תקין») */
         else if(a&&a.st&&(a.st.sev==='good'||a.st.k==='ok')&&laneOf(e)!=='pay'&&e.slip){ var iss=(issuesOf(e,a)||[]).filter(function(x){ return !/^ℹ/.test(String(x).replace(/<[^>]+>/g,'')); });
-          if(iss.length) a.st={k:'gap',sev:'warn',label:'⚠ '+iss.length+(iss.length>1?' פערים ברכיבים':' פער ברכיב')}; } }catch(_){} return a; }; }
+          if(iss.length) a.st={k:'gap',sev:'warn',label:'⚠ '+iss.length+(iss.length>1?' פערים ברכיבים':' פער ברכיב')}; }
+        /* כל עובד שיש לו הערה (שכר / לעצמי / רועי / שאלת חשבת) שלא סימנת ✓ — לבדיקה, לא «תקין» (איילת 4.11: «לא לפספס אף עובד עם הערה») */
+        if(a&&a.st&&(a.st.sev==='good'||a.st.k==='ok')&&laneOf(e)!=='pay'){ var no=openNotesN(e); if(no) a.st={k:'note',sev:'warn',label:'📝 '+(no>1?no+' הערות — לוודא':'הערה — לוודא')}; } }catch(_){} return a; }; }
+    function openNotesN(e){ var n=0; try{ n+=empNotesFull(e).filter(function(x){ return String(x.t||'').trim()&&!handled(e,x); }).length; }catch(_){}
+      try{ n+=flagsOf(e).filter(function(x){ return !x.f.done; }).length; }catch(_){} try{ n+=aqOf(e.name).filter(function(q){ return !q.a; }).length; }catch(_){} return n; }
     function slipLinesHtml(s,e){ if(!s||!(s.lines||[]).length) return '';
       var odd=oddLines(s), isOdd=function(l){ return odd.find(function(x){ return x.l===l; }); };
       /* מנהל משמרת / גלובלי / נטו — הטבלה למעלה מאחדת הכול לשורה אחת, אז כאן הפירוט המלא פתוח (איילת 4.11: «למה אין פירוט של הבונוס?») */
