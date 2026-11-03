@@ -12,6 +12,7 @@
   color-scheme:dark;
 }
 html{background:#17122b}
+#themeBtn{display:none!important}   /* במראה הזה המעבר לבהיר הוא בכפתור «☀️ מצב בהיר» למעלה */
 body{background:radial-gradient(1200px 700px at 85% -10%,#3b2a6b 0%,transparent 60%),radial-gradient(900px 600px at 0% 100%,#2a1f55 0%,transparent 60%),#17122b fixed!important;color:var(--ink)}
 /* משטחי הזכוכית */
 .tile,.utile,.row,.cmp,.revbox,.recrow.rechd,.fixitem,.ci,.cmpc,.notebox,.reconbox,.crow,.setcard,.editwrap,.qlbox,.empedit,.draftbanner,

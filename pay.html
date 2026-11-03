@@ -20,7 +20,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .bar select{height:32px;border-radius:9px;border:1px solid var(--line);background:transparent;color:inherit;padding:0 8px;font:inherit}
 .bar a{color:var(--acc);text-decoration:none;font-weight:600;margin-inline-start:auto;white-space:nowrap}
 .st{font-size:12.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.look{height:32px;width:36px;border-radius:9px;border:1px solid var(--line);background:transparent;cursor:pointer;font-size:15px;flex:none}
+.look{height:32px;padding:0 10px;border-radius:9px;color:inherit;font-family:inherit;border:1px solid var(--line);background:transparent;cursor:pointer;font-size:15px;flex:none}
 .st.ok{color:var(--ok)}.st.warn{color:var(--warn);font-weight:600}.st.bad{color:var(--bad);font-weight:600}
 #fr{position:fixed;top:46px;inset-inline:0;bottom:0;width:100%;height:calc(100% - 46px);border:0;background:#fff}
 .msg{max-width:440px;margin:18vh auto 0;padding:26px;border-radius:18px;background:var(--bar);border:1px solid var(--line);text-align:center;line-height:1.6}
@@ -35,7 +35,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 </style>
 </head>
 <body>
-<div class="bar hid" id="bar"><b id="btitle">בקרת שכר</b><select id="ssel" aria-label="מסעדה"></select><select id="msel" aria-label="חודש"></select><span class="st" id="st">טוען…</span><button id="look" class="look" title="החלפת מראה: קריסטל / רגיל">🎨</button><a href="mission.html">מרכז הבקרה ←</a></div>
+<div class="bar hid" id="bar"><b id="btitle">בקרת שכר</b><select id="ssel" aria-label="מסעדה"></select><select id="msel" aria-label="חודש"></select><span class="st" id="st">טוען…</span><button id="look" class="look" title="מעבר בין מצב כהה למצב בהיר">☀️ מצב בהיר</button><a href="mission.html">מרכז הבקרה ←</a></div>
 <div id="view"></div>
 <script>
 (function(){
@@ -164,6 +164,7 @@ function open(){
     var fr=document.createElement('iframe'); fr.id='fr'; fr.title=f.title||'בקרת שכר';
     if(themed()) fr.style.background='#17122b';
     $('look').classList.toggle('hid',SYS==='hz');
+    $('look').textContent=useTheme()?'☀️ מצב בהיר':'🌙 מצב כהה';
     $('view').innerHTML=''; $('view').appendChild(fr); fr.srcdoc=html;
     fr.onload=function(){ var w=fr.contentWindow; if(w&&w.__PAY_FAIL){ setSt('⚠ לא הצלחתי לחבר את השמירה לענן — לא לעבוד כאן ('+w.__PAY_FAIL+')','bad'); }
       else setSt('☁ בענן · '+monLbl(MON),'ok'); };
