@@ -169,6 +169,15 @@
       var oldDetail=detailHtml;
       window.detailHtml=function(e,a){
         var h=oldDetail(e,a);
+        var sl=e.slip; if(sl){
+          /* הבראה וקרן השתלמות — החודש מול החודש הקודם (איילת 3.11) */
+          var P=null; try{ P=(JSON.parse(localStorage.getItem('pay-prev-v1')||'{}')[DATA.month||'']||{})[e.slipname]||null; }catch(_){}
+          var pv=function(v){ return P?F0(v||0)+' ₪':'—'; };
+          var rows=kv('הבראה — החודש',F0(sl.recup||0)+' ₪')+kv('הבראה — '+(P&&P.m?P.m:'חודש קודם'),pv(P&&P.recup))
+            +kv('קרן השתלמות (מעסיק) — החודש',F0(sl.empStudy||0)+' ₪')+kv('קרן השתלמות (מעסיק) — '+(P&&P.m?P.m:'חודש קודם'),pv(P&&P.empStudy))
+            +((sl.study||(P&&P.study))?kv('שווי קרן השתלמות (מעל התקרה) — החודש / קודם',F0(sl.study||0)+' / '+pv(P&&P.study)):'');
+          h=h.replace('<h4>מס ופנסיה</h4>','<h4>מס ופנסיה</h4>'+rows);
+        }
         return h.replace('<div class="detail">','<div class="detail r6d">')
           .replace('הערות שכר — טופלו?','הערות שכר החודש — מה המצב')
           .replace('<span class="chip">⏳ טרם בוצע</span>','<span class="r6st wait">⏳ מחכה לחשבת</span>')
@@ -183,7 +192,7 @@
     if(typeof rvBtns==="function"){
       var oldBtns=rvBtns;
       window.rvBtns=function(e){ var h=oldBtns(e);
-        if(!e.slip||!e.slipname||!slipFn()) return h;
+        if(!e.slip||!e.slipname) return h;   /* הכפתור תמיד מוצג כשיש תלוש; אם המעטפת ישנה — הודעה לרענן */
         return h.replace(/<\/div>$/,'<button class="rvbtn" onclick="event.stopPropagation();__r6slip(decodeURIComponent(\''+EMO(e.slipname)+'\'),decodeURIComponent(\''+EMO(e.name)+'\'))">📄 צילום התלוש</button></div>'); };
     }
     window.__r6slip=function(slipname,name){
@@ -194,10 +203,10 @@
       var esc_=function(k){ if(k.key==='Escape') close(); };
       document.addEventListener('keydown',esc_);
       ov.addEventListener('click',function(ev){ if(ev.target===ov||ev.target.closest('[data-x]')) close(); if(ev.target.closest('[data-z]')) ov.classList.toggle('zoom'); });
-      Promise.resolve(slipFn()(slipname)).then(function(r){
+      (slipFn()?Promise.resolve(slipFn()(slipname)):Promise.reject('no-shell')).then(function(r){
         var box=ov.querySelector('.r6slipimg');
         box.innerHTML=r&&r.img?'<img alt="תלוש" src="'+r.img+'">':'<div class="r6d" style="padding:30px">אין עדיין צילום לתלוש הזה בענן.</div>';
-      },function(){ ov.querySelector('.r6slipimg').innerHTML='<div class="r6d" style="padding:30px">לא הצלחתי לטעון את הצילום.</div>'; });
+      },function(){ ov.querySelector('.r6slipimg').innerHTML='<div class="r6d" style="padding:30px">לא הצלחתי לטעון את הצילום — לרענן את הדף (Ctrl+Shift+R) ולנסות שוב.</div>'; });
     };
     /* מעקב מילואים (איילת 3.11: «זה לא מסנן לפי עובדים»): בחירת עובד ברשימה מסננת את הטבלה לעובד הזה;
        «✕ כל העובדים» מחזיר. הטבלה עצמה נבנית מחדש בקוד החודש — הסינון מוחל שוב אחרי כל בנייה. */
