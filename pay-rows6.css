@@ -18,6 +18,33 @@ html.rows6 .row.r6{display:block;padding:10px 14px}
 .row.r6 ul.r6iss li.info{color:var(--muted,#6f6886)}
 .row.r6 .rvrow{margin-top:6px;padding:5px 8px}
 .row.r6 .rvbtn{font-size:14px;padding:4px 11px}
+/* כרטיס פתוח «דוגמה 1»: טור אחד = טבלת הרכיבים; טור שני = מה לא בסדר + הערות + מס ופנסיה + הערה לחשבת */
+.detail.r6d{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.45fr);grid-template-areas:"ex rec" "det rec";gap:10px 14px;align-items:start;margin-top:8px}
+.detail.r6d>.explainbox{grid-area:ex;margin:0;padding:8px 12px}
+.detail.r6d>.recwrap{grid-area:rec;margin:0}
+.detail.r6d>.detrow{grid-area:det;display:flex;flex-direction:column;gap:10px;margin:0}
+.detail.r6d>.detrow>.panel{margin:0;padding:8px 12px}
+.detail.r6d .panel h4,.detail.r6d .exh{font-size:14px;margin:0 0 4px}
+.detail.r6d .exl{font-size:15px;line-height:1.45;margin:2px 0}
+.detail.r6d .kv{font-size:15px;padding:3px 0}
+.detail.r6d .formula{font-size:13.5px}
+.detail.r6d .recrow{font-size:15px;padding-top:5px;padding-bottom:5px}
+.detail.r6d .recrow .calc{font-size:12.5px}
+.r6st{display:inline-block;border-radius:99px;padding:0 9px;font-size:13px;font-weight:600;white-space:nowrap;margin-inline-end:4px}
+.r6st.wait{background:rgba(251,191,36,.2);color:#8a5a00}
+.r6st.done{background:rgba(52,211,153,.18);color:#15803d}
+.r6st.miss{background:rgba(251,113,133,.18);color:#c2410c}
+:root[data-theme="dark"] .r6st.wait,html:has(#payTheme) .r6st.wait{color:#fde68a}
+:root[data-theme="dark"] .r6st.done,html:has(#payTheme) .r6st.done{color:#6ee7b7}
+:root[data-theme="dark"] .r6st.miss,html:has(#payTheme) .r6st.miss{color:#fda4af}
+.r6why{font-size:13px;color:var(--muted,#6f6886);margin-top:1px}
+@media (max-width:900px){.detail.r6d{grid-template-columns:minmax(0,1fr);grid-template-areas:"ex" "rec" "det"}}
+.detail.r6d>*{min-width:0}
+.detail.r6d .rec{overflow-x:auto}
+@media (max-width:560px){.detail.r6d .recrow{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.8fr)!important;font-size:14px}.detail.r6d .recrow .calc{display:block}}
+/* במראה הכהה — «מה לא בסדר» בזכוכית ענבר במקום קופסה בהירה */
+html:has(#payTheme) .explainbox{background:rgba(251,191,36,.08)!important;border-color:rgba(251,191,36,.3)!important;color:#ece8ff!important}
+html:has(#payTheme) .explainbox .exbad{color:#fda4af!important}
 @media (max-width:760px){
   .row.r6 .r6chips{margin-inline-start:0}
   .row.r6 ul.r6iss{columns:1}

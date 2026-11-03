@@ -39,6 +39,33 @@
           +'</div>';
       }catch(err){ return old(e,a); }   /* תקלה בתצוגה החדשה — חוזרים לשורה הרגילה */
     };
+    /* כרטיס פתוח «דוגמה 1» (איילת 3.11): שני טורים — הטבלה בטור אחד; מה לא בסדר, הערות, מס ופנסיה בשני (העימוד ב-CSS).
+       הערות שכר עם מצב ברור: ⏳ מחכה לחשבת · ✓ בוצע בתלוש · ❗ לא בוצע. */
+    if(typeof notesHtml==="function"&&typeof noteStatus==="function"&&typeof empNotesFull==="function"){
+      var oldNotes=notesHtml;
+      window.notesHtml=function(e){
+        try{
+          var A=empNotesFull(e); if(!A.length) return '<div class="exl exm">אין הערות שכר לעובד/ת זה החודש.</div>';
+          return A.map(function(n){ var st=noteStatus(e,n);
+            var tag=st.ok===true?'<span class="r6st done">✓ בוצע בתלוש</span>':st.ok===false?'<span class="r6st miss">❗ לא בוצע בתלוש</span>':'<span class="r6st wait">⏳ מחכה לחשבת</span>';
+            var why=st.ok===true?'':st.ok===false?(st.t||'ביקשנו, והתלוש הגיע בלי זה — לבקש תיקון'):'אין במה לבדוק את זה בתלוש — מחכים שהחשבת תאשר שטיפלה';
+            return '<div class="exl r6n">'+tag+' «'+esc(n.t)+'»'+(n.topic?' <span class="exm">('+esc(n.topic)+(n.me?' · לעצמי':'')+')</span>':'')+(why?'<div class="r6why">'+esc(why)+'</div>':'')+'</div>';
+          }).join('');
+        }catch(err){ return oldNotes(e); }
+      };
+    }
+    if(typeof detailHtml==="function"){
+      var oldDetail=detailHtml;
+      window.detailHtml=function(e,a){
+        var h=oldDetail(e,a);
+        return h.replace('<div class="detail">','<div class="detail r6d">')
+          .replace('הערות שכר — טופלו?','הערות שכר החודש — מה המצב')
+          .replace('<span class="chip">⏳ טרם בוצע</span>','<span class="r6st wait">⏳ מחכה לחשבת</span>')
+          .replace('✅ בוצע</span>','✓ החשבת טיפלה</span>')
+          .replace('<span class="rn">מחושב (שיפט)</span>','<span class="rn" title="כמה מגיע לפי השעות בשיפט">מגיע לפי השיפט</span>')
+          .replace('<span class="rn">הפרש</span>','<span class="rn" title="+ חסר בתלוש · − עודף בתלוש">הפרש (+ חסר)</span>');
+      };
+    }
     document.documentElement.classList.add("rows6");
     if(typeof render==="function"&&document.getElementById("list")&&document.getElementById("list").children.length) render();
   }catch(_){}
