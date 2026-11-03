@@ -125,23 +125,32 @@
   function shortD(d){ var m=String(d||'').match(/^(\d{1,2})\.(\d{1,2})\.\d{2}(\d{2})$/); return m?m[1]+'.'+m[2]+'.'+m[3]:d; }
   function rowHtml(n){
     var s=stOf(n), a=amtOf(n), info=slipInfo(n), d=deptOf(n.emp), sel=!!V.sel[n.id], ty=typeOf(n);
-    var dest=n.me&&n.roy?'<span class="nx-dest d-roy">❓ לשאול את רועי</span>':'';
-    return '<div class="nx-row'+(n.done?' is-done':'')+(sel?' is-sel':'')+'" data-id="'+E(n.id)+'">'
-      +'<label class="nx-ck" title="לבחירה"><input type="checkbox" data-act="ck" data-id="'+E(n.id)+'"'+(sel?' checked':'')+'></label>'
-      +'<div class="nx-c nx-who"><span class="nx-av">👤</span><b>'+E(n.emp||(n.general?'כללי':'⚠ לא משויך'))+'</b></div>'
+    /* כל תיקון ישר מהטבלה (איילת 3.11): טקסט — לחיצה ועריכה במקום; סוג, סכום, למי, סטטוס — בחירה בתא עצמו */
+    var id=E(n.id), dv=n.me?(n.roy?'roy':'me'):'acc';
+    var dsel='<select class="nx-isel nx-dest d-'+dv+'" data-act="irow" data-f="dest" data-id="'+id+'" title="למי"><option value="acc"'+(dv==='acc'?' selected':'')+'>לחשבת</option><option value="me"'+(dv==='me'?' selected':'')+'>🔒 לעצמי</option><option value="roy"'+(dv==='roy'?' selected':'')+'>❓ לרועי</option></select>';
+    var tsel='<select class="nx-isel nx-type t-'+TYPES.indexOf(ty)+'" data-act="irow" data-f="type" data-id="'+id+'" title="סוג"><option value="">'+E(ty)+(n.type?'':' (אוט׳)')+'</option>'+TYPES.map(function(x){ return '<option value="'+x+'">'+x+'</option>'; }).join('')+'</select>';
+    var ssel='<select class="nx-isel nx-pill '+ST[s][1]+'" data-act="irow" data-f="st" data-id="'+id+'" title="סטטוס">'+['new','wip','sent','done'].map(function(k){ return '<option value="'+k+'"'+(k===s?' selected':'')+'>'+SICON[k]+' '+ST[k][0]+'</option>'; }).join('')+'</select>';
+    return '<div class="nx-row'+(n.done?' is-done':'')+(sel?' is-sel':'')+'" data-id="'+id+'">'
+      +'<label class="nx-ck" title="לבחירה"><input type="checkbox" data-act="ck" data-id="'+id+'"'+(sel?' checked':'')+'></label>'
+      +'<div class="nx-c nx-who"><span class="nx-av">👤</span><span><b>'+E(n.emp||(n.general?'כללי':'⚠ לא משויך'))+'</b>'+dsel+'</span></div>'
       +'<div class="nx-c nx-dep">'+E(d||'—')+'</div>'
-      +'<div class="nx-c"><span class="nx-type t-'+TYPES.indexOf(ty)+'"><i>'+(TICON[ty]||'•')+'</i>'+E(ty)+'</span></div>'
-      +'<div class="nx-c nx-body"><div class="nx-text">'+hl(n.t)+'</div>'+dest
+      +'<div class="nx-c">'+tsel+'</div>'
+      +'<div class="nx-c nx-body"><div class="nx-text nx-ed" data-act="itext" data-id="'+id+'" title="לחיצה לעריכה">'+hl(n.t)+'</div>'
       +(n.resp?'<div class="nx-resp">💬 החשבת: '+E(n.resp)+'</div>':'')
       +(info?'<div class="nx-info'+(/^❗/.test(info)?' bad':'')+'">'+E(info)+'</div>':'')+'</div>'
-      +'<div class="nx-c nx-amt">'+(a?F0(a)+' ₪':'<span class="nx-mut">—</span>')+'</div>'
-      +'<div class="nx-c"><span class="nx-pill '+ST[s][1]+'"><i>'+SICON[s]+'</i>'+ST[s][0]+'</span></div>'
+      +'<div class="nx-c nx-amt"><input class="nx-ain" data-act="irow" data-f="amt" data-id="'+id+'" inputmode="decimal" value="'+(a?F0(a):'')+'" placeholder="—" title="סכום"><span>₪</span></div>'
+      +'<div class="nx-c">'+ssel+'</div>'
       +'<div class="nx-c nx-date">'+E(shortD(dateOf(n)))+'</div></div>'; }
+  /* עריכה במקום של טקסט (הערה או הערה של רועי) */
+  function inlineEdit(div,get,set){ if(div.querySelector('textarea')) return; var ta=document.createElement('textarea'); ta.className='nx-ita'; ta.value=get(); div.innerHTML=''; div.appendChild(ta);
+    var fit=function(){ ta.style.height='auto'; ta.style.height=Math.max(36,ta.scrollHeight)+'px'; }; fit(); ta.addEventListener('input',fit); ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length);
+    var done=false, fin=function(ok){ if(done) return; done=true; if(ok&&ta.value.trim()!==String(get()).trim()) set(ta.value.trim()); draw(); };
+    ta.addEventListener('blur',function(){ fin(true); }); ta.addEventListener('keydown',function(ev){ if(ev.key==='Escape'){ ev.stopPropagation(); fin(false); } else if(ev.key==='Enter'&&!ev.shiftKey){ ev.preventDefault(); fin(true); } }); }
   function headRow(){ var L=all().filter(inTab).filter(pass), on=L.length&&L.every(function(n){ return V.sel[n.id]; });
     return '<div class="nx-row nx-th"><label class="nx-ck"><input type="checkbox" data-act="ckall"'+(on?' checked':'')+' title="בחירת הכול"></label><div class="nx-c">עובד</div><div class="nx-c">מחלקה</div><div class="nx-c">סוג הערה</div><div class="nx-c">הערה</div><div class="nx-c">סכום</div><div class="nx-c">סטטוס</div><div class="nx-c">תאריך</div></div>'; }
   function flagsHtml(){ if(V.tab!=='after') return ''; var F=flagsOpen(); if(!F.length) return '';
     return '<div class="nx-flags"><div class="nx-flags-h">🔎 רועי כתב אחרי התלושים <span>'+F.length+' · עוד לא נשלח לחשבת — את מחליטה</span></div>'
-      +F.map(function(x){ return '<div class="nx-flag"><div><b>'+E(flagEmp(x.f))+'</b> — '+E(x.f.t)+(x.f.at?' <span class="nx-when">'+E(x.f.at)+'</span>':'')+'</div>'
+      +F.map(function(x){ return '<div class="nx-flag"><div class="nx-fl"><b>'+E(flagEmp(x.f))+'</b> — <span class="nx-ed" data-act="iflag" data-i="'+x.i+'" title="לחיצה לעריכה">'+E(x.f.t)+'</span>'+(x.f.at?' <span class="nx-when">'+E(x.f.at)+'</span>':'')+'</div>'
         +'<div><button class="nx-btn p" data-act="flag2note" data-i="'+x.i+'">להפוך לתיקון לחשבת</button> <button class="nx-btn" data-act="flagme" data-i="'+x.i+'">לעצמי</button> <button class="nx-btn ghost" data-act="flagno" data-i="'+x.i+'">לא רלוונטי</button></div></div>'; }).join('')+'</div>'; }
   function listHtml(){
     var A=all().filter(inTab).filter(pass);
@@ -220,9 +229,12 @@
   function byId(id){ return NOTES2.find(function(x){ return x.id===id; }); }
   function setStatus(n,s){ if(s==='done'){ if(!n.done){ n.done=true; n.doneAt=today(); addLog(n,'סטטוס: טופלה'); } }
     else { if(n.done){ n.done=false; n.doneAt=undefined; } if(s==='sent'){ if(!n.sentAt){ n.sentAt=today(); } n.st=undefined; } else { n.sentAt=undefined; n.st=s==='wip'?'wip':'new'; } addLog(n,'סטטוס: '+ST[s][0]); } }
-  function onClick(ev){ var b=ev.target.closest('[data-act]'); if(!b||!root.contains(b)) { if(!ev.target.closest('.nx-menu')) hideMenu(); var r=ev.target.closest('.nx-row'); if(r&&!ev.target.closest('input,button,label')) openEdit(r.dataset.id); return; }
+  function onClick(ev){ var b=ev.target.closest('[data-act]'); if(!b||!root.contains(b)) { if(!ev.target.closest('.nx-menu')) hideMenu(); var r=ev.target.closest('.nx-row'); if(r&&!r.classList.contains('nx-th')&&!ev.target.closest('input,button,label,select,textarea')) openEdit(r.dataset.id); return; }
     var a=b.dataset.act;
     if(a!=='menu') hideMenu();
+    if(a==='itext'){ var nn=byId(b.dataset.id); if(nn) inlineEdit(b,function(){ return nn.t||''; },function(v){ addLog(nn,'הטקסט שונה'); nn.t=v; save(); }); return; }
+    if(a==='iflag'){ var fi=+b.dataset.i; inlineEdit(b,function(){ var L=flagsAll()[MON()]||[]; return (L[fi]||{}).t||''; },function(v){ var A=flagsAll(), L=A[MON()]||[]; if(!L[fi]) return; L[fi].t=v; L[fi].edited=today(); try{ localStorage.setItem('pay-flags-v1',JSON.stringify(A)); }catch(_){} }); return; }
+    if(a==='irow') return;
     if(a==='close') close();
     else if(a==='tab'){ V.tab=b.dataset.k; V.sel={}; draw(); }
     else if(a==='kpi'){ var k=b.dataset.k; if(k==='me'){ V.tab='me'; V.st=''; } else { if(V.tab==='me') V.tab=DATA.prepay?'before':'after'; V.st=V.st===k?'':k; } draw(); }
@@ -262,8 +274,14 @@
     else if(a==='imgshare') shareImgs();
   }
   function onInput(ev){ var t=ev.target; if(t.dataset.act==='q'){ V.q=t.value; var p=t.selectionStart; draw(); var f=root.querySelector('[data-act=q]'); if(f){ f.focus(); f.setSelectionRange(p,p); } } }
-  function onChange(ev){ var t=ev.target, a=t.dataset.act;
+  function onChange(ev){ var t=ev.target, a=t.dataset.act; if(t.closest('textarea.nx-ita')) return;
     if(a==='dept'||a==='type'||a==='st'){ V[a]=t.value; draw(); }
+    else if(a==='irow'){ var n=byId(t.dataset.id), f=t.dataset.f, v=t.value; if(!n) return;
+      if(f==='st') setStatus(n,v);
+      else if(f==='dest'){ n.me=v!=='acc'; n.roy=v==='roy'; addLog(n,v==='acc'?'הועברה: לחשבת':v==='me'?'הועברה: לעצמי':'הועברה: לשאול את רועי'); }
+      else if(f==='type'){ n.type=v||undefined; addLog(n,'סוג: '+(v||'אוטומטי')); }
+      else if(f==='amt'){ var am=String(v).replace(/[,₪\s]/g,''); n.amt=am===''?undefined:+am; addLog(n,'סכום: '+(am||'—')); }
+      save(); draw(); }
     else if(a==='ck'){ V.sel[t.dataset.id]=t.checked; draw(); }
     else if(a==='ckall'){ all().filter(inTab).filter(pass).forEach(function(n){ V.sel[n.id]=t.checked; }); draw(); }
     else if(a==='bulkst'&&t.value){ var v2=t.value; NOTES2.forEach(function(n){ if(V.sel[n.id]) setStatus(n,v2); }); V.sel={}; save(); draw(); }

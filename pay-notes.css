@@ -1,6 +1,6 @@
 /* מסך «הערות שכר» החדש — טורקיז, לבן, אפור בהיר. מסך מלא עם גלילה אחת. */
 html.nx-on,html.nx-on body{overflow:hidden!important}
-#nx{--tq:#0f9b8e;--tqd:#0b6e66;--tql:#e6f5f3;--bg:#f4f6f6;--card:#fff;--ink:#1f2a2e;--mut:#7d8b8a;--line:#e5ebea;
+#nx{--tq:#1a8fb0;--tqd:#16627e;--tql:#e8f3f8;--bg:#f4f6f6;--card:#fff;--ink:#1f2a2e;--mut:#7d8b8a;--line:#e5ebea;
   --org:#b7791f;--orgl:#fdf3e3;--blu:#2d6fa3;--blul:#e9f1f9;--grn:#1e8449;--grnl:#e7f5ec;--pur:#6c4fb3;--purl:#f1ecfb;--red:#c0392b;--redl:#fdecea;
   position:fixed;inset:0;z-index:9000;background:var(--bg);color:var(--ink);overflow-y:auto;overflow-x:hidden;font-family:Rubik,system-ui,sans-serif;font-size:15px;direction:rtl;text-align:right}
 #nx[hidden]{display:none}
@@ -18,7 +18,7 @@ html.nx-on,html.nx-on body{overflow:hidden!important}
 .nx-btn:hover{background:#f2f6f5}
 .nx-btn.big{padding:9px 18px;font-weight:600}
 .nx-btn.p{background:var(--tq);border-color:var(--tq);color:#fff;font-weight:600}.nx-btn.p:hover{background:var(--tqd)}
-.nx-btn.tq{background:var(--tqd);border-color:var(--tqd);color:#fff;font-weight:600}.nx-btn.tq:hover{background:#08544e}
+.nx-btn.tq{background:var(--tqd);border-color:var(--tqd);color:#fff;font-weight:600}.nx-btn.tq:hover{background:#114e65}
 .nx-btn.ok{border-color:#bfe3cc;color:var(--grn);background:var(--grnl)}
 .nx-btn.danger{border-color:#f2c4bf;color:var(--red);background:#fff}
 .nx-btn.ghost{border-color:transparent;background:transparent;color:var(--mut)}
@@ -93,8 +93,8 @@ html.nx-on,html.nx-on body{overflow:hidden!important}
 .nx-sp{flex:1}
 /* חלונית צד */
 .nx-dim{position:fixed;inset:0;background:rgba(20,35,35,.28);z-index:9001}
-.nx-drawer{position:fixed;top:0;bottom:0;left:0;width:min(520px,100%);background:#fff;z-index:9002;display:flex;flex-direction:column;box-shadow:12px 0 40px rgba(0,0,0,.15);animation:nxIn .18s ease-out}
-@keyframes nxIn{from{transform:translateX(-30px);opacity:.4}to{transform:none;opacity:1}}
+.nx-drawer{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(640px,94vw);max-height:90vh;border-radius:18px;background:#fff;z-index:9002;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.22);animation:nxIn .16s ease-out}
+@keyframes nxIn{from{transform:translate(-50%,-46%);opacity:.3}to{transform:translate(-50%,-50%);opacity:1}}
 .nx-dh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
 .nx-dh h2{margin:0;font-size:19px}
 .nx-dbody{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px}
@@ -102,7 +102,7 @@ html.nx-on,html.nx-on body{overflow:hidden!important}
 .nx-f>span{font-size:13.5px;font-weight:600;color:#4a5856}
 .nx-f small{color:var(--mut);font-size:13px}
 .nx-f input,.nx-f select,.nx-f textarea{border:1px solid #d9e2e0;border-radius:10px;padding:9px 12px;background:#fff;outline:none}
-.nx-f input:focus,.nx-f select:focus,.nx-f textarea:focus{border-color:var(--tq);box-shadow:0 0 0 3px #0f9b8e22}
+.nx-f input:focus,.nx-f select:focus,.nx-f textarea:focus{border-color:var(--tq);box-shadow:0 0 0 3px #1a8fb022}
 .nx-f textarea{resize:vertical;min-height:96px;line-height:1.5}
 .nx-f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .nx-seg{display:flex;background:#eef2f1;border-radius:10px;padding:3px;gap:3px;flex-wrap:wrap}
@@ -163,3 +163,22 @@ html:has(#payTheme) #nx .nx-tab.on{background:var(--tqd);color:#fff}
 html:has(#payTheme) #nx .nx-row:hover{background:#232833}
 html:has(#payTheme) #nx .nx-kt span{color:#c9d0d4}
 html:has(#payTheme) #nx .nx-seg{background:#22262f}html:has(#payTheme) #nx .nx-seg button.on{background:#2e3440}
+
+/* עריכה במקום (3.11) */
+#nx .nx-isel{appearance:none;-webkit-appearance:none;border:1px solid transparent;cursor:pointer;font:inherit;padding-inline-end:22px;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:left 10px center,left 6px center;background-size:4px 4px,4px 4px;background-repeat:no-repeat}
+#nx .nx-isel:hover{border-color:currentColor}
+#nx .nx-isel option{background:#fff;color:#1f2a2e}
+#nx .nx-who>span{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0}
+#nx select.nx-dest{font-size:12px;border-radius:12px;padding:1px 9px;padding-inline-end:20px;margin-top:0}
+.d-acc{background:var(--tql);color:var(--tqd)}.d-me{background:var(--purl);color:var(--pur)}
+#nx select.nx-type{border-radius:20px;padding:3px 11px;padding-inline-end:22px;font-size:13px}
+#nx select.nx-pill{border-radius:20px;padding:3px 12px;padding-inline-end:22px;font-size:13px}
+.nx-ed{cursor:text;border-radius:6px;transition:background .1s}
+.nx-ed:hover{background:#fff6d9;box-shadow:0 0 0 4px #fff6d9}
+.nx-ita{width:100%;font:inherit;line-height:1.45;border:1px solid var(--tq);border-radius:8px;padding:6px 8px;resize:vertical;outline:none;box-shadow:0 0 0 3px #1a8fb022;background:#fff}
+.nx-amt{display:flex;align-items:center;gap:3px}
+.nx-ain{width:78px;border:1px solid transparent;border-radius:8px;padding:4px 6px;font:inherit;font-weight:700;text-align:left;background:transparent}
+.nx-ain:hover{border-color:var(--line);background:#fff}.nx-ain:focus{border-color:var(--tq);outline:none;background:#fff}
+.nx-ain::placeholder{color:#c3cbca;font-weight:400}
+.nx-amt span{color:var(--mut);font-size:13px}
+.nx-fl{flex:1;min-width:240px;line-height:1.45}
