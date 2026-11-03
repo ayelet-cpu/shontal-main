@@ -149,8 +149,10 @@
     /* שורות חריגות בתלוש (איילת 3.11, חן ביטון: «למה לא שיקפת לי שיש פה מילואים במינוס? אני צריכה לדעת כל שורה ושורה»):
        כל שורה במינוס = ❗ (חוץ משורות טיפ), שורה שלא מסווגת / הפרשים = לשים לב */
     function oddLines(s){ var out=[]; ((s&&s.lines)||[]).forEach(function(l){ var d=String(l[0]||''), amt=+l[4]||0;
-      if(amt<-0.5&&!/טיפ|מפרע/.test(d)) out.push({l:l,sev:'crit',t:'שורה במינוס בתלוש: «'+d+'» '+F0(amt)+' ₪ — לברר מה זה'});
-      else if(Math.abs(amt)>0.5&&(/הפרש|גילום|קיזוז|החזר|תיקון/.test(d)||l[1]==='other'&&!/^(שעות|בר\/מלצר|מתלמד|צ'קר|השלמת שכר)/.test(d))) out.push({l:l,sev:'warn',t:'שורה לא רגילה בתלוש: «'+d+'» '+F0(amt)+' ₪'}); });
+      /* «מיסוי פנסיה» במינוס = זקיפת מס על הפרשה מעל התקרה (נכנס ויוצא) — לידיעה, לא תקלה; «גילום» = חלק רגיל משכר נטו */
+      if(amt<-0.5&&/מיסוי פנסיה|שווי/.test(d)) out.push({l:l,sev:'warn',t:'«'+d+'» '+F0(amt)+' ₪ — זקיפת מס על הפרשה מעל התקרה (טכני, לידיעה)'});
+      else if(amt<-0.5&&!/טיפ|מפרע/.test(d)) out.push({l:l,sev:'crit',t:'שורה במינוס בתלוש: «'+d+'» '+F0(amt)+' ₪ — לברר מה זה'});
+      else if(Math.abs(amt)>0.5&&(/הפרש|קיזוז|החזר|תיקון/.test(d)||l[1]==='other'&&!/^(שעות|בר\/מלצר|מתלמד|צ'קר|השלמת שכר)/.test(d))) out.push({l:l,sev:'warn',t:'שורה לא רגילה בתלוש: «'+d+'» '+F0(amt)+' ₪'}); });
       return out; }
     if(typeof issuesOf==="function"){ var oldIss=issuesOf;
       window.issuesOf=function(e,a){ var r=oldIss(e,a)||[]; try{ oddLines(e.slip).forEach(function(x){ if(r.indexOf(x.t)<0) r.push(x.t); }); }catch(_){} return r; }; }
