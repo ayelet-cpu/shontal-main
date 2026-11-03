@@ -30,7 +30,13 @@ html.rows6 .row.r6{display:block;padding:10px 14px}
 .row.r6 .r6btn.lite{border-color:rgba(0,0,0,.15);color:#3b3550;font-weight:400}
 .row.r6 .r6btn.sm{padding:0 7px;font-size:13px}
 .row.r6 .r6nb{display:inline-flex;gap:4px;margin-inline-start:6px;vertical-align:middle;opacity:.55}
-.row.r6 .r6n:hover .r6nb,.row.r6 .r6n.show .r6nb,.row.r6 .r6nb:has(.on){opacity:1}
+.row.r6 .r6n:hover .r6nb,.row.r6 .r6n.show .r6nb,.row.r6 .r6cn:hover .r6nb,.row.r6 .r6nb:has(.on){opacity:1}
+.row.r6 .r6cn{display:block;padding:5px 8px;border-radius:8px}
+.row.r6 .r6cn+.r6cn{border-top:1px solid rgba(0,0,0,.06)}
+.row.r6 .r6cn:hover{background:rgba(0,0,0,.03)}
+.row.r6 .r6cn .r6cl{line-height:1.45}
+.row.r6 .r6cn .r6cw{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:2px}
+.row.r6 .r6cn .r6cw .r6nb{margin:0}
 .row.r6 .r6nb .r6btn.on{background:#e8f6ee;border-color:#2f8f5b;color:#1f6b42;font-weight:600}
 html:has(#payTheme) .row.r6 .r6nb .r6btn.on{background:rgba(47,143,91,.25);color:#bdf0d2}
 .row.r6 .r6d{opacity:.75;font-size:13px}

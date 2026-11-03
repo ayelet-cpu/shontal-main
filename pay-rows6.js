@@ -79,6 +79,17 @@
       });
       return out;
     }
+    /* בכרטיס פתוח — רק מה שדורש ממך משהו: הערות של רועי ושאלות החשבת (איילת 3.11: «הורדת את ההערה של רועי, היא חשובה») */
+    function attnHtml(e){ var nm=EMO(e.name), out='';
+      flagsOf(e).forEach(function(x){ var f=x.f, by=f.by||'רועי'; if(f.done) return;
+        out+='<div class="r6todo bad">🔎 <span><b>'+esc(by)+' כתב אחרי התלוש:</b> «'+esc(f.t)+'»'+(f.at?' <span class="r6d">('+esc(f.at)+')</span>':'')+'<br><span class="r6d">עוד לא נשלח לחשבת — את מחליטה מה לכתוב לה.</span></span>'
+          +'<span class="go"><button class="r6btn" data-addnote="'+nm+'" data-suggest="'+EMO(e.name+' — '+f.t)+'">✍️ לכתוב לחשבת</button>'
+          +'<button class="r6btn lite" onclick="event.stopPropagation();__r6flagDone('+x.i+')">✓ טופל / לא רלוונטי</button></span></div>'; });
+      aqOf(e.name).forEach(function(q,i){ if(q.a) return;
+        out+='<div class="r6todo q">❓ <span><b>החשבת שאלה:</b> «'+esc(q.q)+'»'+(q.at?' <span class="r6d">('+esc(q.at)+')</span>':'')+'</span>'
+          +'<span class="go"><button class="r6btn" onclick="event.stopPropagation();__r6answer(decodeURIComponent(\''+nm+'\'),'+i+')">✍️ לענות לחשבת</button>'
+          +'<button class="r6btn lite" onclick="event.stopPropagation();__r6info(decodeURIComponent(\''+nm+'\'),'+i+')">✓ רק לידיעה</button></span></div>'; });
+      return out; }
     /* שני סוגי הערות (איילת 3.11: «לא ברור מה לפני מה ולמה אני ממתינה»):
        1. נשלחו עם הערות השכר — לפני שהתלוש הגיע (מדף הבית). המצב: בוצע / לא בוצע בתלוש / אין תלוש.
        2. נכתבו בבקרה אחרי שהתלוש הגיע (תיקונים, «לבקש תלוש»). המצב: מחכים לתשובה או לתלוש מתוקן / החשבת טיפלה. */
@@ -167,7 +178,7 @@
           ?'<span class="notechip '+(ndone?'done':'')+'" title="'+esc(note)+'">'+(ndone?'✅':'📝')+' '+esc(note.length>60?note.slice(0,60)+"…":note)+'</span><button class="notebtn has" data-note="'+encodeURIComponent(e.name)+'">ערוך</button>'
           :'<button class="notebtn" data-note="'+encodeURIComponent(e.name)+'">📝 הערה</button>';
         var sev=a.st.sev==='good'?'good':a.st.sev==='warn'?'warn':a.st.sev==='crit'?'crit':'none';
-        var issHtml=open?'':todoHtml(e,a)+notesLines(e);
+        var issHtml=open?attnHtml(e):todoHtml(e,a)+notesLines(e);
         return '<div class="row r6 sev-'+a.st.sev+' lane-'+laneOf(e)+'" data-id="'+encodeURIComponent(id)+'">'
           +'<div class="r6h">'
           +  '<span class="nm">'+e.name+(e.glob?' <span class="chip info">גלובלי</span>':"")+rvTag(e)+'</span>'
@@ -194,15 +205,17 @@
         try{
           var A=empNotesFull(e); if(!A.length) return '<div class="exl exm">אין הערות שכר לעובד/ת זה החודש.</div>';
           return A.map(function(n){ var st=noteStatus(e,n), B=nstBtns(e.name,n), tp=n.topic?' <span class="exm">('+esc(n.topic)+')</span>':'';
-            if(isMe(n)) return '<div class="exl r6n"><span class="r6st me">🔒 לעצמי — לא בתלוש</span> «'+esc(n.t)+'»'+tp+B+'<div class="r6why">הערה בשבילך — לא לחשבת, ולא אמורה להופיע בתלוש</div></div>';
-            if(st.t==='✓ סימנת שטופל') return '<div class="exl r6n"><span class="r6st done">✓ סימנת שטופל</span> «'+esc(n.t)+'»'+tp+B+'</div>';
+            /* שתי שורות: מצב + ההערה, ומתחת ההסבר והכפתורים (בלי טורים צרים) */
+            var CN=function(tag,why){ return '<div class="exl r6cn"><div class="r6cl">'+tag+' <span class="r6t">«'+esc(n.t)+'»</span>'+tp+'</div>'
+              +'<div class="r6cw">'+(why?'<span class="r6why">'+esc(why)+'</span>':'<span></span>')+B+'</div></div>'; };
+            if(isMe(n)) return CN('<span class="r6st me">🔒 לעצמי — לא בתלוש</span>','הערה בשבילך — לא לחשבת, ולא אמורה להופיע בתלוש');
+            if(st.t==='✓ סימנת שטופל') return CN('<span class="r6st done">✓ סימנת שטופל</span>','');
             if(!isFirst(n)){ var dn=!!n.done||st.ok===true;
-              return '<div class="exl r6n">'+(dn?'<span class="r6st done">✓ החשבת טיפלה</span>':'<span class="r6st wait">⏳ ביקשת אחרי התלוש</span>')+' «'+esc(n.t)+'»'+B
-                +'<div class="r6why">'+(dn?'סומן שהחשבת טיפלה':'כתבת לחשבת אחרי שהתלוש הגיע — מחכים לתשובה או לתלוש מתוקן')+'</div></div>'; }
-            if(!e.slip) return '<div class="exl r6n"><span class="r6st miss">✗ לא בוצע — אין תלוש</span> «'+esc(n.t)+'»'+tp+B+'</div>';
+              return CN(dn?'<span class="r6st done">✓ החשבת טיפלה</span>':'<span class="r6st wait">⏳ ביקשת אחרי התלוש</span>',dn?'סומן שהחשבת טיפלה':'כתבת לחשבת אחרי שהתלוש הגיע — מחכים לתשובה או לתלוש מתוקן'); }
+            if(!e.slip) return CN('<span class="r6st miss">✗ לא בוצע — אין תלוש</span>','');
             var tag=st.ok===true?'<span class="r6st done">✓ בוצע בתלוש</span>':st.ok===false?'<span class="r6st miss">❗ לא בוצע בתלוש</span>':'<span class="r6st info">ℹ אין במה לבדוק בתלוש</span>';
             var why=st.ok===true?String(st.t||'').replace(/^✓\s*(טופל\s*—\s*)?/,''):st.ok===false?(String(st.t||'').replace(/^✗\s*/,'')||'ביקשנו, והתלוש הגיע בלי זה — לבקש תיקון'):'נשלח לחשבת לפני התלוש — אין שורה בתלוש שמראה שבוצע';
-            return '<div class="exl r6n">'+tag+' «'+esc(n.t)+'»'+tp+B+(why?'<div class="r6why">'+esc(why)+'</div>':'')+'</div>';
+            return CN(tag,why);
           }).join('');
         }catch(err){ return oldNotes(e); }
       };
