@@ -131,3 +131,5 @@ html:has(#payTheme) .row.r6 .r6days{background:rgba(255,255,255,.05);border-colo
 .row.r6 .r6ex.ok .ex{background:#f1f9f4;border-color:#cfe9d9}
 .row.r6 .r6ex.ok .exc.ok{display:none}
 .row.r6 .r6todo.ok.big{font-size:15.5px;padding:10px 14px;margin:6px 0}
+.row.r6 .r6chk{display:block;margin-top:3px;font-size:12.5px;color:#5b7a66}
+.row.r6 .r6chk i{font-style:normal;margin-inline-end:8px;white-space:nowrap}.row.r6 .r6chk i.w{color:#9a6a12}

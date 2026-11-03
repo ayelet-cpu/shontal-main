@@ -170,7 +170,16 @@
     function okText(e,a){ var N=empNotesFull(e).filter(function(n){ return !isMe(n); }), done=N.filter(function(n){ return noteStatus(e,n).ok===true||handled(e,n); }).length;
       return '<b>תקין</b> — התלוש תואם לשיפט'+(a&&a.tg!=null&&a.exp!=null?' ('+F0(a.exp)+' מול '+F0(a.tg)+')':'')
         +' · '+(N.length?(done===N.length?'הערות השכר בוצעו בתלוש ('+N.length+')':'הערות שכר: '+done+' מתוך '+N.length+' בוצעו'):'אין הערות שכר החודש')
-        +' · אין שורות חריגות בתלוש'; }
+        +' · אין שורות חריגות בתלוש'+checksLine(e); }
+    /* מה נבדק — כדי שלא צריך לפתוח כל עובד (איילת 3.11: «כאשר סגור לא מבינים אם תקין באמת») */
+    function checksLine(e){ var s=e.slip; if(!s) return '';
+      var c=[], y=function(t){ c.push('<i class="y">✓ '+t+'</i>'); }, w=function(t){ c.push('<i class="w">⚠ '+t+'</i>'); };
+      y('שעות ותעריף');
+      if(e.net||e.glob||e.basis==='manager'){} else { s.travel?y('נסיעות'):w('אין נסיעות'); s.meals?y('שווי ארוחות'):w('אין שווי ארוחות'); }
+      if(s.fixedtax>0) w('מס קבוע '+F1(s.fixedtax)+'%'); else if(s.mtax>=47) w('מס שולי '+F1(s.mtax)+'%'); else y('מס');
+      s.pension?y('פנסיה'):w('אין פנסיה');
+      if(s.recup) y('הבראה');
+      return '<span class="r6chk">נבדק: '+c.join(' ')+'</span>'; }
     function daysHtml(e){ var s=e.slip; if(!s) return '';
       var L=(s.lines||[]).filter(function(l){ return l[1]==='pidyon'||l[1]==='sick'||/פדיון|תמורת חופשה|מחלה|חופשה/.test(String(l[0]||'')); }).filter(function(l){ return Math.abs(+l[4]||0)>0.5; });
       if(!L.length) return '';
