@@ -20,6 +20,22 @@
       q.a=t.trim(); q.aat=new Date().toLocaleDateString('he-IL'); aqSave(name,L); render();
     };
     window.__r6info=function(name,i){ var L=aqOf(name); if(!L[i]) return; L[i].a=L[i].a||'לידיעה בלבד'; L[i].aat=new Date().toLocaleDateString('he-IL'); aqSave(name,L); render(); };
+    /* הערות של רועי (או מנהל אחר) אחרי שהתלושים הגיעו — «דגלים» (איילת 3.11): העובד מסומן «יש בעיה»,
+       אבל שום דבר לא נשלח לחשבת. איילת כותבת בעצמה את ההערה לחשבת (➕), או מסמנת «טופל».
+       נשמר ב-pay_kv «pay-flags-v1»: {"10/2026":[{emp, rest, by, t, at, done}]} — emp = שם או תחילת שם כמו בבקרה. */
+    var FK='pay-flags-v1';
+    function flAll(){ try{ return JSON.parse(localStorage.getItem(FK)||'{}')||{}; }catch(_){ return {}; } }
+    function flMatch(f,e){ var a=String(f.emp||'').trim(), b=String(e.name||'').trim(); if(!a) return false;
+      if(f.rest&&DATA.restaurant&&f.rest!==DATA.restaurant) return false;
+      return b===a||b.indexOf(a+' ')===0||(e.slipname&&String(e.slipname).indexOf(a)>=0&&a.indexOf(' ')>0); }
+    function flagsOf(e){ var L=flAll()[DATA.month||'']||[]; return L.map(function(f,i){ return {f:f,i:i}; }).filter(function(x){ return flMatch(x.f,e); }); }
+    window.__r6flagDone=function(i){ var A=flAll(), L=A[DATA.month||'']||[]; if(!L[i]) return; L[i].done=new Date().toLocaleDateString('he-IL'); try{ localStorage.setItem(FK,JSON.stringify(A)); }catch(_){} render(); };
+    if(typeof assess==="function"){
+      var oldAssess=assess;
+      window.assess=function(e){ var a=oldAssess(e);
+        try{ if(flagsOf(e).some(function(x){ return !x.f.done; })&&a&&a.st&&a.st.sev!=='crit') a.st={k:'gap',sev:'crit',flag:true,label:'❗ הערה של '+(flagsOf(e)[0].f.by||'רועי')}; }catch(_){}
+        return a; };
+    }
     function noteTxt(t){ t=String(t||'').replace(/\s+/g,' ').trim(); return t.length>110?t.slice(0,110)+'…':t; }
     function todoHtml(e,a){
       var s=e.slip, seen={};
@@ -42,7 +58,7 @@
           +'<button class="r6btn lite" data-lane="pay" data-emp="'+nm+'">✓ ידוע לי, לא צריך</button></span></div>';
       }
       else if(!s) out='';
-      else if(a.st.sev==='crit'||a.st.sev==='warn'){
+      else if((a.st.sev==='crit'||a.st.sev==='warn')&&!(a.st.flag&&!iss.length)){
         var head=a.diff!=null&&Math.abs(a.diff)>35&&!redOK(e,a)?(a.diff>0?'חסרים '+F0(a.diff)+' ₪ בתלוש':'עודף '+F0(-a.diff)+' ₪ בתלוש'):(a.st.sev==='crit'?'יש בעיה בתלוש':'לשים לב');
         var sug=(iss.length?e.name+' — '+iss.map(function(x){ return String(x).replace(/<[^>]+>/g,''); }).join('; '):gapSuggestion(e,a));
         out='<div class="r6todo '+(a.st.sev==='crit'?'bad':'wait')+'">❗ <span><b>'+head+'</b>'+(iss.length?' — '+iss.join(' · '):'')+'</span>'
@@ -50,6 +66,12 @@
           +'<button class="r6btn lite" data-lane="pay" data-emp="'+nm+'">✓ ידוע לי</button></span></div>';
       }
       else if(a.st.k==='ok'||a.st.sev==='good') out='<div class="r6todo ok">✓ <span><b>תקין</b>'+(empNotesFull(e).some(function(n){ return noteStatus(e,n).ok===true; })?' — גם ההערות שלנו בוצעו בתלוש':'')+'</span></div>';
+      flagsOf(e).forEach(function(x){ var f=x.f, by=f.by||'רועי';
+        if(f.done){ return; }
+        out='<div class="r6todo bad">🔎 <span><b>'+esc(by)+' כתב אחרי התלוש:</b> «'+esc(f.t)+'»'+(f.at?' <span class="r6d">('+esc(f.at)+')</span>':'')+'<br><span class="r6d">עוד לא נשלח לחשבת — את מחליטה מה לכתוב לה.</span></span>'
+          +'<span class="go"><button class="r6btn" data-addnote="'+nm+'" data-suggest="'+EMO(e.name+' — '+f.t)+'">✍️ לכתוב לחשבת</button>'
+          +'<button class="r6btn lite" onclick="event.stopPropagation();__r6flagDone('+x.i+')">✓ טופל / לא רלוונטי</button></span></div>'+out;
+      });
       openQ.forEach(function(x){
         out+='<div class="r6todo q">❓ <span><b>החשבת שאלה:</b> «'+esc(x.q.q)+'»'+(x.q.at?' <span class="r6d">('+esc(x.q.at)+')</span>':'')+'</span>'
           +'<span class="go"><button class="r6btn" onclick="event.stopPropagation();__r6answer(decodeURIComponent(\''+nm+'\'),'+x.i+')">✍️ לענות לחשבת</button>'
@@ -86,6 +108,8 @@
           +'<span class="r6t">'+esc(noteTxt(n.t))+'</span>'+(n.mine?'<button class="r6btn lite sm" data-note="'+EMO(e.name)+'">✏️</button>':'')
           +'<div class="r6hist"><div>1️⃣ '+(s?'התלוש הגיע':'התלוש לא הגיע')+'</div><div>2️⃣ כתבת לחשבת אחרי זה (בבקרה)</div><div>3️⃣ <b>'+(n.done?'סומן שהחשבת טיפלה':'עוד לא — מחכים שהחשבת תענה או תשלח תלוש מתוקן')+'</b></div></div></div>');
       });
+      flagsOf(e).filter(function(x){ return x.f.done; }).forEach(function(x){
+        B.push('<div class="r6n"><span class="r6st done">✓ סימנת שטופל</span><span class="r6t">'+esc((x.f.by||'רועי')+': '+noteTxt(x.f.t))+'</span><div class="r6hist"><div>1️⃣ '+esc(x.f.by||'רועי')+' כתב אחרי התלוש'+(x.f.at?' ('+esc(x.f.at)+')':'')+'</div><div>2️⃣ <b>סימנת «טופל / לא רלוונטי»'+(x.f.done&&x.f.done!==true?' ('+esc(x.f.done)+')':'')+'</b></div></div></div>'); });
       aqOf(e.name).filter(function(q){ return q.a; }).forEach(function(q){
         B.push('<div class="r6n"><span class="r6st done">💬 ענית לחשבת</span><span class="r6t">'+esc(noteTxt(q.a))+'</span><div class="r6hist"><div>1️⃣ החשבת שאלה'+(q.at?' ('+esc(q.at)+')':'')+': «'+esc(q.q)+'»</div><div>2️⃣ <b>ענית'+(q.aat?' ('+esc(q.aat)+')':'')+': «'+esc(q.a)+'»</b></div></div></div>'); });
       var h='';
