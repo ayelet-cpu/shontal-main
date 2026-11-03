@@ -83,7 +83,35 @@
        1. נשלחו עם הערות השכר — לפני שהתלוש הגיע (מדף הבית). המצב: בוצע / לא בוצע בתלוש / אין תלוש.
        2. נכתבו בבקרה אחרי שהתלוש הגיע (תיקונים, «לבקש תלוש»). המצב: מחכים לתשובה או לתלוש מתוקן / החשבת טיפלה. */
     /* הערה לעצמי: סומנה «רק לי», או כתוב בה «לא בתלוש» (למשל תוספת כנגד חשבוניות) — לא לחשבת ולא מחכים לה (איילת 3.11) */
-    function isMe(n){ return !!n.me||n.for_acc===false||/לא\s+בתלוש/.test(String(n.t||'')); }
+    /* סימון ידני של איילת לכל הערה (3.11): «✓ טופל» / «🔒 לעצמי». pay_kv «pay-nst-v1»: {"10/2026":{"עובד|תחילת ההערה":"done"|"me"}} */
+    var NK='pay-nst-v1';
+    function nKey(emp,t){ return String(emp||'')+'|'+String(t||'').replace(/\s+/g,' ').trim().slice(0,40); }
+    function nstAll(){ try{ return JSON.parse(localStorage.getItem(NK)||'{}')||{}; }catch(_){ return {}; } }
+    function nstOf(emp,t){ return (nstAll()[DATA.month||'']||{})[nKey(emp,t)]||''; }
+    window.__r6nst=function(emp,t,v){ var A=nstAll(), m=DATA.month||''; A[m]=A[m]||{}; var k=nKey(decodeURIComponent(emp),decodeURIComponent(t));
+      if(!v||A[m][k]===v) delete A[m][k]; else A[m][k]=v; try{ localStorage.setItem(NK,JSON.stringify(A)); }catch(_){} render(); };
+    function nstBtns(emp,n){ var v=nstOf(emp,n.t), a="'"+EMO(emp)+"','"+EMO(n.t)+"'";
+      return '<span class="r6nb">'
+        +'<button class="r6btn lite sm'+(v==='done'?' on':'')+'" title="סימון שההערה טופלה" onclick="event.stopPropagation();__r6nst('+a+',\'done\')">✓ טופל</button>'
+        +'<button class="r6btn lite sm'+(v==='me'?' on':'')+'" title="הערה בשבילך — לא לחשבת" onclick="event.stopPropagation();__r6nst('+a+',\'me\')">🔒 לעצמי</button></span>'; }
+    /* ניכוי שביקשנו («להוריד נעליים 270») — בודקים בעצמנו בניכויי הרשות של התלוש, לא מחכים לחשבת */
+    if(typeof noteStatus==="function"){
+      var oldNS=noteStatus;
+      window.noteStatus=function(e,n){
+        var v=nstOf(e.name,n&&n.t);
+        if(v==='done') return {ok:true,t:'✓ סימנת שטופל'};
+        if(v==='me') return {ok:null,t:'🔒 לעצמי'};
+        try{ var s=e.slip, t=String(n&&n.t||'');
+          if(s&&/להוריד|לנכות|ניכוי|לקזז|קיזוז/.test(t)&&!/ברוטו|נטו|שכר|שעות|תעריף/.test(t)){
+            var nums=(t.replace(/,/g,'').match(/\d+(\.\d+)?/g)||[]).map(Number).filter(function(x){ return x>=10; });
+            var vol=s.vol||[], hit=vol.find(function(d){ return nums.some(function(x){ return Math.abs((+d[1]||0)-x)<=1; }); });
+            if(nums.length) return hit?{ok:true,t:'✓ בניכויי הרשות: '+hit[0]+' '+F0(hit[1])+' ₪'}
+              :{ok:false,t:'✗ אין בניכויי הרשות ניכוי של '+nums.map(F0).join('/')+' ₪'+(vol.length?' (יש: '+vol.map(function(d){ return d[0]+' '+F0(d[1]); }).join(', ')+')':'')};
+          } }catch(_){}
+        return oldNS(e,n);
+      };
+    }
+    function isMe(n){ return !!n.me||n.for_acc===false||/לא\s+בתלוש/.test(String(n.t||''))||nstOf(n.emp,n.t)==='me'; }
     function isFirst(n){ return /^o\d/.test(String(n.id||''))||/דף הבית|הערות שכר לחשבת/.test(String(n.src||'')); }
     function afterNotes(e){
       var R=[], mine=noteGet(e.name);
@@ -91,24 +119,28 @@
       /* ההערה בבקרה שנבנתה מאותן הערות שכר — לא להציג פעמיים */
       if(mine&&!empNotesFull(e).some(function(n){ var t=String(n.t||'').replace(/\s+/g,' ').trim().slice(0,30); return t&&String(mine).replace(/\s+/g,' ').indexOf(t)>=0; }))
         R.push({t:mine,done:!!noteDoneOf(e.name),mine:true});
+      R.forEach(function(n){ if(nstOf(e.name,n.t)==='done') n.done=true; });
+      R=R.filter(function(n){ return nstOf(e.name,n.t)!=='me'; });
       return R;
     }
     function notesLines(e){
       var s=e.slip, A=[], B=[];
-      var M=empNotesFull(e).filter(isMe).map(function(n){ return '<div class="r6n"><span class="r6st me">🔒 לעצמי — לא בתלוש</span><span class="r6t">'+esc(noteTxt(n.t))+'</span>'
+      var M=empNotesFull(e).filter(isMe).map(function(n){ return '<div class="r6n"><span class="r6st me">🔒 לעצמי — לא בתלוש</span><span class="r6t">'+esc(noteTxt(n.t))+'</span>'+nstBtns(e.name,n)
         +'<div class="r6hist"><div><b>הערה בשבילך — לא לחשבת, ולא אמורה להופיע בתלוש</b></div></div></div>'; });
+      var mine=noteGet(e.name); if(mine&&nstOf(e.name,mine)==='me') M.push('<div class="r6n"><span class="r6st me">🔒 לעצמי</span><span class="r6t">'+esc(noteTxt(mine))+'</span>'+nstBtns(e.name,{t:mine})+'</div>');
       empNotesFull(e).filter(function(n){ return isFirst(n)&&!isMe(n); }).forEach(function(n){ var st=noteStatus(e,n), tag, now;
         if(!s){ tag='<span class="r6st miss">✗ לא בוצע — אין תלוש</span>'; now='אין תלוש, אז ההערה לא בוצעה. מחכים לתלוש'; }
         else if(st.ok===true){ tag='<span class="r6st done">✓ בוצע בתלוש</span>'; now='בתלוש: '+String(st.t).replace(/^✓\s*(טופל\s*—\s*)?/,''); }
         else if(st.ok===false){ tag='<span class="r6st miss">❗ לא בוצע בתלוש</span>'; now=String(st.t).replace(/^✗\s*/,'')+' — לבקש תיקון'; }
         else { tag='<span class="r6st info">ℹ אין במה לבדוק בתלוש</span>'; now='זה מידע לחשבת (למשל פרטי עובד חדש) — אין שורה בתלוש שמראה שבוצע'; }
-        A.push('<div class="r6n">'+tag+'<span class="r6t">'+esc(noteTxt(n.t))+'</span><div class="r6hist">'
+        if(st.t==='✓ סימנת שטופל'){ tag='<span class="r6st done">✓ סימנת שטופל</span>'; now='סימנת בעצמך שההערה טופלה'; }
+        A.push('<div class="r6n">'+tag+'<span class="r6t">'+esc(noteTxt(n.t))+'</span>'+nstBtns(e.name,n)+'<div class="r6hist">'
           +'<div>1️⃣ נשלח לחשבת עם הערות השכר'+(n.topic?' · '+esc(n.topic):'')+'</div>'
           +'<div>2️⃣ '+(s?'התלוש הגיע':'התלוש עוד לא הגיע')+'</div><div>3️⃣ <b>'+esc(now)+'</b></div></div></div>');
       });
       afterNotes(e).forEach(function(n){
         B.push('<div class="r6n">'+(n.done?'<span class="r6st done">✓ החשבת טיפלה</span>':'<span class="r6st wait">⏳ מחכים לתשובה או לתלוש מתוקן</span>')
-          +'<span class="r6t">'+esc(noteTxt(n.t))+'</span>'+(n.mine?'<button class="r6btn lite sm" data-note="'+EMO(e.name)+'">✏️</button>':'')
+          +'<span class="r6t">'+esc(noteTxt(n.t))+'</span>'+(n.mine?'<button class="r6btn lite sm" data-note="'+EMO(e.name)+'">✏️</button>':'')+nstBtns(e.name,n)
           +'<div class="r6hist"><div>1️⃣ '+(s?'התלוש הגיע':'התלוש לא הגיע')+'</div><div>2️⃣ כתבת לחשבת אחרי זה (בבקרה)</div><div>3️⃣ <b>'+(n.done?'סומן שהחשבת טיפלה':'עוד לא — מחכים שהחשבת תענה או תשלח תלוש מתוקן')+'</b></div></div></div>');
       });
       flagsOf(e).filter(function(x){ return x.f.done; }).forEach(function(x){
@@ -161,15 +193,16 @@
       window.notesHtml=function(e){
         try{
           var A=empNotesFull(e); if(!A.length) return '<div class="exl exm">אין הערות שכר לעובד/ת זה החודש.</div>';
-          return A.map(function(n){ var st=noteStatus(e,n);
-            if(isMe(n)) return '<div class="exl r6n"><span class="r6st me">🔒 לעצמי — לא בתלוש</span> «'+esc(n.t)+'»'+(n.topic?' <span class="exm">('+esc(n.topic)+')</span>':'')+'<div class="r6why">הערה בשבילך — לא לחשבת, ולא אמורה להופיע בתלוש</div></div>';
+          return A.map(function(n){ var st=noteStatus(e,n), B=nstBtns(e.name,n), tp=n.topic?' <span class="exm">('+esc(n.topic)+')</span>':'';
+            if(isMe(n)) return '<div class="exl r6n"><span class="r6st me">🔒 לעצמי — לא בתלוש</span> «'+esc(n.t)+'»'+tp+B+'<div class="r6why">הערה בשבילך — לא לחשבת, ולא אמורה להופיע בתלוש</div></div>';
+            if(st.t==='✓ סימנת שטופל') return '<div class="exl r6n"><span class="r6st done">✓ סימנת שטופל</span> «'+esc(n.t)+'»'+tp+B+'</div>';
             if(!isFirst(n)){ var dn=!!n.done||st.ok===true;
-              return '<div class="exl r6n">'+(dn?'<span class="r6st done">✓ החשבת טיפלה</span>':'<span class="r6st wait">⏳ ביקשת אחרי התלוש</span>')+' «'+esc(n.t)+'»'
+              return '<div class="exl r6n">'+(dn?'<span class="r6st done">✓ החשבת טיפלה</span>':'<span class="r6st wait">⏳ ביקשת אחרי התלוש</span>')+' «'+esc(n.t)+'»'+B
                 +'<div class="r6why">'+(dn?'סומן שהחשבת טיפלה':'כתבת לחשבת אחרי שהתלוש הגיע — מחכים לתשובה או לתלוש מתוקן')+'</div></div>'; }
-            if(!e.slip) return '<div class="exl r6n"><span class="r6st miss">✗ לא בוצע — אין תלוש</span> «'+esc(n.t)+'»'+(n.topic?' <span class="exm">('+esc(n.topic)+')</span>':'')+'</div>';
+            if(!e.slip) return '<div class="exl r6n"><span class="r6st miss">✗ לא בוצע — אין תלוש</span> «'+esc(n.t)+'»'+tp+B+'</div>';
             var tag=st.ok===true?'<span class="r6st done">✓ בוצע בתלוש</span>':st.ok===false?'<span class="r6st miss">❗ לא בוצע בתלוש</span>':'<span class="r6st info">ℹ אין במה לבדוק בתלוש</span>';
-            var why=st.ok===true?'':st.ok===false?(st.t||'ביקשנו, והתלוש הגיע בלי זה — לבקש תיקון'):'נשלח לחשבת לפני התלוש — אין שורה בתלוש שמראה שבוצע';
-            return '<div class="exl r6n">'+tag+' «'+esc(n.t)+'»'+(n.topic?' <span class="exm">('+esc(n.topic)+(n.me?' · לעצמי':'')+')</span>':'')+(why?'<div class="r6why">'+esc(why)+'</div>':'')+'</div>';
+            var why=st.ok===true?String(st.t||'').replace(/^✓\s*(טופל\s*—\s*)?/,''):st.ok===false?(String(st.t||'').replace(/^✗\s*/,'')||'ביקשנו, והתלוש הגיע בלי זה — לבקש תיקון'):'נשלח לחשבת לפני התלוש — אין שורה בתלוש שמראה שבוצע';
+            return '<div class="exl r6n">'+tag+' «'+esc(n.t)+'»'+tp+B+(why?'<div class="r6why">'+esc(why)+'</div>':'')+'</div>';
           }).join('');
         }catch(err){ return oldNotes(e); }
       };
@@ -187,6 +220,15 @@
             +((sl.study||(P&&P.study))?kv('שווי קרן השתלמות (מעל התקרה) — החודש / קודם',F0(sl.study||0)+' / '+pv(P&&P.study)):'');
           h=h.replace('<h4>מס ופנסיה</h4>','<h4>מס ופנסיה</h4>'+rows);
         }
+        /* «הערה לחשבת שכר» — בלי לחזור על הערות שכבר מוצגות למעלה (איילת 3.11: «ההערות רשומות פעמיים») */
+        try{ var NZ=function(t){ return String(t||'').replace(/<[^>]+>/g,'').replace(/&[a-z#0-9]+;/g,' ').replace(/[^֐-׿a-zA-Z0-9]+/g,' ').trim(); };
+          var have=empNotesFull(e).map(function(n){ return NZ(n.t); });
+          h=h.replace(/(<h4>הערה לחשבת שכר<\/h4>)<div class="kv"><span class="kk"[^>]*>([\s\S]*?)<\/span><\/div>([\s\S]*?)(<span class="r6st wait">⏳ מחכה לחשבת<\/span>|<span class="chip">⏳ טרם בוצע<\/span>)?(<\/div><\/div>)/,
+            function(all,h4,txt,mid,chip,end){
+              var parts=String(txt).split(/\s*\|\s*/).map(function(p){ return p.replace(/^[^:]{1,25}:\s*/,''); }).filter(function(p){ var z=NZ(p); return z&&!have.some(function(x){ return x&&(x.indexOf(z.slice(0,30))>=0||z.indexOf(x.slice(0,30))>=0); }); });
+              if(parts.length) return all;
+              return '<h4>הערה לחשבת שכר</h4><div class="exm">כל ההערות מופיעות למעלה, ב«הערות שכר החודש».</div>'+mid+end; });
+        }catch(_){}
         return h.replace('<div class="detail">','<div class="detail r6d">')
           .replace('הערות שכר — טופלו?','הערות שכר החודש — מה המצב')
           .replace('<span class="chip">⏳ טרם בוצע</span>','<span class="r6st wait">⏳ מחכה לחשבת</span>')

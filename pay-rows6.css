@@ -29,6 +29,10 @@ html.rows6 .row.r6{display:block;padding:10px 14px}
 .row.r6 .r6btn{font:inherit;font-size:14.5px;font-weight:600;border:1px solid currentColor;background:#fff;color:inherit;border-radius:9px;padding:3px 12px;cursor:pointer;white-space:nowrap}
 .row.r6 .r6btn.lite{border-color:rgba(0,0,0,.15);color:#3b3550;font-weight:400}
 .row.r6 .r6btn.sm{padding:0 7px;font-size:13px}
+.row.r6 .r6nb{display:inline-flex;gap:4px;margin-inline-start:6px;vertical-align:middle;opacity:.55}
+.row.r6 .r6n:hover .r6nb,.row.r6 .r6n.show .r6nb,.row.r6 .r6nb:has(.on){opacity:1}
+.row.r6 .r6nb .r6btn.on{background:#e8f6ee;border-color:#2f8f5b;color:#1f6b42;font-weight:600}
+html:has(#payTheme) .row.r6 .r6nb .r6btn.on{background:rgba(47,143,91,.25);color:#bdf0d2}
 .row.r6 .r6d{opacity:.75;font-size:13px}
 .row.r6 .r6notes{margin-top:6px;display:flex;flex-direction:column;gap:2px}
 .row.r6 .r6n{position:relative;display:flex;gap:8px;align-items:baseline;font-size:15px;padding:3px 8px;border-radius:8px;cursor:default}
