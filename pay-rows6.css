@@ -18,6 +18,33 @@ html.rows6 .row.r6{display:block;padding:10px 14px}
 .row.r6 ul.r6iss li.info{color:var(--muted,#6f6886)}
 .row.r6 .rvrow{margin-top:6px;padding:5px 8px}
 .row.r6 .rvbtn{font-size:14px;padding:4px 11px}
+/* «מה צריך ממך» — שורה צבעונית בולטת */
+.row.r6 .r6todo{margin-top:8px;border-radius:10px;padding:7px 12px;display:flex;gap:6px 10px;align-items:center;flex-wrap:wrap;font-size:16px;line-height:1.45}
+.row.r6 .r6todo b{font-weight:700}
+.row.r6 .r6todo.bad{background:#fdecec;color:#b91c1c}
+.row.r6 .r6todo.wait{background:#fff4dc;color:#8a5a00}
+.row.r6 .r6todo.ok{background:#e9f7ee;color:#15803d}
+.row.r6 .r6todo.q{background:#efe9ff;color:#6d28d9}
+.row.r6 .r6todo .go{margin-inline-start:auto;display:flex;gap:6px;flex-wrap:wrap}
+.row.r6 .r6btn{font:inherit;font-size:14.5px;font-weight:600;border:1px solid currentColor;background:#fff;color:inherit;border-radius:9px;padding:3px 12px;cursor:pointer;white-space:nowrap}
+.row.r6 .r6btn.lite{border-color:rgba(0,0,0,.15);color:#3b3550;font-weight:400}
+.row.r6 .r6btn.sm{padding:0 7px;font-size:13px}
+.row.r6 .r6d{opacity:.75;font-size:13px}
+.row.r6 .r6notes{margin-top:6px;display:flex;flex-direction:column;gap:2px}
+.row.r6 .r6n{position:relative;display:flex;gap:8px;align-items:baseline;font-size:15px;padding:3px 8px;border-radius:8px;cursor:default}
+.row.r6 .r6n:hover{background:rgba(0,0,0,.04)}
+.row.r6 .r6n .r6t{min-width:0}
+.row.r6 .r6hist{display:none;position:absolute;inset-inline-start:0;top:100%;z-index:20;background:var(--card,#fff);border:1px solid var(--border,#ece6dc);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:8px 12px;min-width:min(440px,88vw);font-size:14px;line-height:1.5;color:var(--ink,#2a2440)}
+.row.r6 .r6n:hover .r6hist,.row.r6 .r6n.show .r6hist{display:block}
+.r6st.me{background:rgba(120,113,108,.15);color:#57534e}
+html:has(#payTheme) .row.r6 .r6todo.bad{background:rgba(251,113,133,.16);color:#fda4af}
+html:has(#payTheme) .row.r6 .r6todo.wait{background:rgba(251,191,36,.14);color:#fde68a}
+html:has(#payTheme) .row.r6 .r6todo.ok{background:rgba(52,211,153,.14);color:#6ee7b7}
+html:has(#payTheme) .row.r6 .r6todo.q{background:rgba(167,139,250,.2);color:#d8ccff}
+html:has(#payTheme) .row.r6 .r6btn{background:rgba(255,255,255,.08)}
+html:has(#payTheme) .row.r6 .r6btn.lite{border-color:rgba(255,255,255,.25);color:#ece8ff}
+html:has(#payTheme) .row.r6 .r6hist{background:#2a2050;border-color:rgba(255,255,255,.2);color:#ece8ff}
+html:has(#payTheme) .r6st.me{color:#d6d3d1}
 /* כרטיס פתוח «דוגמה 1»: טור אחד = טבלת הרכיבים; טור שני = מה לא בסדר + הערות + מס ופנסיה + הערה לחשבת */
 .detail.r6d{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.45fr);grid-template-areas:"ex rec" "det rec";gap:10px 14px;align-items:start;margin-top:8px}
 .detail.r6d>.explainbox{grid-area:ex;margin:0;padding:8px 12px}
