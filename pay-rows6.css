@@ -98,3 +98,27 @@ html:has(#payTheme) .explainbox .exbad{color:#fda4af!important}
   .row.r6 ul.r6iss{columns:1}
   .row.r6 .r6note .notechip{max-width:220px}
 }
+
+/* 3.11 ערב: הערות שטופלו מקופלות · כל שורות התלוש · «מה לא בסדר» למעלה */
+.row.r6 .r6donegrp{margin-top:4px}
+.row.r6 .r6donegrp>summary{cursor:pointer;font-size:13.5px;color:#4a7a5c;padding:3px 8px;border-radius:8px;list-style:none;display:inline-block}
+.row.r6 .r6donegrp>summary::before{content:"▸ "}.row.r6 .r6donegrp[open]>summary::before{content:"▾ "}
+.row.r6 .r6donegrp>summary:hover{background:#eef7f1}
+.row.r6 .r6donegrp .r6n,.row.r6 .r6donegrp .r6cn{opacity:.75}
+.row.r6 .r6ex{margin:6px 0}
+.row.r6 .r6ex .ex{margin:0}
+.row.r6 .rvbtn.r6wr{border-color:#c0392b;color:#c0392b;font-weight:600}
+.r6lines{margin-top:10px;border:1px solid rgba(0,0,0,.08);border-radius:12px;background:#fff;overflow:hidden}
+.r6lines>summary{cursor:pointer;padding:8px 12px;font-weight:600;font-size:14.5px;background:#f7f8f9;list-style:none}
+.r6lines>summary::before{content:"▸ "}.r6lines[open]>summary::before{content:"▾ "}
+.r6lines .r6bad{color:#c0392b}
+.r6lt{padding:4px 10px 8px}
+.r6lr{display:grid;grid-template-columns:1fr auto 90px;gap:10px;padding:5px 2px;border-top:1px solid rgba(0,0,0,.05);font-size:14px;align-items:baseline}
+.r6lr .q{color:#8a8496;font-size:12.5px;white-space:nowrap}.r6lr .v{text-align:left;font-weight:600;white-space:nowrap}
+.r6lr.crit{background:#fdecea;color:#a3271b;border-radius:6px;padding-inline:6px}
+.r6lr.warn{background:#fff4e0;color:#8a5a12;border-radius:6px;padding-inline:6px}
+.r6lr.tot{font-weight:700;border-top:2px solid rgba(0,0,0,.1)}
+.r6lr.sub{color:#8a8496;font-size:12.5px}
+html:has(#payTheme) .r6lines{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12)}
+html:has(#payTheme) .r6lines>summary{background:rgba(255,255,255,.06)}
+html:has(#payTheme) .r6lr.crit{background:rgba(192,57,43,.25);color:#ffb4aa}html:has(#payTheme) .r6lr.warn{background:rgba(185,119,31,.25);color:#ffd8a0}
