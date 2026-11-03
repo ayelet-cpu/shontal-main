@@ -82,10 +82,12 @@
     /* שני סוגי הערות (איילת 3.11: «לא ברור מה לפני מה ולמה אני ממתינה»):
        1. נשלחו עם הערות השכר — לפני שהתלוש הגיע (מדף הבית). המצב: בוצע / לא בוצע בתלוש / אין תלוש.
        2. נכתבו בבקרה אחרי שהתלוש הגיע (תיקונים, «לבקש תלוש»). המצב: מחכים לתשובה או לתלוש מתוקן / החשבת טיפלה. */
+    /* הערה לעצמי: סומנה «רק לי», או כתוב בה «לא בתלוש» (למשל תוספת כנגד חשבוניות) — לא לחשבת ולא מחכים לה (איילת 3.11) */
+    function isMe(n){ return !!n.me||n.for_acc===false||/לא\s+בתלוש/.test(String(n.t||'')); }
     function isFirst(n){ return /^o\d/.test(String(n.id||''))||/דף הבית|הערות שכר לחשבת/.test(String(n.src||'')); }
     function afterNotes(e){
       var R=[], mine=noteGet(e.name);
-      empNotesFull(e).filter(function(n){ return !isFirst(n)&&!n.me; }).forEach(function(n){ R.push({t:n.t,done:!!n.done||noteStatus(e,n).ok===true}); });
+      empNotesFull(e).filter(function(n){ return !isFirst(n)&&!isMe(n); }).forEach(function(n){ R.push({t:n.t,done:!!n.done||noteStatus(e,n).ok===true}); });
       /* ההערה בבקרה שנבנתה מאותן הערות שכר — לא להציג פעמיים */
       if(mine&&!empNotesFull(e).some(function(n){ var t=String(n.t||'').replace(/\s+/g,' ').trim().slice(0,30); return t&&String(mine).replace(/\s+/g,' ').indexOf(t)>=0; }))
         R.push({t:mine,done:!!noteDoneOf(e.name),mine:true});
@@ -93,9 +95,10 @@
     }
     function notesLines(e){
       var s=e.slip, A=[], B=[];
-      empNotesFull(e).filter(isFirst).forEach(function(n){ var st=noteStatus(e,n), tag, now;
-        if(n.me){ tag='<span class="r6st me">🔒 לעצמי</span>'; now='רק לך — לא נשלח לחשבת'; }
-        else if(!s){ tag='<span class="r6st miss">✗ לא בוצע — אין תלוש</span>'; now='אין תלוש, אז ההערה לא בוצעה. מחכים לתלוש'; }
+      var M=empNotesFull(e).filter(isMe).map(function(n){ return '<div class="r6n"><span class="r6st me">🔒 לעצמי — לא בתלוש</span><span class="r6t">'+esc(noteTxt(n.t))+'</span>'
+        +'<div class="r6hist"><div><b>הערה בשבילך — לא לחשבת, ולא אמורה להופיע בתלוש</b></div></div></div>'; });
+      empNotesFull(e).filter(function(n){ return isFirst(n)&&!isMe(n); }).forEach(function(n){ var st=noteStatus(e,n), tag, now;
+        if(!s){ tag='<span class="r6st miss">✗ לא בוצע — אין תלוש</span>'; now='אין תלוש, אז ההערה לא בוצעה. מחכים לתלוש'; }
         else if(st.ok===true){ tag='<span class="r6st done">✓ בוצע בתלוש</span>'; now='בתלוש: '+String(st.t).replace(/^✓\s*(טופל\s*—\s*)?/,''); }
         else if(st.ok===false){ tag='<span class="r6st miss">❗ לא בוצע בתלוש</span>'; now=String(st.t).replace(/^✗\s*/,'')+' — לבקש תיקון'; }
         else { tag='<span class="r6st info">ℹ אין במה לבדוק בתלוש</span>'; now='זה מידע לחשבת (למשל פרטי עובד חדש) — אין שורה בתלוש שמראה שבוצע'; }
@@ -115,6 +118,7 @@
       var h='';
       if(A.length) h+='<div class="r6grp">📤 נשלח עם הערות השכר — לפני התלוש</div>'+A.join('');
       if(B.length) h+='<div class="r6grp">✍️ אחרי התלוש — מה שביקשת מהחשבת</div>'+B.join('');
+      if(M.length) h+='<div class="r6grp">🔒 לעצמך — לא לחשבת</div>'+M.join('');
       return h?'<div class="r6notes">'+h+'</div>':'';
     }
     /* בטלפון אין ריחוף — לחיצה על הערה פותחת/סוגרת את ההיסטוריה שלה (בלי לפתוח את הכרטיס) */
@@ -158,6 +162,7 @@
         try{
           var A=empNotesFull(e); if(!A.length) return '<div class="exl exm">אין הערות שכר לעובד/ת זה החודש.</div>';
           return A.map(function(n){ var st=noteStatus(e,n);
+            if(isMe(n)) return '<div class="exl r6n"><span class="r6st me">🔒 לעצמי — לא בתלוש</span> «'+esc(n.t)+'»'+(n.topic?' <span class="exm">('+esc(n.topic)+')</span>':'')+'<div class="r6why">הערה בשבילך — לא לחשבת, ולא אמורה להופיע בתלוש</div></div>';
             var tag=st.ok===true?'<span class="r6st done">✓ בוצע בתלוש</span>':st.ok===false?'<span class="r6st miss">❗ לא בוצע בתלוש</span>':'<span class="r6st wait">⏳ מחכה לחשבת</span>';
             var why=st.ok===true?'':st.ok===false?(st.t||'ביקשנו, והתלוש הגיע בלי זה — לבקש תיקון'):'אין במה לבדוק את זה בתלוש — מחכים שהחשבת תאשר שטיפלה';
             return '<div class="exl r6n">'+tag+' «'+esc(n.t)+'»'+(n.topic?' <span class="exm">('+esc(n.topic)+(n.me?' · לעצמי':'')+')</span>':'')+(why?'<div class="r6why">'+esc(why)+'</div>':'')+'</div>';
