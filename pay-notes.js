@@ -3,6 +3,15 @@
    עובד על אותם נתונים בדיוק (NOTES2 של החודש → syncNotesFrom2 → pay_kv). לא מוחק ולא משנה לוגיקה עסקית;
    שדות חדשים בהערה (לא חובה): st (wip) · sentAt · doneAt · type · amt · log[] · roy.
    «טופלה» רק כשאיילת מסמנת — מה שבתלוש מוצג כמידע בלבד. החלון הישן נשאר בתפריט «⋯». */
+/* 5.11.2026 איילת: «את בקרת השכר של אסא לא תיקנת כמו השאר» — אסא ופינצוס (קוד אחר: CHK / notes2Save / openQList / qlOverlay) מקבלים את אותו מסך הערות */
+(function(){ try{
+  if(typeof NOTES2==='undefined'||typeof syncNotesFrom2==='function'||typeof notes2Save!=='function'||typeof openQList!=='function'||!document.getElementById('qlOverlay')||typeof CHK==='undefined') return;
+  window.syncNotesFrom2=function(){ notes2Save(); try{ renderChips(); }catch(_){} try{ renderCheck(); }catch(_){} try{ updateQBtn(); }catch(_){} };
+  var OLDQ=openQList; window.openNotes=function(){ OLDQ(); };
+  if(!document.getElementById('notesOverlay')){ var ov=document.createElement('div'); ov.id='notesOverlay'; ov.hidden=true; ov.style.display='none'; document.body.appendChild(ov); }
+  if(typeof DATA!=='undefined'&&DATA){ if(!DATA.month) DATA.month=CHK.month; if(!DATA.employees) DATA.employees=(CHK.rows||[]).map(function(o){ return {name:o.name,dept:o.dept||'',slip:o.s||null}; }); if(DATA.prepay==null) DATA.prepay=!!CHK.prepay; }
+  window.__nxAsa=true;
+ }catch(_){} })();
 (function(){
   if(typeof NOTES2==='undefined'||typeof syncNotesFrom2!=='function'||typeof openNotes!=='function'||!document.getElementById('notesOverlay')) return;
   var OLD_OPEN=openNotes;
@@ -428,5 +437,6 @@
   /* ---------- חיבור: כל מקום שפותח את החלון הישן — פותח את המסך החדש ---------- */
   window.openNotes=function(name,suggest){ open(); if(name){ var ex=NOTES2.find(function(x){ return x.emp===name&&!String(x.t||'').trim(); }); openEdit(ex?ex.id:null,{emp:name,t:suggest||''}); } };
   window.__nxOpen=open;
+  if(window.__nxAsa){ window.openQList=function(){ open(); }; }   /* אסא/פינצוס: כל כפתור «הערות שכר» פותח את המסך החדש; החלון הישן — בתפריט «⋯» */
   try{ if(parent.__nxOpen) setTimeout(open,50); }catch(_){}
 })();
