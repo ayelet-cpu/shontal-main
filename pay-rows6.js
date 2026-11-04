@@ -560,10 +560,13 @@
       var pidL=''; try{ var pl=(s.lines||[]).filter(function(l){ return l[1]==='pidyon'||/פדיון|תמורת חופש/.test(String(l[0]||'')); })[0]; if(pl) pidL=String(pl[0]||'').trim(); }catch(_){}
       var ODD={}; L.forEach(function(y){ var m=String(y).match(/^שורה לא רגילה בתלוש: «(.+?)» ([\d,]+) ₪/); if(m) ODD[m[2]]=m[1]; });
       var topol=(typeof CAFE_CUR!=='undefined'&&CAFE_CUR==='טופול');
+      var ELEC=(s.lines||[]).some(function(l){ return /בחירות/.test(String(l[0]||'')); })&&a&&a.diff!=null&&Math.abs(a.diff)<=35;
       L.forEach(function(x){
         var t=String(x||'');
         /* איילת 5.11: «לטופול יש הבראה בתלושים??» — בטופול לא משלמים הבראה בתלוש (0 תלושים בספטמבר ובאוקטובר) */
         if(topol&&/^אין הבראה בתלוש/.test(t)) return;
+        /* יום הבחירות — התשלום לפי השיפט (איילת 5.11: «תתעלם»): כשהסה"כ מתאים, לא מפרטים את פיצול השעות בין יסוד / 200% / תוספת בחירות */
+        if(ELEC&&/^(שכר יסוד|שעות 200%)\s*:|^\S+ [\d,]+ ₪ בתלוש — לא במודל ולא מאושר|«תוספת עבודה בבחירות»/.test(t)) return;
         /* איילת 5.11 (תמר בן סנדר): «יכל פשוט לרשום — שימי לב, יש תשלום עבור מילואים» — שורה לא רגילה + «לא במודל» באותו סכום = שורה אחת */
         var mo=t.match(/^\S+ ([\d,]+) ₪ בתלוש — לא במודל ולא מאושר/);
         if(mo&&ODD[mo[1]]){ var nm=ODD[mo[1]]; t=/מילואים/.test(nm)?'שימי לב — יש תשלום עבור מילואים ('+mo[1]+' ₪)':'שימי לב — בתלוש «'+nm+'» '+mo[1]+' ₪'; if(out.indexOf(t)<0) out.push(t); return; }
@@ -588,6 +591,17 @@
       });
       return out;
     }
+    /* גם בסטטוס (לא רק בתצוגה): בטופול אין הבראה בתלוש; יום הבחירות לפי השיפט כשהסה"כ מתאים */
+    var io0=window.issuesOf;
+    window.issuesOf=function(e,a){ var r=io0(e,a)||[];
+      try{ var s=e.slip||{}, topol=(typeof CAFE_CUR!=='undefined'&&CAFE_CUR==='טופול'&&!(e.rest&&e.rest!=='טופול'));
+        var dif=null; try{ var tg=target(e); dif=tg==null?null:expected(e)-tg; }catch(_){}
+        var elec=(s.lines||[]).some(function(l){ return /בחירות/.test(String(l[0]||'')); })&&dif!=null&&Math.abs(dif)<=35;
+        r=r.filter(function(t){ t=String(t||'');
+          if(topol&&/^אין הבראה בתלוש/.test(t)) return false;
+          if(elec&&/^(שכר יסוד|שעות 200%)\s*:|^\S+ [\d,]+ ₪ בתלוש — לא במודל ולא מאושר|«תוספת עבודה בבחירות»/.test(t)) return false;
+          return true; });
+      }catch(_){} return r; };
     window.explainHtml=function(e,a){
       var s=e.slip, iss=[]; try{ iss=short(e,a,issuesOf(e,a)||[]); }catch(_){ iss=issuesOf(e,a)||[]; }
       var info=function(x){ return /^ℹ/.test(x)&&!/<b>/.test(x); };
