@@ -565,8 +565,8 @@
       var ELEC=(s.lines||[]).some(function(l){ return /בחירות/.test(String(l[0]||'')); })&&a&&a.diff!=null&&Math.abs(a.diff)<=35;
       L.forEach(function(x){
         var t=String(x||'');
-        /* איילת 5.11: «לטופול יש הבראה בתלושים??» — בטופול לא משלמים הבראה בתלוש (0 תלושים בספטמבר ובאוקטובר) */
-        if(topol&&/^אין הבראה בתלוש/.test(t)) return;
+        /* איילת 5.11: «לטופול יש הבראה בתלושים??» + «באריאלה אין הבראה לעובדים כל חודש קבוע» — בבתי הקפה לא מתריעים «אין הבראה בתלוש» */
+        if(typeof CAFE_CUR!=='undefined'&&/^אין הבראה בתלוש/.test(t)) return;
         /* יום הבחירות — התשלום לפי השיפט (איילת 5.11: «תתעלם»): כשהסה"כ מתאים, לא מפרטים את פיצול השעות בין יסוד / 200% / תוספת בחירות */
         if(ELEC&&/^(שכר יסוד|שעות 200%)\s*:|^\S+ [\d,]+ ₪ בתלוש — לא במודל ולא מאושר|«תוספת עבודה בבחירות»/.test(t)) return;
         /* איילת 5.11 (תמר בן סנדר): «יכל פשוט לרשום — שימי לב, יש תשלום עבור מילואים» — שורה לא רגילה + «לא במודל» באותו סכום = שורה אחת */
@@ -606,7 +606,7 @@
         var dif=null; try{ var tg=target(e); dif=tg==null?null:expected(e)-tg; }catch(_){}
         var elec=(s.lines||[]).some(function(l){ return /בחירות/.test(String(l[0]||'')); })&&dif!=null&&Math.abs(dif)<=35;
         r=r.filter(function(t){ t=String(t||'');
-          if(topol&&/^אין הבראה בתלוש/.test(t)) return false;
+          if(typeof CAFE_CUR!=='undefined'&&/^אין הבראה בתלוש/.test(t)) return false;
           /* איילת 5.11 (תומר וקנין): «הוא צעיר» — פנסיה חובה רק מגיל 21 (גבר) / 20 (אישה) */
           if(e.young&&/^אין פנסיה/.test(t)) return false;
           if(elec&&/^(שכר יסוד|שעות 200%)\s*:|^\S+ [\d,]+ ₪ בתלוש — לא במודל ולא מאושר|«תוספת עבודה בבחירות»/.test(t)) return false;
