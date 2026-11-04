@@ -181,4 +181,22 @@ html:has(#payTheme) #nx .nx-seg{background:#22262f}html:has(#payTheme) #nx .nx-s
 .nx-ain:hover{border-color:var(--line);background:#fff}.nx-ain:focus{border-color:var(--tq);outline:none;background:#fff}
 .nx-ain::placeholder{color:#c3cbca;font-weight:400}
 .nx-amt span{color:var(--mut);font-size:13px}
-.nx-fl{flex:1;min-width:240px;line-height:1.45}
+.nx-fl{flex:1;min-width:240px;line-height:1.45}/* הערות של רועי בתוך הטבלה + שורת ייצוא ללשונית (4.11) */
+.nx-row.nx-froy{background:#fff8f6;cursor:default}
+.nx-row.nx-froy .nx-facts{grid-column:span 2;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-start}
+.nx-rtag{display:block;font-size:11.5px;color:#b0473b;font-weight:600}
+.nx-pill.s-roy{background:#fdecea;color:#b0473b;border:1px solid #f3cfca;border-radius:999px;padding:3px 10px;font-size:12.5px;white-space:nowrap}
+.nx-roytxt{color:#5a2f2a}
+.nx-mine{width:100%;margin-top:6px;border:1px dashed #9cc7d6;border-radius:8px;padding:6px 8px;font:inherit;font-size:13.5px;resize:none;background:#fff;min-height:34px;box-sizing:border-box}
+.nx-mine:focus{outline:2px solid var(--tql);border-style:solid;border-color:var(--tq)}
+.nx-roysrc{font-size:12.5px;color:#9a5a52;margin-top:3px}
+.nx-grp.nx-grp-roy{background:#fdf1ef;color:#b0473b}
+.nx-btn.sm{padding:4px 10px;font-size:13px}
+.nx-tabbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;font-size:13.5px;color:var(--mut)}
+.nx-tabbar span{margin-inline-end:auto;font-weight:600;color:#4a5856}
+@media (max-width:760px){.nx-row.nx-froy .nx-facts{width:100%}}
+html:has(#payTheme) #nx .nx-row.nx-froy{background:#2c2424}
+html:has(#payTheme) #nx .nx-grp.nx-grp-roy{background:#3a2a2a;color:#f0b7ae}
+html:has(#payTheme) #nx .nx-mine{background:#1d2027;color:#dde3e6;border-color:#3d6f80}
+html:has(#payTheme) #nx .nx-roytxt,html:has(#payTheme) #nx .nx-roysrc{color:#f0c8c1}
+html:has(#payTheme) #nx .nx-tabbar span{color:#c9d0d4}
