@@ -337,7 +337,8 @@
         if(open){ /* כרטיס פתוח (איילת 3.11): «מה לא בסדר» + הערות מתחת להערה של רועי, וכל הכפתורים בשורה אחת בלי כפילויות */
           var F=flagsOf(e).filter(function(x){ return !x.f.done; });
           var sug=F.length?e.name+' — '+F.map(function(x){ return x.f.t; }).join(' · '):(typeof gapSuggestion==='function'?gapSuggestion(e,a):'');
-          var extra='<button class="rvbtn r6wr" data-addnote="'+EMO(e.name)+'" data-suggest="'+EMO(sug)+'">✍️ לכתוב לחשבת</button>'
+          /* איילת 5.11: «כשהכרטיס פתוח אי אפשר להוסיף הערה» */
+          var extra='<button class="rvbtn r6wr" data-addnote="'+EMO(e.name)+'" data-suggest="'+EMO(sug)+'">✍️ לכתוב לחשבת</button>'+noteEl.replace(/class="notebtn( has)?"/,'class="rvbtn notebtn$1"')
             +(F.length?'<button class="rvbtn" onclick="event.stopPropagation();'+F.map(function(x){ return '__r6flagDone('+x.i+')'; }).join(';')+'">✓ '+esc(F[0].f.by||'רועי')+' — טופל / לא רלוונטי</button>':'');
           try{ var okk=(a.st.k==='ok'||a.st.sev==='good')&&laneOf(e)!=='pay';
             if(okk&&!empNotesFull(e).length) issHtml+='<div class="r6todo ok big">✓ <span>'+okText(e,a)+'</span></div>';
