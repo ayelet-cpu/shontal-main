@@ -158,7 +158,13 @@
       else if(Math.abs(amt)>0.5&&(/הפרש|קיזוז|החזר|תיקון/.test(d)||l[1]==='other'&&!/^(שעות|בר\/מלצר|מתלמד|צ'קר|השלמת שכר)/.test(d))) out.push({l:l,sev:'warn',t:'שורה לא רגילה בתלוש: «'+d+'» '+F0(amt)+' ₪'}); });
       return out; }
     if(typeof issuesOf==="function"){ var oldIss=issuesOf;
-      window.issuesOf=function(e,a){ var r=oldIss(e,a)||[]; try{ oddLines(e.slip).forEach(function(x){ if(r.indexOf(x.t)<0) r.push(x.t); }); }catch(_){} return r; }; }
+      window.issuesOf=function(e,a){ var r=oldIss(e,a)||[]; try{ oddLines(e.slip).forEach(function(x){ if(r.indexOf(x.t)<0) r.push(x.t); }); }catch(_){}
+        try{ var k=kerenChange(e); if(k&&r.indexOf(k)<0) r.push(k); }catch(_){} return r; }; }
+    /* קרן השתלמות — כל שינוי בסכום מול החודש הקודם = התראה (איילת 4.11: «אם סכום קרן השתלמות משתנה תמיד תתריע») */
+    function kerenChange(e){ var s=e&&e.slip; if(!s) return '';
+      var P=null; try{ P=(JSON.parse(localStorage.getItem('pay-prev-v1')||'{}')[DATA.month||'']||{})[e.slipname]||null; }catch(_){}
+      if(!P) return ''; var c=+s.empStudy||0, v=+P.empStudy||0;
+      return Math.abs(c-v)>=1?'קרן השתלמות (מעסיק) השתנתה: '+(P.m||'החודש הקודם')+' '+F0(v)+' ₪ → החודש '+F0(c)+' ₪ — לבדוק למה':''; }
     if(typeof assess==="function"){ var oldAs2=assess;
       window.assess=function(e){ var a=oldAs2(e); try{ if(a&&a.st&&a.st.sev!=='crit'&&laneOf(e)!=='pay'&&oddLines(e.slip).some(function(x){ return x.sev==='crit'; })) a.st={k:'gap',sev:'crit',label:'❗ שורה במינוס בתלוש'};
         /* «תקין» רק כשאין שום דבר ב«מה לא בסדר» — גם כשהסה"כ מתאים, פער ברכיב (שעות מארחת מול 150%) = לבדוק (איילת 3.11: «למה רשמת שהעובד תקין») */
