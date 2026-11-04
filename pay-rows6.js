@@ -544,3 +544,59 @@
     };
   }catch(_){}
 })();
+
+/* ===== 5.11.2026 איילת (אריאלה, מייקל): «תראה איזה עומס של מידע — כל דבר פה רשום כמה פעמים ועם יותר מדי מלל».
+   כרטיס פתוח: כל בעיה פעם אחת ובקצרה; הערות השכר רק ב«הערות שכר» (לא שוב ב«מה לא בסדר»); בלי חצים;
+   «פדיון חופשה» בשם שבתלוש; אצל עובד/ת שעוזב/ת (גמר חשבון) — פדיון/תמורת חופשה = מידע, לא בעיה. התצוגה בלבד — הבדיקות והסטטוס לא משתנים. ===== */
+(function(){
+  try{
+    if(typeof explainHtml!=="function"||typeof issuesOf!=="function") return;
+    var N=function(x){ return String(x||'').replace(/<[^>]+>/g,'').replace(/[,\s]/g,''); };
+    function short(e,a,L){
+      var s=e.slip||{}, out=[], txt=L.map(N).join('|');
+      var NT=[]; try{ NT=(empNotesFull(e)||[]).map(function(n){ return String(n.t||''); }); }catch(_){}
+      var gm=false; try{ gm=(typeof gmarNote==='function'&&gmarNote(e))||(empNotesFull(e)||[]).some(function(n){ return /גמר חשבון/.test(n.topic||'')||/עוזב|עזב|התפטר|פוטר|גמר חשבון/.test(n.t||''); }); }catch(_){}
+      short.drop=0;
+      var pidL=''; try{ var pl=(s.lines||[]).filter(function(l){ return l[1]==='pidyon'||/פדיון|תמורת חופש/.test(String(l[0]||'')); })[0]; if(pl) pidL=String(pl[0]||'').trim(); }catch(_){}
+      L.forEach(function(x){
+        var t=String(x||'');
+        if(/^הערת שכר «/.test(t)){ short.drop++; return; }                                     /* מופיע למטה, ב«הערות שכר» */
+        var m=t.match(/תעריף בתלוש ([\d.]+) ₪ ≠ תעריף מוסכם ([\d.]+)/);        /* כפילות של «תעריף בתלוש X במקום Y» */
+        if(m&&txt.indexOf(N('תעריף בתלוש '+Number(m[1]).toFixed(1).replace(/\.0$/,'')))>=0&&/במקום/.test(txt)) return;
+        if(m&&L.some(function(y){ return /תעריף בתלוש [\d.]+ ₪ במקום/.test(y); })) return;
+        m=t.match(/^בונוס מאושר ([\d,]+) ₪ חסר בתלוש/);
+        if(m&&L.some(function(y){ return y!==x&&new RegExp('^בונוס '+m[1]+' ₪ חסר בתלוש').test(y); })) return;
+        /* איילת 5.11: «בונוס 2,400 רשום פעמיים — היית יכול לרשום רק בהערות שכר» — שורה שהערת שכר מכסה (אותה מילה ואותו סכום) מופיעה רק שם */
+        var kw=(t.match(/^(?:❗\s*)?(בונוס|תוספת|מילואים|מקדמה|הלוואה|פרמיה|מענק)/)||[])[1], am=(t.match(/([\d,]{3,}) ₪/)||[])[1];
+        if(kw&&am&&NT.some(function(z){ return z.indexOf(kw)>=0&&z.replace(/,/g,'').indexOf(am.replace(/,/g,''))>=0; })){ short.drop++; return; }
+        if(/^(תמורת חופשה|פדיון)[^:]*?[\d,]+ ₪\s*$/.test(t)){
+          var v=(t.match(/([\d,]+) ₪/)||[])[1]||'';
+          out.push((gm?'ℹ ':'')+(pidL||'פדיון חופשה')+' '+v+' ₪'+(gm?' — חלק מגמר החשבון':'')); return; }
+        t=t.replace(/\s*→\s*\+([\d,]+) ₪/,' — חסר $1 ₪').replace(/\s*→\s*[\u200e\u200f]?[−-]([\d,]+) ₪/,' — עודף $1 ₪').replace(/\s*→\s*/g,' — ')
+           .replace(/^תעריף בתלוש ([\d.]+) ₪ במקום/,'תעריף $1 ₪ במקום')
+           .replace(/^(.+?) ([\d,]+) ₪ חסר בתלוש — חסר \2 ₪$/,'$1 $2 ₪ — לא בתלוש');
+        if(out.indexOf(t)<0) out.push(t);
+      });
+      return out;
+    }
+    window.explainHtml=function(e,a){
+      var s=e.slip, iss=[]; try{ iss=short(e,a,issuesOf(e,a)||[]); }catch(_){ iss=issuesOf(e,a)||[]; }
+      var info=function(x){ return /^ℹ/.test(x)&&!/<b>/.test(x); };
+      var h='<div class="explainbox">';
+      if(!s) h+='<div class="exl exc">'+(a.worked?'<b>יש שעות בשיפט ואין תלוש — לבדוק מול חשבת השכר.</b>':'אין תלוש ואין שעות בשיפט.')+'</div>';
+      else if(iss.length){ var bad=iss.filter(function(x){ return !info(x); });
+        h+=(bad.length?'<div class="exh">❗ מה לא בסדר</div>':short.drop?'':'<div class="exh">'+(redOK(e,a)?'✓ התלוש תקין לאחר הפחתה':'✓ התלוש תקין')+'</div>')
+          +iss.map(function(x){ return '<div class="exl '+(info(x)?'exm':'exbad')+'">• '+x.replace(/^ℹ\s*/,'')+'</div>'; }).join(''); }
+      else h+='<div class="exl exc ok"><b>✓ התלוש תקין</b> — כל הרכיבים תואמים (מחושב '+F0(a.exp)+' מול תלוש '+F0(a.tg)+').</div>';
+      return h+'<div class="exh" style="margin-top:8px">'+(short.drop?'❗ ':'')+'הערות שכר</div>'+notesHtml(e)+'</div>';
+    };
+    /* הערות שכר: שורה אחת לכל הערה — מצב קצר + ההערה + כפתורים; בלי משפט הסבר שחוזר על המצב */
+    if(typeof notesHtml==="function"){ var nh0=window.notesHtml;
+      window.notesHtml=function(e){ var h=nh0(e);
+        try{ h=h.replace(/<span class="r6why">(?:נשלח לחשבת לפני התלוש — אין שורה בתלוש שמראה שבוצע|לא טופל — אין [^<]*|ביקשנו, והתלוש הגיע בלי זה — לבקש תיקון|הערה בשבילך — לא לחשבת, ולא אמורה להופיע בתלוש)<\/span>/g,'<span></span>')
+          .replace('<span class="r6st info">ℹ אין במה לבדוק בתלוש</span>','<span class="r6st info">ℹ מידע</span>')
+          .replace(/<span class="r6st miss">❗ לא בוצע בתלוש<\/span>/g,'<span class="r6st miss">✗ לא בתלוש</span>'); }catch(_){}
+        return h; };
+    }
+  }catch(_){}
+})();
