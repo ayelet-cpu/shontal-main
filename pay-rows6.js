@@ -607,6 +607,8 @@
         var elec=(s.lines||[]).some(function(l){ return /בחירות/.test(String(l[0]||'')); })&&dif!=null&&Math.abs(dif)<=35;
         r=r.filter(function(t){ t=String(t||'');
           if(topol&&/^אין הבראה בתלוש/.test(t)) return false;
+          /* איילת 5.11 (תומר וקנין): «הוא צעיר» — פנסיה חובה רק מגיל 21 (גבר) / 20 (אישה) */
+          if(e.young&&/^אין פנסיה/.test(t)) return false;
           if(elec&&/^(שכר יסוד|שעות 200%)\s*:|^\S+ [\d,]+ ₪ בתלוש — לא במודל ולא מאושר|«תוספת עבודה בבחירות»/.test(t)) return false;
           return true; });
       }catch(_){} return r; };
