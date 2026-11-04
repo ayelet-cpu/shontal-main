@@ -167,7 +167,41 @@
     }
     if(typeof issuesOf==="function"){ var oldIss=issuesOf;
       window.issuesOf=function(e,a){ var r=oldIss(e,a)||[]; try{ oddLines(e.slip).forEach(function(x){ if(r.indexOf(x.t)<0) r.push(x.t); }); }catch(_){}
-        try{ var k=kerenChange(e); if(k&&r.indexOf(k)<0) r.push(k); }catch(_){} return r; }; }
+        try{ var k=kerenChange(e); if(k&&r.indexOf(k)<0) r.push(k); }catch(_){}
+        try{ deepChecks(e).forEach(function(x){ if(r.indexOf(x.t)<0) r.push(x.t); }); }catch(_){} return r; }; }
+    /* בדיקות עומק (איילת 5.11: «אין דבר כזה להשוות תלוש לעצמו… כל חשד קטן — לרשום»):
+       כל רכיב מול השיפט / ההסכם / החודש הקודם / ההערות. ❗ = כסף או חוק, ⚠ = לבדוק. */
+    function prevOf(e){ try{ return (JSON.parse(localStorage.getItem('pay-prev-v1')||'{}')[DATA.month||'']||{})[e.slipname]||null; }catch(_){ return null; } }
+    function deepChecks(e){ var s=e&&e.slip, out=[], P=prevOf(e); if(!s) return out;
+      var add=function(sev,t){ out.push({sev:sev,t:(sev==='crit'?'❗ ':'⚠ ')+t}); };
+      var hv=s.hova||[], keren=0, pens=0; hv.forEach(function(h){ var d=String(h[0]||''); if(/מס הכנסה|ביטוח לאומי|דמי בריאות/.test(d)) return; if(/השתלמות|קרן/.test(d)) keren+=+h[1]||0; else pens+=+h[1]||0; });
+      /* אחמ"ש — התשלום בתלוש מול עלות המשמרות בשיפט (לא מול התלוש עצמו) */
+      var mgd=e.basis==='manager'&&e.mgrShift!=null?Math.abs((+s.ahmash||0)-e.mgrShift):0;
+      if(mgd>35) add(mgd>200?'crit':'warn','תשלום אחמ"ש בתלוש '+F0(s.ahmash||0)+' ₪ ≠ עלות משמרות הניהול בשיפט '+F0(e.mgrShift)+' ₪ (הפרש '+F0((s.ahmash||0)-e.mgrShift)+')');
+      /* תעריף שעתי מוסכם מול התלוש */
+      if(e.basis==='hourly'&&e.rate&&s.rate&&Math.abs(s.rate-e.rate)>0.01) add('crit','תעריף בתלוש '+s.rate+' ₪ ≠ תעריף מוסכם '+e.rate+' ₪'+(e.rateNote?' ('+e.rateNote+')':''));
+      var worked=(+s.hours||0)>0||(+s.days||0)>0||(+e.hours||0)>0;
+      if(worked&&!(+s.meals>0)&&!(s.lines||[]).some(function(l){ return /שווי ארוחות/.test(l[0]||''); })) add('warn','עבד/ה ואין שווי ארוחות בתלוש');
+      if(worked&&!(+s.travel>0)&&e.basis!=='global'&&!e.glob) add('warn','עבד/ה ואין נסיעות בתלוש');
+      /* מול החודש הקודם (נתונים קבועים) */
+      if(P){
+        if((+P.empPension||0)>0&&!(+s.empPension>0)&&worked) add('crit','הייתה פנסיה ב-'+P.m+' ('+F0(P.empPension)+' ₪ מעסיק) — אין פנסיה בתלוש החודש');
+        if(P.points!=null&&s.points!=null&&Math.abs(P.points-s.points)>0.01) add('warn','נקודות זיכוי השתנו: '+P.m+' '+P.points+' → החודש '+s.points);
+        if(P.vacBal!=null&&s.vacPrev!=null&&Math.abs(P.vacBal-s.vacPrev)>0.05) add('warn','יתרת חופשה בסוף '+P.m+' '+P.vacBal+' ≠ יתרת הפתיחה החודש '+s.vacPrev);
+        if(P.sickBal!=null&&s.sickPrev!=null&&Math.abs(P.sickBal-s.sickPrev)>0.05) add('warn','יתרת מחלה בסוף '+P.m+' '+P.sickBal+' ≠ יתרת הפתיחה החודש '+s.sickPrev);
+        if(P.rate&&s.rate&&Math.abs(P.rate-s.rate)>0.01&&!e.glob&&e.basis!=='global'&&e.basis!=='manager') add('warn','התעריף השתנה: '+P.m+' '+P.rate+' → החודש '+s.rate+' — לוודא שיש הערה');
+        if((+P.keren||0)>0&&Math.abs((+P.keren||0)-keren)>=1) add('warn','קרן השתלמות (עובד): '+P.m+' '+F0(P.keren)+' → החודש '+F0(keren));
+        if((+P.pension||0)>0&&Math.abs((+P.pension||0)-pens)>=1&&e.glob) add('warn','פנסיה (עובד, גלובלי): '+P.m+' '+F0(P.pension)+' → החודש '+F0(pens));
+      }
+      /* הערות עם סכום — מול הניכוי בתלוש */
+      try{ empNotesFull(e).forEach(function(n){ var t=String(n.t||''), m;
+        /* מספר צמוד למילה (עד 12 תווים, בלי פסיק / מילה אחרת באמצע); לא שנה (2020–2035) */
+        var num=function(rx){ var mm=t.match(rx); if(!mm) return 0; var v=+mm[1].replace(/,/g,''); return (v>=2020&&v<=2035&&!/₪|ש"?ח|שקל/.test(mm[0]))?0:v; };
+        var N=num(/פנסיה[^\d\n,;.]{0,12}?(\d[\d,]{2,})(\s*(₪|ש"?ח|שקל))?/); if(N>50&&Math.abs(pens-N)>5) add('crit','בהערה: פנסיה '+F0(N)+' — בתלוש ניכוי פנסיה '+F0(pens)+' ₪');
+        var K=num(/השתלמות[^\d\n,;.]{0,12}?(\d[\d,]{2,})(\s*(₪|ש"?ח|שקל))?/); if(K>50&&Math.abs(keren-K)>5&&Math.abs((+s.empStudy||0)-K)>5) add('crit','בהערה: קרן השתלמות '+F0(K)+' — בתלוש עובד '+F0(keren)+' / מעסיק '+F0(s.empStudy||0)+' ₪');
+      }); }catch(_){}
+      return out; }
+    window.__deepChecks=deepChecks;
     /* קרן השתלמות — כל שינוי בסכום מול החודש הקודם = התראה (איילת 4.11: «אם סכום קרן השתלמות משתנה תמיד תתריע») */
     function kerenChange(e){ var s=e&&e.slip; if(!s) return '';
       var P=null; try{ P=(JSON.parse(localStorage.getItem('pay-prev-v1')||'{}')[DATA.month||'']||{})[e.slipname]||null; }catch(_){}
@@ -175,6 +209,9 @@
       return Math.abs(c-v)>=1?'קרן השתלמות (מעסיק) השתנתה: '+(P.m||'החודש הקודם')+' '+F0(v)+' ₪ → החודש '+F0(c)+' ₪ — לבדוק למה':''; }
     if(typeof assess==="function"){ var oldAs2=assess;
       window.assess=function(e){ var a=oldAs2(e); try{ if(a&&a.st&&a.st.sev!=='crit'&&laneOf(e)!=='pay'&&oddLines(e.slip).some(function(x){ return x.sev==='crit'; })) a.st={k:'gap',sev:'crit',label:'❗ שורה במינוס בתלוש'};
+        /* בדיקות עומק — ❗ גובר על «תקין» / ⚠, גם אם הסה"כ מתאים */
+        var dc=deepChecks(e), cr=dc.filter(function(x){ return x.sev==='crit'; });
+        if(a&&a.st&&laneOf(e)!=='pay'&&cr.length&&a.st.sev!=='crit') a.st={k:'gap',sev:'crit',label:cr[0].t.replace(/^❗ /,'❗ ').slice(0,60)};
         /* «תקין» רק כשאין שום דבר ב«מה לא בסדר» — גם כשהסה"כ מתאים, פער ברכיב (שעות מארחת מול 150%) = לבדוק (איילת 3.11: «למה רשמת שהעובד תקין») */
         else if(a&&a.st&&(a.st.sev==='good'||a.st.k==='ok')&&laneOf(e)!=='pay'&&e.slip){ var iss=(issuesOf(e,a)||[]).filter(function(x){ return !/^ℹ/.test(String(x).replace(/<[^>]+>/g,'')); });
           if(iss.length) a.st={k:'gap',sev:'warn',label:'⚠ '+iss.length+(iss.length>1?' פערים ברכיבים':' פער ברכיב')}; }
