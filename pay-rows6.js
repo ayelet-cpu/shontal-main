@@ -558,8 +558,17 @@
       var gm=false; try{ gm=(typeof gmarNote==='function'&&gmarNote(e))||(empNotesFull(e)||[]).some(function(n){ return /גמר חשבון/.test(n.topic||'')||/עוזב|עזב|התפטר|פוטר|גמר חשבון/.test(n.t||''); }); }catch(_){}
       short.drop=0;
       var pidL=''; try{ var pl=(s.lines||[]).filter(function(l){ return l[1]==='pidyon'||/פדיון|תמורת חופש/.test(String(l[0]||'')); })[0]; if(pl) pidL=String(pl[0]||'').trim(); }catch(_){}
+      var ODD={}; L.forEach(function(y){ var m=String(y).match(/^שורה לא רגילה בתלוש: «(.+?)» ([\d,]+) ₪/); if(m) ODD[m[2]]=m[1]; });
+      var topol=(typeof CAFE_CUR!=='undefined'&&CAFE_CUR==='טופול');
       L.forEach(function(x){
         var t=String(x||'');
+        /* איילת 5.11: «לטופול יש הבראה בתלושים??» — בטופול לא משלמים הבראה בתלוש (0 תלושים בספטמבר ובאוקטובר) */
+        if(topol&&/^אין הבראה בתלוש/.test(t)) return;
+        /* איילת 5.11 (תמר בן סנדר): «יכל פשוט לרשום — שימי לב, יש תשלום עבור מילואים» — שורה לא רגילה + «לא במודל» באותו סכום = שורה אחת */
+        var mo=t.match(/^\S+ ([\d,]+) ₪ בתלוש — לא במודל ולא מאושר/);
+        if(mo&&ODD[mo[1]]){ var nm=ODD[mo[1]]; t=/מילואים/.test(nm)?'שימי לב — יש תשלום עבור מילואים ('+mo[1]+' ₪)':'שימי לב — בתלוש «'+nm+'» '+mo[1]+' ₪'; if(out.indexOf(t)<0) out.push(t); return; }
+        var mq=t.match(/^שורה לא רגילה בתלוש: «(.+?)» ([\d,]+) ₪/);
+        if(mq&&L.some(function(y){ var z=String(y).match(/^\S+ ([\d,]+) ₪ בתלוש — לא במודל ולא מאושר/); return z&&z[1]===mq[2]; })) return;
         if(/^הערת שכר «/.test(t)){ short.drop++; return; }                                     /* מופיע למטה, ב«הערות שכר» */
         var m=t.match(/תעריף בתלוש ([\d.]+) ₪ ≠ תעריף מוסכם ([\d.]+)/);        /* כפילות של «תעריף בתלוש X במקום Y» */
         if(m&&txt.indexOf(N('תעריף בתלוש '+Number(m[1]).toFixed(1).replace(/\.0$/,'')))>=0&&/במקום/.test(txt)) return;
@@ -583,12 +592,13 @@
       var s=e.slip, iss=[]; try{ iss=short(e,a,issuesOf(e,a)||[]); }catch(_){ iss=issuesOf(e,a)||[]; }
       var info=function(x){ return /^ℹ/.test(x)&&!/<b>/.test(x); };
       var h='<div class="explainbox">';
-      if(!s) h+='<div class="exl exc">'+(a.worked?'<b>יש שעות בשיפט ואין תלוש — לבדוק מול חשבת השכר.</b>':'אין תלוש ואין שעות בשיפט.')+'</div>';
+      if(!s){ /* «אין תלוש» כבר כתוב בשורה שמעל הכרטיס — לא חוזרים על זה (איילת 5.11) */ }
       else if(iss.length){ var bad=iss.filter(function(x){ return !info(x); });
         h+=(bad.length?'<div class="exh">❗ מה לא בסדר</div>':short.drop?'':'<div class="exh">'+(redOK(e,a)?'✓ התלוש תקין לאחר הפחתה':'✓ התלוש תקין')+'</div>')
           +iss.map(function(x){ return '<div class="exl '+(info(x)?'exm':'exbad')+'">• '+x.replace(/^ℹ\s*/,'')+'</div>'; }).join(''); }
       else h+='<div class="exl exc ok"><b>✓ התלוש תקין</b> — כל הרכיבים תואמים (מחושב '+F0(a.exp)+' מול תלוש '+F0(a.tg)+').</div>';
-      return h+'<div class="exh" style="margin-top:8px">'+(short.drop?'❗ ':'')+'הערות שכר</div>'+notesHtml(e)+'</div>';
+      var nt=notesHtml(e); if(/אין הערות שכר לעובד\/ת זה החודש/.test(nt)) return h+'</div>';   /* בלי הערות — בלי הכותרת */
+      return h+'<div class="exh" style="margin-top:8px">'+(short.drop?'❗ ':'')+'הערות שכר</div>'+nt+'</div>';
     };
     /* הערות שכר: שורה אחת לכל הערה — מצב קצר + ההערה + כפתורים; בלי משפט הסבר שחוזר על המצב */
     if(typeof notesHtml==="function"){ var nh0=window.notesHtml;
