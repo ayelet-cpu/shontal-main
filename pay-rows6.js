@@ -157,6 +157,14 @@
       else if(amt<-0.5&&!/טיפ|מפרע/.test(d)) out.push({l:l,sev:'crit',t:'שורה במינוס בתלוש: «'+d+'» '+F0(amt)+' ₪ — לברר מה זה'});
       else if(Math.abs(amt)>0.5&&(/הפרש|קיזוז|החזר|תיקון/.test(d)||l[1]==='other'&&!/^(שעות|בר\/מלצר|מתלמד|צ'קר|השלמת שכר)/.test(d))) out.push({l:l,sev:'warn',t:'שורה לא רגילה בתלוש: «'+d+'» '+F0(amt)+' ₪'}); });
       return out; }
+    /* מחזור — מפתח נפרד (באג 4.11: שתי פונקציות revKey בדף — אחת של המחזור ואחת של סימוני הבדיקה; השנייה דורסת,
+       ו«המחזור» נקרא מתוך סימוני הבדיקה → «הזיני מחזור». עכשיו: מחזור שהוזן ידנית במפתח משלו, אחרת DATA.revenue מהבקרה) */
+    if(typeof getRev==="function"){
+      var REVK=function(){ return (typeof CAFE_CUR!=="undefined"?"cafe_"+CAFE_CUR:"pastel")+"_revenue_"+String(DATA.month||"").replace(/\W/g,""); };
+      window.getRev=function(){ var v=null; try{ v=localStorage.getItem(REVK()); }catch(_){}
+        var n=/^\s*\d+(\.\d+)?\s*$/.test(String(v||""))?Number(v):0; return n||Number(DATA.revenue)||0; };
+      window.setRev=function(v){ try{ localStorage.setItem(REVK(),String(v||"").replace(/[^\d.]/g,"")); }catch(_){} };
+    }
     if(typeof issuesOf==="function"){ var oldIss=issuesOf;
       window.issuesOf=function(e,a){ var r=oldIss(e,a)||[]; try{ oddLines(e.slip).forEach(function(x){ if(r.indexOf(x.t)<0) r.push(x.t); }); }catch(_){}
         try{ var k=kerenChange(e); if(k&&r.indexOf(k)<0) r.push(k); }catch(_){} return r; }; }
