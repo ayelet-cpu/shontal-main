@@ -469,3 +469,78 @@
     if(typeof render==="function"&&document.getElementById("list")&&document.getElementById("list").children.length) render();
   }catch(_){}
 })();
+
+/* ===== 4.11.2026 איילת — PDF דוח עלות: «הכתב לא ברור, צבעים מזעזעים», «חישוב עלות מעסיק — לא מעניין»,
+   ו«תחליף סדר — טבלה קטנה כמו הבר מתחת למנהל משמרת — גם חסכנו דף וגם לא נחתכה טבלה באמצע» ===== */
+(function(){
+  try{
+    if(typeof _prOpen!=="function") return;
+    window._prCss=function(){return `@page{size:A4;margin:12mm 9mm}
+  *{box-sizing:border-box} body{margin:0;font-family:"Rubik","Assistant","Segoe UI",Arial,sans-serif;font-size:13px;color:#111;background:#fff;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #263238;padding-bottom:8px;margin-bottom:16px}
+  .hd h1{margin:0;font-size:22px;font-weight:700;color:#111} .hd .sub{color:#444;font-size:13px;margin-top:3px} .hd .dt{color:#444;font-size:12px}
+  .utiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .utile{background:#fff;border:1px solid #b0bec5;border-radius:10px;padding:12px 14px;break-inside:avoid}
+  .ut-l{font-size:14px;font-weight:700;color:#111;margin-bottom:8px}
+  .ut-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end}
+  .ut-s{text-align:center} .us-l{font-size:12px;color:#333;font-weight:500;margin-bottom:3px} .us-v{font-size:17px;font-weight:700;color:#111}
+  .ut-s.hl{background:#263238;border-radius:8px;padding:7px 4px} .ut-s.hl .us-l{color:#eceff1} .ut-s.hl .us-v{color:#fff;font-size:20px}
+  .ut-n{font-size:12px;color:#333;margin-top:8px} .ut-n a{display:none}
+  h2{font-size:16px;font-weight:700;color:#111;margin:20px 0 8px;break-after:avoid} .sm{font-size:12px;color:#333;margin:-4px 0 8px}
+  .sec{break-before:page} .blk{break-inside:avoid;page-break-inside:avoid}
+  table{width:100%;border-collapse:collapse;font-size:13px;color:#111}
+  thead{display:table-header-group} tr{break-inside:avoid}
+  th{background:#263238;color:#fff;font-weight:600;padding:7px 8px;text-align:center} th.rl{text-align:right}
+  tr.bt-grp th{background:#455a64;font-size:11px}
+  td{padding:5px 8px;border-bottom:1px solid #cfd8dc;text-align:center;color:#111!important} td.rl{text-align:right;font-weight:500}
+  tbody tr:nth-child(even) td{background:#f5f7f8}
+  tr.dt-dep td{background:#dfe5e8!important;color:#111!important;font-weight:700;text-align:right;border-top:1px solid #90a4ae}
+  tr.dt-sub td{background:#eef1f3!important;font-weight:700}
+  tr.bt-tot td,tfoot td{background:#cfd8dc!important;font-weight:700;font-size:13.5px;color:#111!important;border-top:2px solid #263238}
+  tfoot{display:table-row-group}
+  .wide table{font-size:8.6px;table-layout:fixed;width:100%!important;min-width:0!important} .wide th,.wide td{padding:3px 1px;white-space:normal!important;min-width:0!important;width:auto!important;word-break:break-word} .wide th:first-child,.wide td:first-child{width:12%!important}
+  .wide td,.wide th,.wide tr.bt-tot td,.wide tfoot td{font-size:8.6px!important;line-height:1.3} .wide td *,.wide th *{font-size:inherit!important;line-height:inherit!important;color:inherit!important;display:inline!important;margin:0!important;padding:0!important} .wide td:first-child *{display:block!important;font-weight:400!important;color:#555!important} .wide td:not(:first-child){white-space:nowrap!important;word-break:normal!important}
+  td[style]{color:#111!important} button,input,.ftag{display:none!important}
+  .tot1{display:flex;justify-content:space-between;background:#f5f7f8;border:1px solid #b0bec5;border-radius:8px;padding:10px 14px;font-weight:700;font-size:15px}
+  .tot1 b{color:#111;font-size:18px} .ft{margin-top:16px;font-size:11px;color:#555;text-align:center}`;};
+    /* בלי «חישוב עלות מעסיק» */
+    window._prCostBody=function(){
+      var tiles=((document.getElementById("utiles")||{}).innerHTML||"").replace(/🍽️\s*/g,"");
+      var table=(document.getElementById("repCostTable")||{}).innerHTML||"";
+      return '<div class="blk"><div class="utiles">'+tiles+'</div><h2>עלות לפי מחלקה</h2>'+table+'</div>';
+    };
+    /* בחלון ההדפסה: כל מחלקה שלמה; ממלאים כל עמוד — מחלקה שלא נכנסת עוברת לעמוד הבא, ובמקום שנשאר נכנסת מחלקה קטנה יותר */
+    function PACK(){
+      var MM=96/25.4, PH=(297-24)*MM-24;
+      [].forEach.call(document.querySelectorAll('table.pgsplit'),function(t){
+        var gs=[].slice.call(t.querySelectorAll(':scope > tbody.pgrp')); if(gs.length<3) return;
+        /* שורת הסה"כ הכללי — קבוצה משלה, תמיד אחרונה */
+        var last=gs[gs.length-1], ft=[].filter.call(last.rows,function(r){return r.classList.contains('bt-tot')||/סה.?כ\s*(כללי)?\s*$/.test((r.cells[0]||{}).textContent||'')&&!r.classList.contains('dt-sub');});
+        var tot=null; if(ft.length&&ft.length<last.rows.length){ tot=document.createElement('tbody'); tot.className='pgrp'; ft.forEach(function(r){tot.appendChild(r);}); t.appendChild(tot); }
+        var thH=(t.tHead?t.tHead.getBoundingClientRect().height:0);
+        var items=gs.map(function(g){return {g:g,h:g.getBoundingClientRect().height};});
+        var top=t.getBoundingClientRect().top+window.scrollY, sec=t.closest('.sec');
+        var startTop=sec?sec.getBoundingClientRect().top+window.scrollY:0;
+        var rem=PH-(top-startTop)-thH, order=[];
+        while(items.length){
+          var i=-1; for(var k=0;k<items.length;k++){ if(items[k].h<=rem){ i=k; break; } }
+          if(i<0){ rem=PH-thH; i=0; }
+          rem-=items[i].h; order.push(items[i].g); items.splice(i,1);
+        }
+        order.forEach(function(g){ t.appendChild(g); }); if(tot) t.appendChild(tot);
+      });
+    }
+    window._prOpen=function(title,body){ /* איילת 4.11: «בדיקת תלושים» — לא בהדפסה בכלל */ body=String(body||'').replace(/<div class="sec wide">[\s\S]*$/,''); body=_prSplit(body);
+      var d=new Date(), today=d.getDate()+"."+(d.getMonth()+1)+"."+d.getFullYear();
+      var html='<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>'+esc(title)+'</title>'+
+        '<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">'+
+        '<style>'+_prCss()+'</style></head><body><div class="hd"><div><h1>'+esc(title.replace(/ \d\d\.\d{4}/,""))+'</h1><div class="sub">חודש '+esc(String(DATA.month||""))+'</div></div><div class="dt">הופק '+today+'</div></div>'+body+
+        '<script>('+PACK.toString()+')();<\/script><\/body><\/html>';
+      var w=window.open("","_blank"); if(!w){alert("הדפדפן חסם את החלון — אפשרי חלונות קופצים לקובץ הזה");return;}
+      w.document.open(); w.document.write(html); w.document.close(); try{w.document.title=title;}catch(e){}
+      var go=function(){ try{ (w.PACK2||function(){})(); w.focus(); w.print(); }catch(e){} };
+      var waited=false; try{ if(w.document.fonts&&w.document.fonts.ready){ Promise.race([w.document.fonts.ready,new Promise(function(r){setTimeout(r,2500);})]).then(function(){ setTimeout(go,150); }); waited=true; } }catch(e){}
+      if(!waited) setTimeout(go,600);
+    };
+  }catch(_){}
+})();
