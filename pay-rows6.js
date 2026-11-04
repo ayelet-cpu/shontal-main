@@ -194,7 +194,7 @@
         if(P.points!=null&&s.points!=null&&Math.abs(P.points-s.points)>0.01) add('warn','נקודות זיכוי השתנו: '+P.m+' '+P.points+' → החודש '+s.points);
         if(P.vacBal!=null&&s.vacPrev!=null&&Math.abs(P.vacBal-s.vacPrev)>0.05) add('warn','יתרת חופשה בסוף '+P.m+' '+P.vacBal+' ≠ יתרת הפתיחה החודש '+s.vacPrev);
         if(P.sickBal!=null&&s.sickPrev!=null&&Math.abs(P.sickBal-s.sickPrev)>0.05) add('warn','יתרת מחלה בסוף '+P.m+' '+P.sickBal+' ≠ יתרת הפתיחה החודש '+s.sickPrev);
-        if(P.rate&&s.rate&&Math.abs(P.rate-s.rate)>0.01&&!e.glob&&e.basis!=='global'&&e.basis!=='manager') add('warn','התעריף השתנה: '+P.m+' '+P.rate+' → החודש '+s.rate+' — לוודא שיש הערה');
+        if(P.rate&&s.rate&&Math.abs(P.rate-s.rate)>0.01&&!e.glob&&e.basis!=='global'&&e.basis!=='manager'&&!(new RegExp('תעריף '+(+s.rate)+'(\D|$)').test(e.rateNote||'')&&!/לאשר/.test(e.rateNote||''))) add('warn','התעריף השתנה: '+P.m+' '+P.rate+' → החודש '+s.rate+' — לוודא שיש הערה');
         if((+P.keren||0)>0&&Math.abs((+P.keren||0)-keren)>=1) add('warn','קרן השתלמות (עובד): '+P.m+' '+F0(P.keren)+' → החודש '+F0(keren));
         if((+P.pension||0)>0&&Math.abs((+P.pension||0)-pens)>=1&&e.glob) add('warn','פנסיה (עובד, גלובלי): '+P.m+' '+F0(P.pension)+' → החודש '+F0(pens));
       }
