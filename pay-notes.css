@@ -43,7 +43,7 @@ html.nx-on,html.nx-on body{overflow:hidden!important}
 .nx-tab{border:1px solid var(--line);background:#e9eeed;border-radius:12px;padding:11px 14px;cursor:pointer;font-weight:600;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;color:#3d4a48}
 .nx-tab em{font-style:normal;font-weight:500;opacity:.8}
 .nx-tab small{flex-basis:100%;text-align:center;font-weight:400;font-size:12.5px;opacity:.75}
-.nx-tab.on{background:var(--tqd);border-color:var(--tqd);color:#fff}
+.nx-tab.on{background:var(--tql);border-color:var(--tq);color:var(--tqd);box-shadow:inset 0 -3px 0 var(--tq)}
 .nx-sticky{position:sticky;top:61px;z-index:4;background:var(--bg);padding:4px 0 10px}
 .nx-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .nx-search{flex:1;min-width:240px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:0 12px}
@@ -159,7 +159,7 @@ html:has(#payTheme) #nx .nx-btn,html:has(#payTheme) #nx .nx-sel,html:has(#payThe
 html:has(#payTheme) #nx .nx-table,html:has(#payTheme) #nx .nx-kpi,html:has(#payTheme) #nx .nx-bulk,html:has(#payTheme) #nx .nx-drawer,html:has(#payTheme) #nx .nx-sendbar,html:has(#payTheme) #nx .nx-srow,html:has(#payTheme) #nx .nx-mlist,
 html:has(#payTheme) #nx .nx-f input,html:has(#payTheme) #nx .nx-f select,html:has(#payTheme) #nx .nx-f textarea,html:has(#payTheme) #nx .nx-bulk select{background:var(--card);color:var(--ink);border-color:var(--line)}
 html:has(#payTheme) #nx .nx-th,html:has(#payTheme) #nx .nx-grp,html:has(#payTheme) #nx .nx-tab{background:#22262f;color:#c9d0d4}
-html:has(#payTheme) #nx .nx-tab.on{background:var(--tqd);color:#fff}
+html:has(#payTheme) #nx .nx-tab.on{background:#1f3a44;color:#bfe3ef;box-shadow:inset 0 -3px 0 var(--tq)}
 html:has(#payTheme) #nx .nx-row:hover{background:#232833}
 html:has(#payTheme) #nx .nx-kt span{color:#c9d0d4}
 html:has(#payTheme) #nx .nx-seg{background:#22262f}html:has(#payTheme) #nx .nx-seg button.on{background:#2e3440}
