@@ -176,8 +176,12 @@
       var add=function(sev,t){ out.push({sev:sev,t:(sev==='crit'?'❗ ':'⚠ ')+t}); };
       var hv=s.hova||[], keren=0, pens=0; hv.forEach(function(h){ var d=String(h[0]||''); if(/מס הכנסה|ביטוח לאומי|דמי בריאות/.test(d)) return; if(/השתלמות|קרן/.test(d)) keren+=+h[1]||0; else pens+=+h[1]||0; });
       /* אחמ"ש — התשלום בתלוש מול עלות המשמרות בשיפט (לא מול התלוש עצמו) */
-      var mgd=e.basis==='manager'&&e.mgrShift!=null?Math.abs((+s.ahmash||0)-e.mgrShift):0;
-      if(mgd>35) add(mgd>200?'crit':'warn','תשלום אחמ"ש בתלוש '+F0(s.ahmash||0)+' ₪ ≠ עלות משמרות הניהול בשיפט '+F0(e.mgrShift)+' ₪ (הפרש '+F0((s.ahmash||0)-e.mgrShift)+')');
+      /* בשיפט — סכום נטו ליום (תגבור 300, מלאה 500, סופ"ש 750, כפולה 1,000); בתלוש — אותם סכומים מגולמים לברוטו.
+         לכן משווים לפי כמויות × תעריף נטו: משמרת ניהול 300 (266+23+11), נוספות גלובליות 200, עבודה במנוחה — לפי התעריף בשורה (איילת 5.11) */
+      if(e.basis==='manager'&&e.mgrShift!=null){ var ln=s.lines||[], q=function(rx){ return ln.filter(function(l){ return rx.test(l[0]||''); }); };
+        var nSh=q(/אחמש-משמרת ניהול/).reduce(function(a,l){ return a+(+l[2]||0); },0), nOt=q(/נוספות גלובליות/).reduce(function(a,l){ return a+(+l[2]||0); },0);
+        var rest=q(/עבודה במנוחה/).reduce(function(a,l){ return a+(+l[2]||0)*(+l[3]||0); },0), val=nSh*300+nOt*200+rest;
+        if(Math.abs(val-e.mgrShift)>1) add(Math.abs(val-e.mgrShift)>200?'crit':'warn','משמרות ניהול: בתלוש '+nSh+' משמרות×300 + '+nOt+' נוספות×200 + מנוחה '+F0(rest)+' = '+F0(val)+' ₪ נטו ≠ בשיפט '+F0(e.mgrShift)+' ₪ (הפרש '+F0(val-e.mgrShift)+')'); }
       /* תעריף שעתי מוסכם מול התלוש */
       if(e.basis==='hourly'&&e.rate&&s.rate&&Math.abs(s.rate-e.rate)>0.01) add('crit','תעריף בתלוש '+s.rate+' ₪ ≠ תעריף מוסכם '+e.rate+' ₪'+(e.rateNote?' ('+e.rateNote+')':''));
       var worked=(+s.hours||0)>0||(+s.days||0)>0||(+e.hours||0)>0;
