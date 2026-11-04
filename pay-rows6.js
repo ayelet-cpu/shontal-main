@@ -166,7 +166,14 @@
           if(iss.length) a.st={k:'gap',sev:'warn',label:'⚠ '+iss.length+(iss.length>1?' פערים ברכיבים':' פער ברכיב')}; }
         /* כל עובד שיש לו הערה (שכר / לעצמי / רועי / שאלת חשבת) שלא סימנת ✓ — לבדיקה, לא «תקין» (איילת 4.11: «לא לפספס אף עובד עם הערה») */
         if(a&&a.st&&(a.st.sev==='good'||a.st.k==='ok')&&laneOf(e)!=='pay'){ var no=openNotesN(e); if(no) a.st={k:'note',sev:'warn',label:'📝 '+(no>1?no+' הערות — לוודא':'הערה — לוודא')}; } }catch(_){} return a; }; }
-    function openNotesN(e){ var n=0; try{ n+=empNotesFull(e).filter(function(x){ return String(x.t||'').trim()&&!handled(e,x); }).length; }catch(_){}
+    /* הודעת «עובד חדש» מהוואטסאפ (פרטים, הכנסה נוספת, פנסיה) — מידע בלבד, לא דורש בדיקה (איילת 4.11);
+       חוץ מ: תעריף / סכום / משהו לבדוק, או «פנסיה פעילה» כשאין פנסיה בתלוש */
+    function infoOnly(e,x){ var t=String(x.t||''), tp=String(x.topic||'');
+      if(!(/עובדים חדשים/.test(tp)||/^עוב(ד|דת) חד(ש|שה)/.test(t))) return false;
+      if(/תעריף|\d{2,}\s*(₪|שקל|ש"ח)|יבדוק|לבדוק|לא ימשיך|לעדכן|לפתוח|חסר|להוציא/.test(t)) return false;
+      if(/פנסיה( פעילה)?:\s*(?!אין)\S/.test(t)&&e.slip&&!e.slip.pension) return false;
+      return true; }
+    function openNotesN(e){ var n=0; try{ n+=empNotesFull(e).filter(function(x){ return String(x.t||'').trim()&&!handled(e,x)&&!infoOnly(e,x); }).length; }catch(_){}
       try{ n+=flagsOf(e).filter(function(x){ return !x.f.done; }).length; }catch(_){} try{ n+=aqOf(e.name).filter(function(q){ return !q.a; }).length; }catch(_){} return n; }
     function slipLinesHtml(s,e){ if(!s||!(s.lines||[]).length) return '';
       var odd=oddLines(s), isOdd=function(l){ return odd.find(function(x){ return x.l===l; }); };
