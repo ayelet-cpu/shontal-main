@@ -505,11 +505,10 @@
   td[style]{color:#111!important} button,input,.ftag{display:none!important}
   .tot1{display:flex;justify-content:space-between;background:#f5f7f8;border:1px solid #b0bec5;border-radius:8px;padding:10px 14px;font-weight:700;font-size:15px}
   .tot1 b{color:#111;font-size:18px} .ft{margin-top:16px;font-size:11px;color:#555;text-align:center}`;};
-    /* בלי «חישוב עלות מעסיק» */
-    window._prCostBody=function(){
-      var tiles=((document.getElementById("utiles")||{}).innerHTML||"").replace(/🍽️\s*/g,"");
-      var table=(document.getElementById("repCostTable")||{}).innerHTML||"";
-      return '<div class="blk"><div class="utiles">'+tiles+'</div><h2>עלות לפי מחלקה</h2>'+table+'</div>';
+    /* בלי «חישוב עלות מעסיק» — על הפונקציה של החודש (אסא/פינצוס בונים את הכרטיסים אחרת) */
+    var pcb0=window._prCostBody;
+    if(typeof pcb0==="function") window._prCostBody=function(){
+      return String(pcb0()||'').replace(/<div class="blk"><h2>חישוב עלות מעסיק<\/h2>[\s\S]*$/,'');
     };
     /* בחלון ההדפסה: כל מחלקה שלמה; ממלאים כל עמוד — מחלקה שלא נכנסת עוברת לעמוד הבא, ובמקום שנשאר נכנסת מחלקה קטנה יותר */
     function PACK(){
@@ -536,7 +535,7 @@
       var d=new Date(), today=d.getDate()+"."+(d.getMonth()+1)+"."+d.getFullYear();
       var html='<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>'+esc(title)+'</title>'+
         '<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">'+
-        '<style>'+_prCss()+'</style></head><body><div class="hd"><div><h1>'+esc(title.replace(/ \d\d\.\d{4}/,""))+'</h1><div class="sub">חודש '+esc(String(DATA.month||""))+'</div></div><div class="dt">הופק '+today+'</div></div>'+body+
+        '<style>'+_prCss()+'</style></head><body><div class="hd"><div><h1>'+esc(title.replace(/ \d\d\.\d{4}/,""))+'</h1><div class="sub">חודש '+esc(String((typeof CHK!=='undefined'&&CHK.month)||DATA.month||""))+'</div></div><div class="dt">הופק '+today+'</div></div>'+body+
         '<script>('+PACK.toString()+')();<\/script><\/body><\/html>';
       var w=window.open("","_blank"); if(!w){alert("הדפדפן חסם את החלון — אפשרי חלונות קופצים לקובץ הזה");return;}
       w.document.open(); w.document.write(html); w.document.close(); try{w.document.title=title;}catch(e){}
@@ -632,5 +631,41 @@
           .replace(/<span class="r6st miss">❗ לא בוצע בתלוש<\/span>/g,'<span class="r6st miss">✗ לא בתלוש</span>'); }catch(_){}
         return h; };
     }
+  }catch(_){}
+})();
+
+/* ===== 5.11.2026 איילת: «כן, להעביר» — כרטיס העובד באסא ובפינצוס (קוד אחר: pinIssues / pinExplain) — אותם כללי קיצור:
+   בלי חצים; פער כסף כשהשעות תואמות לשיפט = פער בתעריף (לא «עודף שעות»); כותרת «הערות שכר» בלי «טופלו?», ובלי כותרת כשאין הערות ===== */
+(function(){
+  try{
+    if(typeof pinIssues!=="function"||typeof pinExplain!=="function") return;
+    var F0x=function(n){ return Math.round(Math.abs(+n||0)).toLocaleString('he-IL'); };
+    var HRS=/^(?!.*(נסיעות|הבראה|ארוחות|טיפ|בונוס|ניהול|תוספת|מילואים|פדיון|חלף|מחלה|השלמת|הפרשי|אחמ"ש))/;
+    function slipHours(o){ var L=(o.s&&o.s.lines)||[], h=0, main=null;
+      L.forEach(function(l){ var d=String(l[0]||''); if(!HRS.test(d)) return; if(/שבת ת?\.?50%|ת\.50%/.test(d)) return; var q=+l[2]||0; if(q>0&&q<400){ h+=q; if(!main||q>(+main[2]||0)) main=l; } });
+      return {h:h,main:main}; }
+    var pi0=window.pinIssues;
+    window.pinIssues=function(o){ var L=pi0(o)||[];
+      try{
+        var out=[];
+        L.forEach(function(x){ var t=String(x||'');
+          var m=t.match(/^(.+?): בתלוש ([\d.]+) ש׳ במקום ([\d.]+) ש׳/);
+          if(m&&o.b&&o.b.shiftHrs){ var sh=slipHours(o);
+            if(sh.main&&Math.abs(sh.h-o.b.shiftHrs)<=0.6){ var rp=+sh.main[3]||0, rc=+(o.rateC||0);
+              if(rp&&rc&&Math.abs(rp-rc)>0.01){ t='תעריף בתלוש '+(+rp.toFixed(2))+' ₪ במקום '+(+rc.toFixed(2))+' ₪ (השעות תואמות לשיפט) — '+((o.diff||0)>0?'חסרים ':'עודף ')+F0x(o.diff)+' ₪'; if(out.indexOf(t)<0) out.push(t); return; } } }
+          t=t.replace(/\s*→\s*[\u200e\u200f]?\+?([\d,]+) ₪/,function(a,v){ return ' — חסר '+v+' ₪'; })
+             .replace(/\s*→\s*[\u200e\u200f]?[−-]([\d,]+) ₪/,' — עודף $1 ₪').replace(/\s*→\s*(חסר|עודף)\s*/,' — $1 ').replace(/\s*→\s*/g,' — ');
+          if(out.indexOf(t)<0) out.push(t); });
+        /* אותה התראה משני מקורות («מס קבוע 7% … טופס 101» / «… 101») — פעם אחת */
+        var seen={}; out=out.filter(function(t){ var k=String(t).replace(/\s*—.*$/,'').trim(); if(/^מס קבוע/.test(k)){ if(seen[k]) return false; seen[k]=1; } return true; });
+        return out;
+      }catch(_){ return L; } };
+    var pe0=window.pinExplain;
+    window.pinExplain=function(o){ var h=pe0(o);
+      try{
+        h=h.replace(/<div class="exh" style="margin-top:8px">הערות שכר — טופלו\?<\/div><div class="exl exm">(אין הערות שכר לעובד\/ת זה\.|ההערות שלא טופלו מופיעות למעלה ב״מה לא בסדר״\.)<\/div>/,'')
+           .replace('הערות שכר — טופלו?','הערות שכר');
+      }catch(_){}
+      return h; };
   }catch(_){}
 })();
