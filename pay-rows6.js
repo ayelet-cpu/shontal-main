@@ -42,6 +42,7 @@
       /* בלי כפילויות: הערות שכר מופיעות ממילא בשורות ההערות, ו«בונוס מאושר … חסר» כבר נאמר כ«בונוס … חסר» */
       var iss=issuesOf(e,a).filter(function(x){ return (!/^ℹ/.test(x)||/<b>/.test(x))&&!/^הערת שכר «/.test(x); })
         .filter(function(x){ var k=String(x).replace(/<[^>]+>/g,'').replace(/מאושר\s*/,'').replace(/→.*$/,'').trim(); if(seen[k]) return false; seen[k]=1; return true; });
+      try{ if(window.__r6short) iss=window.__r6short(e,a,iss,'top'); }catch(_){}
       var more=iss.length>3?iss.length-3:0; iss=more?iss.slice(0,3).concat(['ועוד '+more+' — בכרטיס']):iss;
       if(/חשבונית/.test((e.rateNote||'')+(e.gold_status||''))&&!s) return '<div class="r6todo ok">✓ <span><b>עובד/ת חשבונית</b> — לא מקבל/ת תלוש, אין מה לבדוק</span></div>';
       var lane=laneOf(e), nm=EMO(e.name), out='';
@@ -552,7 +553,7 @@
   try{
     if(typeof explainHtml!=="function"||typeof issuesOf!=="function") return;
     var N=function(x){ return String(x||'').replace(/<[^>]+>/g,'').replace(/[,\s]/g,''); };
-    function short(e,a,L){
+    function short(e,a,L,mode){
       var s=e.slip||{}, out=[], txt=L.map(N).join('|');
       var NT=[]; try{ NT=(empNotesFull(e)||[]).map(function(n){ return String(n.t||''); }); }catch(_){}
       var gm=false; try{ gm=(typeof gmarNote==='function'&&gmarNote(e))||(empNotesFull(e)||[]).some(function(n){ return /גמר חשבון/.test(n.topic||'')||/עוזב|עזב|התפטר|פוטר|גמר חשבון/.test(n.t||''); }); }catch(_){}
@@ -584,13 +585,19 @@
         if(/^(תמורת חופשה|פדיון)[^:]*?[\d,]+ ₪\s*$/.test(t)){
           var v=(t.match(/([\d,]+) ₪/)||[])[1]||'';
           out.push((gm?'ℹ ':'')+(pidL||'פדיון חופשה')+' '+v+' ₪'+(gm?' — חלק מגמר החשבון':'')); return; }
+        /* איילת 5.11: «למה לא פשוט לרשום — העלאת שכר לא בוצעה בתלוש» */
+        var ru=t.match(/^תעריף בתלוש ([\d.]+) ₪ במקום ([\d.]+) ₪[^→]*→\s*\+([\d,]+) ₪/);
+        if(ru&&/מ-\d|העלא|\(היה /.test(e.rateNote||'')&&+ru[1]<+ru[2]){
+          t='העלאת שכר לא בוצעה בתלוש ('+(+ru[1])+' במקום '+(+ru[2])+')'+(mode==='top'?'':' — חסרים '+ru[3]+' ₪'); if(out.indexOf(t)<0) out.push(t); return; }
         t=t.replace(/\s*→\s*\+([\d,]+) ₪/,' — חסר $1 ₪').replace(/\s*→\s*[\u200e\u200f]?[−-]([\d,]+) ₪/,' — עודף $1 ₪').replace(/\s*→\s*/g,' — ')
            .replace(/^תעריף בתלוש ([\d.]+) ₪ במקום/,'תעריף $1 ₪ במקום')
            .replace(/^(.+?) ([\d,]+) ₪ חסר בתלוש — חסר \2 ₪$/,'$1 $2 ₪ — לא בתלוש');
         if(out.indexOf(t)<0) out.push(t);
       });
+      if(mode==='top') out=out.map(function(x){ return x.replace(/ — (חסר|חסרים|עודף) [\d,]+ ₪$/,''); });
       return out;
     }
+    window.__r6short=short;
     /* גם בסטטוס (לא רק בתצוגה): בטופול אין הבראה בתלוש; יום הבחירות לפי השיפט כשהסה"כ מתאים */
     var io0=window.issuesOf;
     window.issuesOf=function(e,a){ var r=io0(e,a)||[];
