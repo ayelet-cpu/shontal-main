@@ -3,6 +3,9 @@ html.nx-on,html.nx-on body{overflow:hidden!important}
 #nx{--tq:#1a8fb0;--tqd:#16627e;--tql:#e8f3f8;--bg:#f4f6f6;--card:#fff;--ink:#1f2a2e;--mut:#7d8b8a;--line:#e5ebea;
   --org:#b7791f;--orgl:#fdf3e3;--blu:#2d6fa3;--blul:#e9f1f9;--grn:#1e8449;--grnl:#e7f5ec;--pur:#6c4fb3;--purl:#f1ecfb;--red:#c0392b;--redl:#fdecea;
   position:fixed;inset:0;z-index:9000;background:var(--bg);color:var(--ink);overflow-y:auto;overflow-x:hidden;font-family:Rubik,system-ui,sans-serif;font-size:15px;direction:rtl;text-align:right}
+/* חלון צף מעל הבקרה, לא מסך מלא (איילת 4.11: «שיהיו פשוט בחלון צף») */
+@media (min-width:761px){#nx{inset:3vh 3vw;border-radius:16px;box-shadow:0 0 0 100vmax rgba(20,30,35,.45),0 24px 70px rgba(0,0,0,.3)}
+  #nx .nx-head{border-radius:16px 16px 0 0}}
 #nx[hidden]{display:none}
 #nx *{box-sizing:border-box}
 #nx button,#nx input,#nx select,#nx textarea{font:inherit;color:inherit}
@@ -200,3 +203,4 @@ html:has(#payTheme) #nx .nx-grp.nx-grp-roy{background:#3a2a2a;color:#f0b7ae}
 html:has(#payTheme) #nx .nx-mine{background:#1d2027;color:#dde3e6;border-color:#3d6f80}
 html:has(#payTheme) #nx .nx-roytxt,html:has(#payTheme) #nx .nx-roysrc{color:#f0c8c1}
 html:has(#payTheme) #nx .nx-tabbar span{color:#c9d0d4}
+.nx-mine{overflow:hidden}.nx-roylive{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:#fdf1ef;border-radius:8px;padding:4px 8px;margin-top:5px}html:has(#payTheme) #nx .nx-roylive{background:#3a2a2a}

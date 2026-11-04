@@ -138,7 +138,7 @@
       +'<div class="nx-c nx-dep">'+E(d||'—')+'</div>'
       +'<div class="nx-c">'+tsel+'</div>'
       +'<div class="nx-c nx-body"><div class="nx-text nx-ed" data-act="itext" data-id="'+id+'" title="לחיצה לעריכה">'+hl(n.t)+'</div>'
-      +(n.royT?'<div class="nx-roysrc">🔎 רועי רשם: '+E(n.royT)+'</div>':'')
+      +(n.royT?'<div class="nx-roysrc">🔎 רועי רשם: '+E(n.royT)+'</div>':'')+royLine(n)
       +(n.resp?'<div class="nx-resp">💬 החשבת: '+E(n.resp)+'</div>':'')
       +(info?'<div class="nx-info'+(/^❗/.test(info)?' bad':'')+'">'+E(info)+'</div>':'')+'</div>'
       +'<div class="nx-c nx-amt"><input class="nx-ain" data-act="irow" data-f="amt" data-id="'+id+'" inputmode="decimal" value="'+(a?F0(a):'')+'" placeholder="—" title="סכום"><span>₪</span></div>'
@@ -162,7 +162,12 @@
       +'<textarea class="nx-mine" data-i="'+i+'" rows="1" placeholder="✍️ ההערה שלך לחשבת (לא חובה — בלי הערה יישלח מה שרועי רשם)">'+E(V.fmine[i]||'')+'</textarea></div>'
       +'<div class="nx-c nx-facts"><button class="nx-btn p sm" data-act="flag2note" data-i="'+i+'">לחשבת</button><button class="nx-btn sm" data-act="flagme" data-i="'+i+'">לעצמי</button><button class="nx-btn ghost sm" data-act="flagno" data-i="'+i+'">לא רלוונטי</button></div>'
       +'<div class="nx-c nx-date">'+E(shortD(x.f.at||''))+'</div></div>'; }
-  function flagsGroup(){ if(V.tab!=='after') return ''; var F=flagsOpen(); if(V.q){ var q=V.q.trim().toLowerCase(); F=F.filter(function(x){ return (flagEmp(x.f)+' '+x.f.t).toLowerCase().indexOf(q)>=0; }); }
+  /* מה שרועי רשם על עובד שכבר יש לו תיקון — באותה שורה (איילת 4.11: «חבר מה שרועי רשם ומה שאני רשמתי») */
+  function hasAfterNote(nm){ return all().some(function(n){ return n.emp===nm&&stageOf(n)==='after'; }); }
+  function royLine(n){ if(V.tab!=='after'||n.me) return ''; var F=flagsOpen().filter(function(x){ return flagEmp(x.f)===n.emp; });
+    return F.map(function(x){ return '<div class="nx-roysrc nx-roylive">🔎 רועי רשם: <span class="nx-ed" data-act="iflag" data-i="'+x.i+'" title="לחיצה לעריכה">'+E(x.f.t)+'</span>'
+      +' <button class="nx-btn sm" data-act="flagin" data-i="'+x.i+'" title="ההערה שלך כבר מכסה את זה">✓ כלול בהערה שלי</button><button class="nx-btn ghost sm" data-act="flagno" data-i="'+x.i+'">לא רלוונטי</button></div>'; }).join(''); }
+  function flagsGroup(){ if(V.tab!=='after') return ''; var F=flagsOpen().filter(function(x){ return !hasAfterNote(flagEmp(x.f)); }); if(V.q){ var q=V.q.trim().toLowerCase(); F=F.filter(function(x){ return (flagEmp(x.f)+' '+x.f.t).toLowerCase().indexOf(q)>=0; }); }
     if(V.dept) F=F.filter(function(x){ return deptOf(flagEmp(x.f))===V.dept; }); if(V.st&&V.st!=='new') F=[]; if(!F.length) return '';
     return '<div class="nx-grp nx-grp-roy">🔎 רועי רשם — לבחור מה לעשות <span>'+F.length+'</span></div>'+F.map(flagRow).join(''); }
   /* ייצוא הלשונית כמו שהיא (איילת 4.11: «אני לא מוצאת בקלות את התיקונים אחרי התלוש — יש רק לשלוח») */
@@ -270,8 +275,9 @@
       if(k3==='del'){ if(!confirm('למחוק '+ids.length+' הערות לגמרי?')) return; ids.forEach(function(id){ var i=NOTES2.findIndex(function(x){ return x.id===id; }); if(i>=0) NOTES2.splice(i,1); }); V.sel={}; save(); draw(); return; }
       if(k3!=='clear') ids.forEach(function(id){ var n=byId(id); if(!n) return; if(k3==='done') setStatus(n,'done'); else if(k3==='sent') setStatus(n,'sent'); else if(k3==='me'){ n.me=true; addLog(n,'הועברה: לעצמי'); } else if(k3==='acc'){ n.me=false; n.roy=false; addLog(n,'הועברה: לחשבת'); } });
       V.sel={}; if(k3!=='clear') save(); draw(); }
-    else if(a==='flag2note'||a==='flagme'||a==='flagno'){ var x=flagsOpen().find(function(y){ return String(y.i)===b.dataset.i; }); if(!x) return;
+    else if(a==='flag2note'||a==='flagme'||a==='flagno'||a==='flagin'){ var x=flagsOpen().find(function(y){ return String(y.i)===b.dataset.i; }); if(!x) return;
       if(a==='flagno'){ flagDone(x.i,'לא רלוונטי'); draw(); return; }
+      if(a==='flagin'){ var tgt=all().find(function(n){ return n.emp===flagEmp(x.f)&&stageOf(n)==='after'; }); if(tgt){ tgt.royT=(tgt.royT?tgt.royT+' · ':'')+x.f.t; addLog(tgt,'צורף מה שרועי רשם'); save(); } flagDone(x.i,'כלול בהערה של איילת'); draw(); return; }
       /* נכנס ישר לטבלה — ההערה שלה (אם כתבה) + מה שרועי רשם נשמר לידה */
       var by=x.f.by||'רועי', mine=String(V.fmine[x.i]||'').trim();
       var nn={id:n2id(),emp:flagEmp(x.f),topic:'הערות שוטפות',t:mine||x.f.t,royT:mine?x.f.t:'',done:false,me:a==='flagme',r:2,resp:'',st:'new',src:by+' כתב אחרי התלושים'+(x.f.at?' ('+x.f.at+')':'')};
