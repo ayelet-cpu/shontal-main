@@ -127,14 +127,18 @@ var PRE='<script>/* ענן: הזיכרון של הדפדפן = הענן */(funct
   'Object.defineProperty(window,"localStorage",{value:ls,configurable:true});window.__PAY_CLOUD=1;}catch(e){window.__PAY_FAIL=String(e);}})();<\/script>';
 function inject(html){
   var i=html.search(/<script[\s>]/i); if(i<0) throw new Error('החודש בענן לא תקין');
-  return html.slice(0,i)+PRE+html.slice(i)+(themed()?'<style id="payTheme">'+THEME+'</style>':'')
+  return html.slice(0,i)+PRE+html.slice(i)+(themed()?'<style id="payTheme">'+themeOf()+'</style>':'')
     +(SYS!=='hz'&&ROWS_CSS&&ROWS_JS?'<style id="payRows">'+ROWS_CSS+'</style><script id="payRowsJs">'+ROWS_JS.replace(/<\/script/gi,'<\\/script')+'<\/script>':'');
 }
 /* מראה «קריסטל לילה» (בחירת איילת 03.11.2026) — רק מראה, מוזרק בסוף החודש; «🎨» בסרגל מחזיר למראה הרגיל */
 var THEME='';
 function useTheme(){ try{ return localStorage.getItem('pay-look')!=='plain'; }catch(_){ return true; } }
 function themed(){ return SYS!=='hz'&&useTheme()&&!!THEME; }   /* התקזזויות — מערכת אחרת, נשארת כמו שהיא */
-function loadTheme(){ return fetch('pay-theme.css',{cache:'no-cache'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){ THEME=t; },function(){}); }
+/* 5.11.2026: באסא ובצ'אקולי — המראה החדש כמו רווח והפסד (pay-theme-pnl.css, איילת בחרה); פאסטל ואריאלה/טופול — «קריסטל לילה» עד שיותאמו */
+var THEME2='';
+function themeOf(){ return (SYS==='asa'||SYS==='pincus')&&THEME2?THEME2:THEME; }
+function loadTheme(){ return Promise.all([fetch('pay-theme.css',{cache:'no-cache'}).then(function(r){ return r.ok?r.text():''; },function(){return '';}),
+  fetch('pay-theme-pnl.css',{cache:'no-cache'}).then(function(r){ return r.ok?r.text():''; },function(){return '';})]).then(function(t){ THEME=t[0]; THEME2=t[1]; }); }
 /* שורת עובד «דוגמה 6» (איילת 3.11) — rows6.css + rows6.js מוזרקים לכל חודש; אם לא נטענו — השורה הרגילה */
 var ROWS_CSS='', ROWS_JS='';
 function txt(u){ return fetch(u,{cache:'no-cache'}).then(function(r){ return r.ok?r.text():''; },function(){ return ''; }); }
@@ -172,7 +176,7 @@ function open(){
     var html=inject(f.html);
     document.title=(f.title||'בקרת שכר')+' · ענן';
     var fr=document.createElement('iframe'); fr.id='fr'; fr.title=f.title||'בקרת שכר';
-    if(themed()) fr.style.background='#17122b';
+    if(themed()) fr.style.background=(themeOf()===THEME2?'#f5f4fa':'#17122b');
     $('look').classList.toggle('hid',SYS==='hz');
     $('look').textContent=useTheme()?'☀️ מצב בהיר':'🌙 מצב כהה';
     $('view').innerHTML=''; $('view').appendChild(fr); fr.srcdoc=html;

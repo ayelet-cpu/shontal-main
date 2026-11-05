@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap');
+/* מראה «כמו רווח והפסד» לבקרת השכר — טיוטה לבחירת איילת (5.11.2026). אותם צבעים, כתב ומשטחים כמו pnl («פחות עומס»):
+   בהיר עם סגול #6d28d9, כרטיסים לבנים עם צל רך, אדום רק כשצריך. רק מראה: לא נוגע בחישובים ובנתונים. רק למסך. */
+@media screen{
+:root,:root[data-theme],:root:not([data-theme="light"]){
+  --ground:#f5f4fa; --surface:#fff; --surface-2:#faf9fd; --raise:#fff; --card:#fff; --bg-2:#faf9fd; --surface2:#faf9fd;
+  --ink:#1b1830; --muted:#5f5b78; --faint:#8a86a3; --border:#e3e0ef; --border-2:#d6d2e6;
+  --accent:#6d28d9; --accent-ink:#5b21b6; --accent-bg:#efe9fd; --accent-soft:#efe9fd;
+  --good:#16855a; --good-bg:#e6f5ee; --warn:#a15c07; --warn-bg:#fff4e0; --crit:#c2363f; --crit-bg:#fdecee;
+  --neutral:#5f5b78; --neutral-bg:#f1eff8;
+  --shadow:0 1px 2px rgba(27,24,48,.04),0 6px 20px rgba(27,24,48,.05); --shadow-lg:0 18px 40px rgba(27,24,48,.12);
+  color-scheme:light;
+}
+/* תצוגת העבודה (אסא/צ'אקולי) — המשתנים מוגדרים על .wv עצמו */
+html .wv,html[data-theme] .wv{--wbg:#fff;--wink:#1b1830;--wmut:#5f5b78;--wb:#e3e0ef;--wsoft:#faf9fd;--wacc:#6d28d9;--wred:#c2363f;--wamb:#9a5800;--wgrn:#16855a;--wblu:#1d4ed8}
+html{background:#f5f4fa}
+body{background:#f5f4fa!important;color:var(--ink);font-size:15.5px;font-family:Rubik,Assistant,system-ui,sans-serif!important}
+button,input,select,textarea{font-family:inherit}
+#themeBtn{display:none!important}
+td,th,.num{font-variant-numeric:tabular-nums}
+/* משטחים */
+.tile,.utile,.row,.cmp,.revbox,.fixitem,.ci,.cmpc,.notebox,.reconbox,.crow,.setcard,.editwrap,.qlbox,.empedit,.draftbanner,
+#viewZarim .zr-card,#viewZarim .zr-wrap,#viewZarim .zr-form,.wv-list,.wv-pane{
+  background:#fff!important;border:1px solid #e3e0ef!important;border-radius:14px;box-shadow:var(--shadow)}
+.tile{border-radius:16px}
+/* כפתורים — לבן עם מסגרת, הנבחר/הראשי בסגול מלא */
+.tbtn,.unitbtn,.fchip,.notebtn,.rvbtn,.nfilt button,.stab,.wvb,#viewZarim .zr-rest button{
+  background:#fff!important;border:1px solid #e3e0ef!important;color:#1b1830!important;border-radius:10px;box-shadow:0 1px 2px rgba(27,24,48,.05)}
+.tbtn:hover,.unitbtn:hover,.fchip:hover,.notebtn:hover,.rvbtn:hover,.wvb:hover{background:#efe9fd!important}
+.tbtn.primary,.unitbtn.on,.fchip.on,.stab.on,.wvb.pri,.rvf.on{background:#6d28d9!important;border-color:#6d28d9!important;color:#fff!important;box-shadow:0 4px 14px rgba(109,40,217,.28)}
+.fchip.crit.on{background:#c2363f!important;border-color:#c2363f!important}
+.rvf{background:#fff!important;border:1px solid #e3e0ef!important;color:#1b1830!important}
+.rvf.b-bad:not(.on){color:#c2363f!important;border-color:#f3c6cb!important}
+/* טבלאות */
+th,.ntbl th,.miltbl th,#viewZarim th,.bt thead .bt-hd th,.wv-cmp th{background:#f3f0fb!important;color:#3b3463!important}
+.bt tbody tr:hover,.row:hover{background:#faf8ff!important}
+input,select,textarea{background:#fff!important;color:#1b1830!important;border:1px solid #d6d2e6!important;border-radius:10px}
+a{color:#6d28d9}
+/* תצוגת העבודה */
+.wv-item.on,.wv-list .on{background:#f3eefe!important}
+.wv-sec{color:#3b3463!important;font-size:14px!important;font-weight:700}
+.wv-iss{background:#faf9fd!important;border-color:#e3e0ef!important}
+.wv-red{color:#c2363f!important}.wv-amb{color:#9a5800!important}.wv-grn{color:#16855a!important}
+.wv-pill.p-red{background:#fdecee!important;color:#c2363f!important}.wv-pill.p-grn{background:#e6f5ee!important;color:#16855a!important}
+summary{color:#6d28d9}
+.modal{background:#fff!important;color:#1b1830!important}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#d6d2e6;border-radius:10px}
+::selection{background:#ddd0fb}
+/* טלפון: שורת הלשוניות נשברת לשורות ולא דוחפת את הדף הצידה */
+@media (max-width:900px){.tabs,.revbar,#revbar,.rvbar{flex-wrap:wrap!important}.tabs .tbtn,.tbtn{white-space:normal}body{overflow-x:hidden}}
+}
