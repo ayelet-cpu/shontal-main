@@ -50,9 +50,30 @@
     return ''; }
   function amtOf(n){ return n.amt!=null&&n.amt!==''?+n.amt:autoAmt(n.t); }
   /* הערה של «לפני התלושים» בחודש שהתלושים שלו כבר הגיעו — כבר נשלחה עם הערות השכר (גם בלי תאריך) */
-  function stOf(n){ if(n.done) return 'done'; if(n.sentAt) return 'sent'; if(n.st==='wip') return 'wip'; if(!n.me&&(n.r||1)===1&&!DATA.prepay&&n.st!=='new') return 'sent'; return 'new'; }
+  function stOf(n){ if(n.done) return 'done'; if(!n.me&&(n.r||1)===3) return qa(n).a?'sent':'new'; if(n.sentAt) return 'sent'; if(n.st==='wip') return 'wip'; if(!n.me&&(n.r||1)===1&&!DATA.prepay&&n.st!=='new') return 'sent'; return 'new'; }
   var ST={ 'new':['חדשה','s-new'], wip:['בטיפול','s-wip'], sent:['נשלחה · ממתינה','s-sent'], done:['טופלה','s-done'] };
-  function stageOf(n){ return n.me?'me':((n.r||1)===2?'after':'before'); }
+  /* 5.11.2026 איילת: «לא ברור מה הערת שכר ראשונה, מה שאלות החשבת, מה התשובות שלנו, מה אחרי קבלת התלושים» —
+     ארבעה שלבים לפי סדר החודש. r: 1 = הערות שכר שלנו (לפני התלושים) · 3 = בירור של החשבת + התשובה שלנו (ans) באותה שורה ·
+     2 = תיקונים אחרי התלושים · me = לעצמי. */
+  function stageOf(n){ return n.me?'me':((n.r||1)===2?'after':(n.r||1)===3?'q':'before'); }
+  var STAGES=[['before','① הערות השכר שלנו','לפני התלושים'],['q','② בירורי החשבת','שאלה ותשובה'],['after','③ אחרי התלושים','מה לתקן בתלוש'],['me','④ לעצמי','לא נשלחות']];
+  var STAGE_R={before:1,q:3,after:2};
+  /* שאלה + תשובה: התשובה בשדה ans; בהערה שהגיעה מהבנייה («…\n↩ תשובתנו: …») — מפוצלת בתצוגה */
+  function qa(n){ var t=String(n.t||''), a=n.ans; if(a==null){ var m=t.match(/^([\s\S]*?)\s*↩\s*תשובתנו:\s*([\s\S]*)$/); if(m){ t=m[1]; a=m[2]; } } return {q:t.trim(),a:String(a||'').trim()}; }
+  function lineText(n){ if(stageOf(n)!=='q') return n.t; var x=qa(n); return '❓ '+x.q+' ← ↩ '+(x.a||'(עוד אין תשובה)'); }
+  var RORD={1:1,3:2,2:3};
+  /* מי כתב את ההערה — כדי שלא תהיה הערה «שנכנסה לבד» בלי לדעת מאיפה */
+  function authorOf(n){ var L=n.log||[], f=String((L[0]&&L[0].w)||''), src=String(n.src||'')+' '+String(n.by||'');
+    var id=String(n.id||'');   /* הערות שהגיעו מהבנייה (המקור לא נשמר בהערה) — לפי המזהה */
+    if(/^chk-/.test(id)) return ['🤖 קלוד — בדיקת תלושים','a-cl']; if(/^qa-/.test(id)) return ['החשבת שאלה · איילת ענתה','a-acc'];
+    if(/^pk-/.test(id)) return ['מהפנקס','a-ot']; if(/^a5-/.test(id)) return ['איילת','a-me'];
+    if(/קלוד|claude/i.test(src)||/מהצעה של קלוד/.test(f)) return ['🤖 קלוד','a-cl'];
+    if(/מהטיוטה בכרטיס/.test(f)) return ['טיוטה מהבקרה','a-dr'];
+    if(/טלי/.test(src)) return ['טלי','a-ot']; if(/יובל/.test(src)) return ['יובל','a-ot']; if(/רועי|כתב אחרי התלושים/.test(src)||n.royT) return ['רועי','a-ot'];
+    if(/דורין/.test(src)) return ['דורין','a-ot']; if(/החשבת|קונפורטי/.test(src)) return ['החשבת','a-acc'];
+    if(/פנקס|ייבוא/.test(src)) return ['מהפנקס','a-ot'];
+    if(/איילת/.test(src)||L.length) return ['איילת','a-me'];
+    return ['לא ידוע','a-un']; }
   function slipInfo(n){ try{ if(n.me||!n.emp) return ''; var e=empOf(n.emp); if(!e) return ''; if(!e.slip) return 'אין תלוש לעובד/ת';
       var s=noteSt(n); var t=String(s&&s.t||'').replace(/^[✓✔✗—ℹ]\s*(טופל\s*—\s*)?/,'').replace(/^בתלוש:\s*/,'').replace(/\s*בתלוש\s*$/,'');
       if(/לא ניתן לבדוק|אין תלוש לבדוק|^מחוץ לתלוש/.test(t)) return '';
@@ -119,7 +140,9 @@
     return '<div class="nx-kpis">'+k('k-open','☰','הערות פתוחות',c.open,'עוד לא נשלחו','new')+k('k-sent','➤','נשלחו לחשבת שכר',c.sent,'ממתינות לחשבת','sent')+k('k-done','✓','טופלו',c.done,'סימנת שטופלו','done')+k('k-me','👤','הערות לעצמי',c.me,'לא נשלחות','me')+'</div>'; }
   function tabs(){ var A=all(), cnt=function(s){ return A.filter(function(n){ return stageOf(n)===s&&!n.done; }).length; };
     var t=function(k,l,sub){ return '<button class="nx-tab'+(V.tab===k?' on':'')+'" data-act="tab" data-k="'+k+'">'+l+' <em>'+cnt(k)+'</em><small>'+sub+'</small></button>'; };
-    return '<div class="nx-tabs">'+t('before','לפני הפקת תלושים','הערות שכר לחשבת')+t('after','תיקונים אחרי התלושים','מה לתקן בתלוש')+t('me','הערות לעצמי','לא נשלחות לאף אחד')+'</div>'; }
+    /* קודם באסא ובצ'אקולי (איילת 5.11: «קודם על אסא, אני מאשרת, ואז לכל המסעדות») */
+    var SS=window.__nxAsa?STAGES:STAGES.filter(function(x){ return x[0]!=='q'||A.some(function(n){ return stageOf(n)==='q'; }); });
+    return '<div class="nx-tabs'+(SS.length>3?' nx-tabs4':'')+'">'+SS.map(function(x){ return t(x[0],x[1],x[2]); }).join('')+'</div>'; }
   function filters(){
     var A=all().filter(inTab), deps={}, tps={}; A.forEach(function(n){ var d=deptOf(n.emp); if(d) deps[d]=1; tps[typeOf(n)]=1; });
     var opt=function(L,v,lbl){ return '<option value="">'+lbl+'</option>'+L.map(function(x){ return '<option'+(x===v?' selected':'')+'>'+E(x)+'</option>'; }).join(''); };
@@ -139,14 +162,17 @@
     /* כל תיקון ישר מהטבלה (איילת 3.11): טקסט — לחיצה ועריכה במקום; סוג, סכום, למי, סטטוס — בחירה בתא עצמו */
     var id=E(n.id), dv=n.me?(n.roy?'roy':'me'):'acc';
     var dsel='<select class="nx-isel nx-dest d-'+dv+'" data-act="irow" data-f="dest" data-id="'+id+'" title="למי"><option value="acc"'+(dv==='acc'?' selected':'')+'>לחשבת</option><option value="me"'+(dv==='me'?' selected':'')+'>🔒 לעצמי</option><option value="roy"'+(dv==='roy'?' selected':'')+'>❓ לרועי</option></select>';
-    var tsel='<select class="nx-isel nx-type t-'+TYPES.indexOf(ty)+'" data-act="irow" data-f="type" data-id="'+id+'" title="סוג"><option value="">'+E(ty)+(n.type?'':' (אוט׳)')+'</option>'+TYPES.map(function(x){ return '<option value="'+x+'">'+x+'</option>'; }).join('')+'</select>';
+    var tsel='<select class="nx-isel nx-type t-'+TYPES.indexOf(ty)+'" data-act="irow" data-f="type" data-id="'+id+'" title="סוג"><option value="">'+E(ty)+'</option>'+TYPES.map(function(x){ return '<option value="'+x+'">'+x+'</option>'; }).join('')+'</select>';
     var ssel='<select class="nx-isel nx-pill '+ST[s][1]+'" data-act="irow" data-f="st" data-id="'+id+'" title="סטטוס">'+['new','wip','sent','done'].map(function(k){ return '<option value="'+k+'"'+(k===s?' selected':'')+'>'+SICON[k]+' '+ST[k][0]+'</option>'; }).join('')+'</select>';
     return '<div class="nx-row'+(n.done?' is-done':'')+(sel?' is-sel':'')+'" data-id="'+id+'">'
       +'<label class="nx-ck" title="לבחירה"><input type="checkbox" data-act="ck" data-id="'+id+'"'+(sel?' checked':'')+'></label>'
-      +'<div class="nx-c nx-who"><span class="nx-av">👤</span><span><b>'+E(n.emp||(n.general?'כללי':'⚠ לא משויך'))+'</b>'+dsel+'</span></div>'
+      +'<div class="nx-c nx-who"><span class="nx-av">👤</span><span><b>'+E(n.emp||(n.general?'כללי':'⚠ לא משויך'))+'</b>'+dsel+'<span class="nx-by '+authorOf(n)[1]+'" title="מי כתב">✍ '+E(authorOf(n)[0])+'</span></span></div>'
       +'<div class="nx-c nx-dep">'+E(d||'—')+'</div>'
       +'<div class="nx-c">'+tsel+'</div>'
-      +'<div class="nx-c nx-body"><div class="nx-text nx-ed" data-act="itext" data-id="'+id+'" title="לחיצה לעריכה">'+hl(n.t)+'</div>'
+      +'<div class="nx-c nx-body">'+(stageOf(n)==='q'?(function(){ var x=qa(n);
+          return '<div class="nx-q"><span class="nx-ql">❓ החשבת שאלה</span><div class="nx-text nx-ed" data-act="itext" data-id="'+id+'" title="לחיצה לעריכה">'+hl(x.q)+'</div></div>'
+            +'<div class="nx-a'+(x.a?'':' empty')+'"><span class="nx-ql">↩ התשובה שלנו</span><div class="nx-text nx-ed" data-act="ians" data-id="'+id+'" title="לחיצה לכתיבת התשובה">'+(x.a?hl(x.a):'— עוד לא ענינו (לחיצה לכתיבה)')+'</div></div>'; })()
+        :'<div class="nx-text nx-ed" data-act="itext" data-id="'+id+'" title="לחיצה לעריכה">'+hl(n.t)+'</div>')
       +(n.royT?'<div class="nx-roysrc">🔎 רועי רשם: '+E(n.royT)+'</div>':'')+royLine(n)
       +(n.resp?'<div class="nx-resp">💬 החשבת: '+E(n.resp)+'</div>':'')
       +(info?'<div class="nx-info'+(/^❗/.test(info)?' bad':'')+'">'+E(info)+'</div>':'')+'</div>'
@@ -181,7 +207,7 @@
     return '<div class="nx-grp nx-grp-roy">🔎 רועי רשם — לבחור מה לעשות <span>'+F.length+'</span></div>'+F.map(flagRow).join(''); }
   /* ייצוא הלשונית כמו שהיא (איילת 4.11: «אני לא מוצאת בקלות את התיקונים אחרי התלוש — יש רק לשלוח») */
   function tabBar(){ var A=all().filter(inTab).filter(pass); if(!A.length) return '';
-    var nm={before:'ההערות לפני התלושים',after:'התיקונים אחרי התלושים',me:'ההערות לעצמי'}[V.tab];
+    var nm={before:'הערות השכר שלנו',q:'בירורי החשבת — שאלה ותשובה',after:'התיקונים אחרי התלושים',me:'ההערות לעצמי'}[V.tab];
     return '<div class="nx-tabbar"><span>'+E(nm)+' · '+A.length+'</span><button class="nx-btn sm" data-act="texp" data-k="copy">📋 העתקה</button><button class="nx-btn sm" data-act="texp" data-k="print">🖨️ הדפסה</button><button class="nx-btn sm" data-act="texp" data-k="pdf">📄 PDF</button><button class="nx-btn sm" data-act="texp" data-k="xls">📊 Excel</button></div>'; }
   function listHtml(){
     var A=all().filter(inTab).filter(pass);
@@ -216,7 +242,7 @@
   function drawerHtml(){ var n=V.edit, isNew=!NOTES2.some(function(x){ return x.id===n.id; }), emp=n.emp||'';
     var empOpts=EMPS().map(function(e){ return '<option value="'+E(e.name)+'">'; }).join('');
     var seg=function(k,v,L){ return '<div class="nx-seg">'+L.map(function(x){ return '<button type="button" class="'+(v===x[0]?'on':'')+'" data-act="seg" data-k="'+k+'" data-v="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div>'; };
-    var dest=n.me?(n.roy?'roy':'me'):'acc', stage=(n.r||1)===2?'after':'before', st=stOf(n);
+    var dest=n.me?(n.roy?'roy':'me'):'acc', stage=(n.r||1)===2?'after':(n.r||1)===3?'q':'before', st=stOf(n);
     var prev=emp?prevNotes(emp):[], info=slipInfo(n);
     var log=(n.log||[]).slice().reverse();
     return '<div class="nx-dim" data-act="dclose"></div><aside class="nx-drawer" role="dialog" aria-label="הערה">'
@@ -227,8 +253,9 @@
       +'<div class="nx-f2"><label class="nx-f"><span>סוג</span><select data-f="type"><option value="">אוטומטי — '+E(autoType(n))+'</option>'+TYPES.map(function(x){ return '<option'+(n.type===x?' selected':'')+'>'+x+'</option>'; }).join('')+'</select></label>'
       +'<label class="nx-f"><span>סכום ₪</span><input data-f="amt" inputmode="decimal" value="'+E(n.amt!=null&&n.amt!==''?n.amt:'')+'" placeholder="'+E(autoAmt(n.t)?F0(autoAmt(n.t))+' (מהטקסט)':'אין')+'"></label></div>'
       +'<div class="nx-f"><span>למי</span>'+seg('dest',dest,[['acc','לחשבת שכר'],['me','🔒 לעצמי'],['roy','❓ לשאול את רועי']])+'</div>'
-      +'<div class="nx-f"><span>שלב</span>'+seg('stage',stage,[['before','לפני הפקת תלושים'],['after','אחרי התלושים (תיקון)']])+'</div>'
+      +'<div class="nx-f"><span>שלב</span>'+seg('stage',stage,[['before','① הערות שכר'],['q','② בירור של החשבת'],['after','③ אחרי התלושים']])+'</div>'
       +'<div class="nx-f"><span>סטטוס</span>'+seg('st',st,[['new','חדשה'],['wip','בטיפול'],['sent','נשלחה'],['done','טופלה']])+'</div>'
+      +(stage==='q'&&!n.me?'<label class="nx-f"><span>↩ התשובה שלנו</span><input data-f="ans" value="'+E(qa(n).a)+'" placeholder="מה ענינו לחשבת…"></label>':'')
       +(stage==='after'&&!n.me?'<label class="nx-f"><span>תשובת החשבת</span><input data-f="resp" value="'+E(n.resp||'')+'" placeholder="מה החשבת ענתה…"></label>':'')
       +(info?'<div class="nx-dinfo">'+E(info)+'<small>מידע בלבד — לא משנה את הסטטוס</small></div>':'')
       +'<div class="nx-hist"><h3>היסטוריה</h3>'+(log.length?log.map(function(l){ return '<div><i>'+E(l.at)+'</i> '+E(l.w)+'</div>'; }).join(''):'')
@@ -237,12 +264,13 @@
       +'</div><div class="nx-dfoot"><button class="nx-btn p big" data-act="dsave">שמירה</button><button class="nx-btn" data-act="dclose">ביטול</button>'
       +(isNew?'':'<button class="nx-btn danger" data-act="ddel">מחיקה</button>')+'</div></aside>'; }
   function openEdit(id,preset){ var n=id?NOTES2.find(function(x){ return x.id===id; }):null;
-    V.edit=n?JSON.parse(JSON.stringify(n)):Object.assign({id:n2id(),emp:'',topic:'הערות שוטפות',t:'',done:false,me:V.tab==='me',r:V.tab==='after'?2:1,resp:''},preset||{});
+    V.edit=n?JSON.parse(JSON.stringify(n)):Object.assign({id:n2id(),emp:'',topic:'הערות שוטפות',t:'',done:false,me:V.tab==='me',r:STAGE_R[V.tab]||1,resp:''},preset||{});
+    if(stageOf(V.edit)==='q'){ var x=qa(V.edit); V.edit.t=x.q; V.edit.ans=x.a; }
     draw(); setTimeout(function(){ var f=root.querySelector(V.edit.emp?'.nx-drawer textarea':'.nx-drawer input[data-f=emp]'); if(f){ f.focus(); try{ f.setSelectionRange(f.value.length,f.value.length); }catch(_){} } },30); }
   function readDrawer(){ var n=V.edit, q=function(k){ var x=root.querySelector('.nx-drawer [data-f='+k+']'); return x?x.value:null; };
     var emp=String(q('emp')||'').trim(); if(emp==='— כללי —'||emp==='כללי'){ n.emp=''; n.general=true; } else { n.emp=emp; n.general=false; }
     n.t=q('t')||''; var tp=q('type'); n.type=tp||undefined; var am=String(q('amt')||'').replace(/[,₪\s]/g,''); n.amt=am===''?undefined:+am;
-    if(q('resp')!=null) n.resp=q('resp'); }
+    if(q('resp')!=null) n.resp=q('resp'); if(q('ans')!=null) n.ans=q('ans'); }
   function closeEdit(){ V.edit=null; draw(); }
   function saveEdit(){ readDrawer(); var n=V.edit; if(!String(n.t||'').trim()){ alert('ההערה ריקה'); return; }
     var i=NOTES2.findIndex(function(x){ return x.id===n.id; });
@@ -250,7 +278,7 @@
     else { var o=NOTES2[i], ch=[];
       if(o.t!==n.t) ch.push('הטקסט שונה'); if((o.emp||'')!==(n.emp||'')) ch.push('עובד: '+(n.emp||'כללי'));
       if(!!o.me!==!!n.me||!!o.roy!==!!n.roy) ch.push(n.me?(n.roy?'הועברה: לשאול את רועי':'הועברה: לעצמי'):'הועברה: לחשבת');
-      if((o.r||1)!==(n.r||1)) ch.push((n.r||1)===2?'שלב: אחרי התלושים':'שלב: לפני התלושים');
+      if((o.r||1)!==(n.r||1)) ch.push('שלב: '+({1:'הערות שכר',2:'אחרי התלושים',3:'בירור של החשבת'})[n.r||1]);
       if(stOf(o)!==stOf(n)) ch.push('סטטוס: '+ST[stOf(n)][0]);
       if((o.resp||'')!==(n.resp||'')) ch.push('תשובת החשבת עודכנה');
       if(o.type!==n.type||o.amt!==n.amt) ch.push('סוג/סכום עודכנו');
@@ -265,7 +293,8 @@
   function onClick(ev){ var b=ev.target.closest('[data-act]'); if(!b||!root.contains(b)) { if(!ev.target.closest('.nx-menu')) hideMenu(); var r=ev.target.closest('.nx-row'); if(r&&r.dataset.id&&!r.classList.contains('nx-th')&&!ev.target.closest('input,button,label,select,textarea')) openEdit(r.dataset.id); return; }
     var a=b.dataset.act;
     if(a!=='menu') hideMenu();
-    if(a==='itext'){ var nn=byId(b.dataset.id); if(nn) inlineEdit(b,function(){ return nn.t||''; },function(v){ addLog(nn,'הטקסט שונה'); nn.t=v; save(); }); return; }
+    if(a==='itext'){ var nn=byId(b.dataset.id); if(nn){ if(stageOf(nn)==='q'){ var x0=qa(nn); inlineEdit(b,function(){ return x0.q; },function(v){ addLog(nn,'השאלה שונתה'); nn.ans=qa(nn).a; nn.t=v; save(); }); } else inlineEdit(b,function(){ return nn.t||''; },function(v){ addLog(nn,'הטקסט שונה'); nn.t=v; save(); }); } return; }
+    if(a==='ians'){ var na=byId(b.dataset.id); if(na){ var x1=qa(na); inlineEdit(b,function(){ return x1.a; },function(v){ addLog(na,x1.a?'התשובה שונתה':'נכתבה תשובה'); na.t=x1.q; na.ans=v; save(); }); } return; }
     if(a==='iflag'){ var fi=+b.dataset.i; inlineEdit(b,function(){ var L=flagsAll()[MON()]||[]; return (L[fi]||{}).t||''; },function(v){ var A=flagsAll(), L=A[MON()]||[]; if(!L[fi]) return; L[fi].t=v; L[fi].edited=today(); try{ localStorage.setItem('pay-flags-v1',JSON.stringify(A)); }catch(_){} }); return; }
     if(a==='irow') return;
     if(a==='close') close();
@@ -278,7 +307,7 @@
     else if(a==='dsave') saveEdit();
     else if(a==='ddel'){ if(!confirm('למחוק את ההערה הזו לגמרי?')) return; var i=NOTES2.findIndex(function(x){ return x.id===V.edit.id; }); if(i>=0) NOTES2.splice(i,1); V.edit=null; save(); draw(); }
     else if(a==='seg'){ readDrawer(); var n2=V.edit, k2=b.dataset.k, v=b.dataset.v;
-      if(k2==='dest'){ n2.me=v!=='acc'; n2.roy=v==='roy'; } else if(k2==='stage'){ n2.r=v==='after'?2:1; } else if(k2==='st'){ setStatus(n2,v); n2.log=(n2.log||[]).slice(0,-1); }
+      if(k2==='dest'){ n2.me=v!=='acc'; n2.roy=v==='roy'; } else if(k2==='stage'){ n2.r=STAGE_R[v]||1; } else if(k2==='st'){ setStatus(n2,v); n2.log=(n2.log||[]).slice(0,-1); }
       draw(); }
     else if(a==='bulk'){ var ids=Object.keys(V.sel).filter(function(k){ return V.sel[k]; }), k3=b.dataset.k;
       if(k3==='del'){ if(!confirm('למחוק '+ids.length+' הערות לגמרי?')) return; ids.forEach(function(id){ var i=NOTES2.findIndex(function(x){ return x.id===id; }); if(i>=0) NOTES2.splice(i,1); }); V.sel={}; save(); draw(); return; }
@@ -336,14 +365,14 @@
   function copy(T){ if(!T){ toastNx('אין מה להעתיק'); return; } try{ navigator.clipboard.writeText(T).then(function(){ toastNx('הועתק'); },function(){ prompt('להעתקה:',T); }); }catch(_){ prompt('להעתקה:',T); } }
 
   /* ---------- הכנת משלוח לחשבת ---------- */
-  function sendList(){ return all().filter(function(n){ return !n.me&&String(n.t||'').trim(); }).sort(function(a,b){ return ((a.r||1)-(b.r||1))||String(a.emp||'').localeCompare(String(b.emp||''),'he'); }); }
+  function sendList(){ return all().filter(function(n){ return !n.me&&String(n.t||'').trim(); }).sort(function(a,b){ return (RORD[a.r||1]-RORD[b.r||1])||String(a.emp||'').localeCompare(String(b.emp||''),'he'); }); }
   function defaultOut(){ return sendList().filter(function(n){ return stOf(n)==='new'||stOf(n)==='wip'; }); }
   function sendChosen(){ var L=sendList(); if(!V.ssel){ V.ssel={}; L.forEach(function(n){ var s=stOf(n); V.ssel[n.id]=s==='new'||s==='wip'; }); } return L.filter(function(n){ return V.ssel[n.id]; }); }
   function sendHtml(){ var L=sendList(), C=sendChosen(), groups={};
     var line=function(n){ var a=amtOf(n); return '<label class="nx-srow'+(V.ssel[n.id]?' on':'')+'"><input type="checkbox" data-act="sck" data-id="'+E(n.id)+'"'+(V.ssel[n.id]?' checked':'')+'>'
-      +'<div class="nx-who"><b>'+E(n.emp||'כללי')+'</b><span>'+E(deptOf(n.emp)||'')+'</span></div><div class="nx-text">'+hl(n.t)+'</div><div class="nx-amt">'+(a?F0(a)+' ₪':'')+'</div>'
+      +'<div class="nx-who"><b>'+E(n.emp||'כללי')+'</b><span>'+E(deptOf(n.emp)||'')+'</span></div><div class="nx-text">'+hl(lineText(n))+'</div><div class="nx-amt">'+(a?F0(a)+' ₪':'')+'</div>'
       +'<span class="nx-pill '+ST[stOf(n)][1]+'">'+ST[stOf(n)][0]+(n.sentAt?' '+E(n.sentAt):'')+'</span></label>'; };
-    var B=L.filter(function(n){ return (n.r||1)===1; }), A=L.filter(function(n){ return (n.r||1)===2; });
+    var B=L.filter(function(n){ return (n.r||1)===1; }), Q=L.filter(function(n){ return (n.r||1)===3; }), A=L.filter(function(n){ return (n.r||1)===2; });
     return '<header class="nx-head"><div class="nx-title"><button class="nx-x" data-act="sback" title="חזרה">→</button><h1>הכנת משלוח לחשבת שכר</h1><span class="nx-sub">'+E(REST())+' · '+E(MON())+'</span></div>'
       +'<div class="nx-hact"><button class="nx-btn" data-act="sall">בחירת הכול / ניקוי</button></div></header>'
       +'<div class="nx-wrap"><div class="nx-sendbar"><div><b>'+C.length+'</b> הערות נבחרו מתוך '+L.length+' <small>(הערות לעצמי ולרועי לא נשלחות)</small></div>'
@@ -351,15 +380,16 @@
       +'<div id="nxImgs"></div>'
       +'<div class="nx-markbar"><span>שלחת? אפשר לסמן את '+C.length+' ההערות כ«נשלחו לחשבת» עם התאריך של היום.</span><button class="nx-btn p" data-act="markSent"'+(C.length?'':' disabled')+'>✓ סימון כנשלחו · '+today()+'</button></div>'
       +(B.length?'<div class="nx-grp">לפני הפקת תלושים <span>'+B.length+'</span></div>'+B.map(line).join(''):'')
+      +(Q.length?'<div class="nx-grp">② בירורי החשבת — התשובות שלנו <span>'+Q.length+'</span></div>'+Q.map(line).join(''):'')
       +(A.length?'<div class="nx-grp">תיקונים אחרי התלושים <span>'+A.length+'</span></div>'+A.map(line).join(''):'')
       +(L.length?'':'<div class="nx-empty">אין הערות לחשבת החודש.</div>')+'</div>'; }
   function grouped(C){ var M={}, O=[]; C.forEach(function(n){ var k=n.emp||'כללי'; if(!M[k]){ M[k]=[]; O.push(k); } M[k].push(n); }); return O.map(function(k){ return {emp:k,dept:deptOf(k),L:M[k]}; }); }
   function titleOf(C){ var a=C.some(function(n){ return (n.r||1)===2; }), b=C.some(function(n){ return (n.r||1)===1; }); return (a&&!b?'תיקונים לשכר':'הערות שכר')+' — '+REST()+' · '+MON(); }
-  function textOf(C){ if(!C||!C.length) return ''; return titleOf(C)+'\n\n'+grouped(C).map(function(g){ return '*'+g.emp+'*'+(g.dept?' ('+g.dept+')':'')+'\n'+g.L.map(function(n){ return '• '+n.t; }).join('\n'); }).join('\n\n'); }
+  function textOf(C){ if(!C||!C.length) return ''; return titleOf(C)+'\n\n'+grouped(C).map(function(g){ return '*'+g.emp+'*'+(g.dept?' ('+g.dept+')':'')+'\n'+g.L.map(function(n){ return '• '+lineText(n); }).join('\n'); }).join('\n\n'); }
   function exportXls(C){ C=C||defaultOut(); if(!C.length){ toastNx('לא נבחרו הערות'); return; }
     if(typeof XLSX==='undefined'){ alert('ספריית האקסל לא נטענה (צריך חיבור לאינטרנט).'); return; }
     var H=['#','עובד/ת','מחלקה','סוג','ההערה','סכום ₪','שלב'];
-    var aoa=[[titleOf(C)],['הופק '+today()+' · '+C.length+' הערות'],[],H].concat(C.map(function(n,i){ var a=amtOf(n); return [i+1,n.emp||'כללי',deptOf(n.emp),typeOf(n),n.t,a===''?'':a,(n.r||1)===2?'תיקון אחרי התלושים':'לפני התלושים']; }));
+    var aoa=[[titleOf(C)],['הופק '+today()+' · '+C.length+' הערות'],[],H].concat(C.map(function(n,i){ var a=amtOf(n); return [i+1,n.emp||'כללי',deptOf(n.emp),typeOf(n),lineText(n),a===''?'':a,({1:'הערות שכר (לפני התלושים)',3:'בירור של החשבת + תשובתנו',2:'תיקון אחרי התלושים'})[n.r||1]]; }));
     var ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[{wch:4},{wch:22},{wch:12},{wch:14},{wch:70},{wch:11},{wch:18}];
     ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}}]; ws['!views']=[{RTL:true}];
     try{ var bd={style:'thin',color:{rgb:'D6E4E2'}}, Bd={top:bd,bottom:bd,left:bd,right:bd};
@@ -374,7 +404,7 @@
       +'@page{size:A4 portrait;margin:14mm}body{font-family:Rubik,Arial,sans-serif;color:#1f2a2e;font-size:12.5pt}h1{color:#0b6e66;font-size:19pt;margin:0 0 2px}.s{color:#777;font-size:10pt;margin-bottom:14px}'
       +'.g{break-inside:avoid;border-top:1px solid #d6e4e2;padding:8px 0}.g b{font-size:13.5pt}.g i{color:#777;font-style:normal;font-size:10pt;margin-inline-start:6px}ul{margin:4px 0 0;padding-inline-start:18px}li{margin:3px 0;line-height:1.45}.n{font-weight:700;color:#0b6e66}</style></head><body>'
       +'<h1>'+E(titleOf(C))+'</h1><div class="s">הופק '+today()+' · '+C.length+' הערות</div>'
-      +grouped(C).map(function(g){ return '<div class="g"><b>'+E(g.emp)+'</b><i>'+E(g.dept||'')+'</i><ul>'+g.L.map(function(n){ return '<li>'+hl(n.t).replace(/nx-num/g,'n')+'</li>'; }).join('')+'</ul></div>'; }).join('')+'</body></html>'; }
+      +grouped(C).map(function(g){ return '<div class="g"><b>'+E(g.emp)+'</b><i>'+E(g.dept||'')+'</i><ul>'+g.L.map(function(n){ return '<li>'+hl(lineText(n)).replace(/nx-num/g,'n')+'</li>'; }).join('')+'</ul></div>'; }).join('')+'</body></html>'; }
   function exportPdf(C,justPrint){ C=C||defaultOut(); if(!C.length){ toastNx('לא נבחרו הערות'); return; }
     var f=document.createElement('iframe'); f.style.cssText='position:fixed;width:0;height:0;border:0;left:0;bottom:0'; document.body.appendChild(f);
     var d=f.contentDocument; d.open(); d.write(docHtml(C)); d.close();
@@ -391,7 +421,7 @@
       words.forEach(function(wd){ var isN=/\d{3,}|\d{1,3},\d{3}/.test(wd); x.font=font(sz,isN?700:400); var ww=x.measureText(wd).width;
         if(cur.length&&w+sp+ww>maxW){ lines.push(cur); cur=[]; w=0; } cur.push({t:wd,n:isN,w:ww}); w+=(cur.length>1?sp:0)+ww; });
       if(cur.length) lines.push(cur); return {lines:lines,sp:sp}; };
-    var blocks=grouped(C).map(function(g){ var items=g.L.map(function(n){ return wrapTokens(n.t,31,W-P*2-34); }); var h=58+items.reduce(function(s,it){ return s+it.lines.length*46+14; },0)+18; return {g:g,items:items,h:h}; });
+    var blocks=grouped(C).map(function(g){ var items=g.L.map(function(n){ return wrapTokens(lineText(n),31,W-P*2-34); }); var h=58+items.reduce(function(s,it){ return s+it.lines.length*46+14; },0)+18; return {g:g,items:items,h:h}; });
     var pages=[], cur=[], hh=0, HEAD=190, FOOT=70;
     blocks.forEach(function(b){ if(cur.length&&HEAD+hh+b.h+FOOT>MAXH){ pages.push(cur); cur=[]; hh=0; } cur.push(b); hh+=b.h; }); if(cur.length) pages.push(cur);
     IMGS=[]; var tot=pages.length, title=titleOf(C);
@@ -433,6 +463,45 @@
       L.filter(function(n){ return ids[n.id]; }).forEach(function(n){ if(have[(n.emp||'')+'|'+n.t]) return; var c=JSON.parse(JSON.stringify(n)); c.id=n2id(); c.done=false; c.doneAt=undefined; c.sentAt=undefined; c.st=undefined; c.r=1; c.resp=''; c.log=[{at:nowS(),w:'הועתקה מ-'+MON()}]; T.push(c); k++; });
       try{ localStorage.setItem(key,JSON.stringify(T)); }catch(_){}
       done(); toastNx(k+' הערות הועתקו ל-'+nm); }; }
+
+  /* ---------- השיחה על העובד (איילת 5.11, לפי הרעיון שלה): רצף אחד לפי סדר החודש — הערה שלנו · שאלת החשבת + תשובתנו ·
+     תיקון אחרי התלושים · לעצמי — כל אחד בצבע משלו, מי כתב ומתי, ואם טופל. בכרטיס העובד + מונים בשורת העובד. ---------- */
+  var SLBL={before:['💬','הערת שכר שלנו','th-b'],q:['❓','בירור של החשבת','th-q'],after:['📄','תיקון אחרי התלושים','th-a'],me:['🔒','לעצמי','th-m']}, SORD={before:1,q:2,after:3,me:4};
+  function empNotes(nm){ return all().filter(function(n){ return n.emp===nm&&String(n.t||'').trim(); })
+    .sort(function(a,b){ return (SORD[stageOf(a)]-SORD[stageOf(b)])||String(dateOf(a)).localeCompare(String(dateOf(b))); }); }
+  function threadHtml(nm){ var L=empNotes(nm), F=flagsOpen().filter(function(x){ return flagEmp(x.f)===nm; });
+    var add=function(st,l){ return '<button class="nx-btn sm" onclick="__nxAdd(\''+encodeURIComponent(nm)+'\',\''+st+'\')">+ '+l+'</button>'; };
+    var h='<div class="nx-thread"><div class="nx-th-h"><b>💬 השיחה על '+E(nm)+'</b><span>'+L.length+' הודעות</span><button class="nx-btn sm" onclick="__nxOpen()">כל הערות השכר ←</button></div>';
+    if(!L.length&&!F.length) h+='<div class="nx-th-empty">אין עדיין הערות על העובד/ת החודש.</div>';
+    L.forEach(function(n){ var g=stageOf(n), lb=SLBL[g], s=stOf(n), au=authorOf(n), body;
+      if(g==='q'){ var x=qa(n); body='<div class="nx-th-q">'+hl(x.q)+'</div><div class="nx-th-a'+(x.a?'':' empty')+'">↩ <b>התשובה שלנו:</b> '+(x.a?hl(x.a):'עוד לא ענינו')+'</div>'; }
+      else body='<div class="nx-th-t">'+hl(n.t)+'</div>'+(n.resp?'<div class="nx-th-a">💬 <b>החשבת ענתה:</b> '+E(n.resp)+'</div>':'');
+      h+='<div class="nx-th-i '+lb[2]+(n.done?' done':'')+'"><div class="nx-th-m"><span class="nx-th-k">'+lb[0]+' '+lb[1]+'</span><span class="nx-by '+au[1]+'">✍ '+E(au[0])+'</span>'
+        +'<span class="nx-th-d">'+E(shortD(dateOf(n)))+'</span><span class="nx-pill '+ST[s][1]+'">'+(n.done?'✓ טופל':ST[s][0])+'</span>'
+        +'<button class="nx-th-e" title="עריכה" onclick="__nxEdit(\''+encodeURIComponent(n.id)+'\')">✎</button></div>'+body+'</div>'; });
+    F.forEach(function(x){ h+='<div class="nx-th-i th-r"><div class="nx-th-m"><span class="nx-th-k">🔎 '+E(x.f.by||'רועי')+' רשם</span><span class="nx-th-d">'+E(shortD(x.f.at||''))+'</span></div><div class="nx-th-t">'+hl(x.f.t)+'</div></div>'; });
+    return h+'<div class="nx-th-add">'+add('before','הערת שכר')+add('q','שאלה של החשבת')+add('after','תיקון אחרי התלושים')+add('me','לעצמי')+'</div></div>'; }
+  window.__nxAdd=function(nm,st){ nm=decodeURIComponent(nm); open(); V.tab=st; draw(); openEdit(null,{emp:nm,r:STAGE_R[st]||1,me:st==='me'}); };
+  window.__nxEdit=function(id){ id=decodeURIComponent(id); var n=byId(id); if(!n) return; open(); V.tab=stageOf(n); draw(); openEdit(id); };
+  function countsHtml(nm){ var L=empNotes(nm); if(!L.length) return '';
+    var c={before:0,q:0,qo:0,after:0,me:0}; L.forEach(function(n){ var g=stageOf(n); if(n.done) return; c[g]++; if(g==='q'&&!qa(n).a) c.qo++; });
+    var b=function(k,ic,t){ return c[k]?'<span class="nx-cnt '+SLBL[k][2]+'" title="'+t+'">'+ic+' '+c[k]+'</span>':''; };
+    var h=b('before','💬','הערות שכר פתוחות')+b('q','❓','בירורים של החשבת'+(c.qo?' — '+c.qo+' בלי תשובה':''))+b('after','📄','תיקונים אחרי התלושים')+b('me','🔒','לעצמי');
+    return h?'<span class="nx-cnts" onclick="event.stopPropagation();__nxThread(\''+encodeURIComponent(nm)+'\')">'+h+'</span>':''; }
+  window.__nxThread=function(nm){ nm=decodeURIComponent(nm); if(typeof openEmpCard==='function') openEmpCard(nm); else if(typeof renderEmpCard==='function'){ try{ renderEmpCard(nm); var ov=document.getElementById('empOverlay'); if(ov) ov.hidden=false; }catch(_){} } };
+  if(window.__nxAsa) try{
+    /* חשוב: בתוך הקובץ הזה יש rowHtml משלו (שורת הערה) — לכן העטיפה על הפונקציות של הבקרה דרך window בלבד */
+    if(typeof window.renderEmpCard==='function'&&document.getElementById('empBody')){
+      var OLD_CARD=window.renderEmpCard;
+      window.renderEmpCard=function(nm){ var r=OLD_CARD.apply(this,arguments); try{ var b=document.getElementById('empBody'); if(b&&nm){ var old=b.querySelector('.nx-thread'); if(old) old.remove(); b.insertAdjacentHTML('afterbegin',threadHtml(nm)); } }catch(_){} return r; };
+    }
+    if(typeof window.rowHtml==='function'){
+      var OLD_ROW=window.rowHtml;
+      window.rowHtml=function(o){ var h=OLD_ROW.apply(this,arguments); try{ var nm=o&&o.name; if(!nm) return h; var c=countsHtml(nm); if(!c) return h;
+        var i=h.indexOf('class="nm"'); if(i<0) return h; var j=h.indexOf('</div>',i); return j<0?h:h.slice(0,j)+c+h.slice(j); }catch(_){ return h; } };
+      try{ if(typeof window.renderCheck==='function') window.renderCheck(); else if(typeof window.render==='function') window.render(); }catch(_){}
+    }
+  }catch(_){}
 
   /* ---------- חיבור: כל מקום שפותח את החלון הישן — פותח את המסך החדש ---------- */
   window.openNotes=function(name,suggest){ open(); if(name){ var ex=NOTES2.find(function(x){ return x.emp===name&&!String(x.t||'').trim(); }); openEdit(ex?ex.id:null,{emp:name,t:suggest||''}); } };

@@ -204,3 +204,30 @@ html:has(#payTheme) #nx .nx-mine{background:#1d2027;color:#dde3e6;border-color:#
 html:has(#payTheme) #nx .nx-roytxt,html:has(#payTheme) #nx .nx-roysrc{color:#f0c8c1}
 html:has(#payTheme) #nx .nx-tabbar span{color:#c9d0d4}
 .nx-mine{overflow:hidden}.nx-roylive{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:#fdf1ef;border-radius:8px;padding:4px 8px;margin-top:5px}html:has(#payTheme) #nx .nx-roylive{background:#3a2a2a}
+/* ---- 5.11.2026: ארבעה שלבים · שאלה ותשובה בשורה אחת · מי כתב · השיחה על העובד בכרטיס · מונים בשורה ---- */
+.nx-tabs.nx-tabs4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:760px){.nx-tabs.nx-tabs4{grid-template-columns:1fr 1fr}}
+.nx-by{display:inline-block;margin-inline-start:6px;font-size:11px;font-weight:600;padding:1px 7px;border-radius:20px;background:#eef1f0;color:#55615f;white-space:nowrap}
+.nx-by.a-cl{background:#ede9fe;color:#5b21b6}.nx-by.a-dr{background:#fff3d6;color:#8a5a00}.nx-by.a-me{background:#e3f4f1;color:#0f6b5c}.nx-by.a-acc{background:#e8f1fb;color:#1d4f8f}.nx-by.a-un{background:#fde8e8;color:#9b1c1c}
+.nx-q,.nx-a{display:flex;flex-direction:column;gap:2px}
+.nx-a{margin-top:6px;padding:6px 9px;border-radius:8px;background:#eef6ff;border-inline-start:3px solid #3b82f6}
+.nx-a.empty{background:#fff7ed;border-color:#f59e0b;color:#9a5b00}
+.nx-ql{font-size:11.5px;font-weight:700;color:#55615f}
+/* השיחה על העובד — בכרטיס העובד */
+.nx-thread{border:1px solid #d9e2e0;border-radius:12px;padding:12px;margin:0 0 14px;background:#fbfcfc;font-size:14px;line-height:1.45}
+.nx-th-h{display:flex;align-items:center;gap:10px;margin-bottom:8px}.nx-th-h b{font-size:15px}.nx-th-h span{color:#6b7775;font-size:12.5px}.nx-th-h button{margin-inline-start:auto}
+.nx-th-i{border:1px solid #e3e9e8;border-inline-start:4px solid #9aa6a4;border-radius:9px;padding:8px 10px;margin:6px 0;background:#fff}
+.nx-th-i.done{opacity:.62}
+.nx-th-i.th-b{border-inline-start-color:#1a8fb0}.nx-th-i.th-q{border-inline-start-color:#7c3aed}.nx-th-i.th-a{border-inline-start-color:#d97706}.nx-th-i.th-m{border-inline-start-color:#64748b}.nx-th-i.th-r{border-inline-start-color:#0e9f6e}
+.nx-th-m{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:4px;font-size:12.5px}
+.nx-th-k{font-weight:700}.nx-th-d{color:#6b7775}.nx-th-e{margin-inline-start:auto;border:0;background:none;cursor:pointer;font-size:15px;color:#55615f}
+.nx-th-q{font-weight:600}.nx-th-a{margin-top:5px;padding:5px 8px;border-radius:7px;background:#eef6ff}.nx-th-a.empty{background:#fff7ed;color:#9a5b00}
+.nx-th-empty{color:#6b7775;padding:6px 0}
+.nx-th-add{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.nx-thread .nx-pill{font-size:11.5px;padding:1px 8px;border-radius:20px}
+/* מונים בשורת העובד */
+.nx-cnts{display:inline-flex;flex-wrap:wrap;gap:4px;margin-inline-start:8px;vertical-align:middle;cursor:pointer}
+.nx-cnt{font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:20px;white-space:nowrap}
+.nx-cnt.th-b{background:#e0f2f7;color:#0e6a85}.nx-cnt.th-q{background:#ede9fe;color:#5b21b6}.nx-cnt.th-a{background:#fdf0dc;color:#8a5a00}.nx-cnt.th-m{background:#eef1f4;color:#475569}
+html:has(#payTheme) .nx-thread{background:#1d2129;border-color:#333a46}html:has(#payTheme) .nx-th-i{background:#232833;border-color:#333a46}
+html:has(#payTheme) .nx-th-a,html:has(#payTheme) #nx .nx-a{background:#1e2a3d}html:has(#payTheme) .nx-th-a.empty,html:has(#payTheme) #nx .nx-a.empty{background:#3a2c14;color:#f3c77a}
