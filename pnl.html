@@ -31,12 +31,175 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .list a{display:block;padding:12px;border-radius:12px;border:1px solid var(--line);margin:8px 0;color:inherit;text-decoration:none;font-weight:600}
 .list a:hover{border-color:var(--acc)}
 .list small{display:block;font-weight:400;color:var(--ink2);font-size:12px}
-@media (max-width:600px){.bar .st{max-width:40vw}}
+.lookb{border:1px solid var(--line);background:transparent;border-radius:9px;height:30px;min-width:34px;cursor:pointer;font-size:15px;margin-inline-start:auto}
+.lookb+a{margin-inline-start:0}
+@media (max-width:600px){.bar .st{max-width:40vw}.bar b{display:none}}
 </style>
 </head>
 <body>
-<div class="bar hid" id="bar"><b>רווח והפסד</b><select id="rsel" aria-label="מסעדה"></select><span class="st" id="st">טוען…</span><a href="mission.html" id="back">מרכז הבקרה ←</a></div>
+<div class="bar hid" id="bar"><b>רווח והפסד</b><select id="rsel" aria-label="מסעדה"></select><span class="st" id="st">טוען…</span><button type="button" class="lookb" id="lookBtn" title="מראה: פחות עומס / המראה הקודם">🎨</button><a href="mission.html" id="back">מרכז הבקרה ←</a></div>
 <div id="view"></div>
+<!-- «פחות עומס» (איילת 05.11.2026, אחרי בדיקת עיצוב): מוזרק לסוף כל מסעדה. רק מראה — לא נוגע בחישובים ובנתונים, ולא בהדפסה/PDF.
+     1) בשורת הכפתורים בחוץ רק ביטול / החזרה / PDF / שמירה; הדפסה, אקסל, גיבוי ועותק לשליחה — בתוך «⬇ ייצוא ועוד ▾».
+        בלי כפילויות מול השורה העליונה של הענן (הכותרת, «נשמר בענן») — מוצגים רק כשיש בעיה.
+     2) אדום רק כשצריך לבדוק: מינוס חשבונאי רגיל בשורות רגילות (טיפ באשראי וכו') — בצבע הטקסט; שורות סיכום נשארות אדומות במינוס;
+        בניתוח החודש הצבע רק בנקודה, והחריגות קודם. פירוט האשראי לא שונה: «זוהה: שונטל» אומר מאיפה הסכום, לא שההפרש מוסבר.
+     3) עיצוב חדש (איילת בחרה 05.11.2026, אחרי 3 כיוונים שנדחו): בהיר עם סגול כמו בשכר, כתב גדול יותר, ובדשבורד כרטיס «השורה התחתונה» —
+        הרווח הנקי גדול, «מכל 100 ₪ נשארו לך…», ופס אחד: עלות מכר / שכר / קבועות / שאר / רווח. המספרים נלקחים מכרטיסי הדשבורד שהמערכת חישבה (.dk),
+        ולכן זהים למסך; אם כרטיס חסר — הכרטיס החדש לא מוצג והדשבורד נשאר כמו שהיה. -->
+<script type="text/plain" id="lookCss">
+@media screen{
+/* כתב גדול וברור — משותף לכל העיצובים */
+html,body{font-size:15px}
+.btn{font-size:14px}#navTools .btn{font-size:14px;padding:6px 12px}
+.small{font-size:13px}
+table.g{font-size:14.5px}table.g th,table.g td{padding:7px 10px}
+table.g tr.big td{font-size:15.5px}
+.dk-t{font-size:14px}.dk-v{font-size:24px}.dk-s,.dk-c{font-size:13px}
+.kpi .l{font-size:13px}.kpi .v{font-size:20px}.kpi .s{font-size:12.5px}
+.card h2{font-size:18px}.dins{font-size:15px}
+.tag,.bd-tag,.am-chip,.aud-pen,.aud-fix,.cl-n,.cc-h,.bd-done,.bd-ch,.aud-srcb,.aud-scb,.am-vat,.rd-ic,.hdf-d,.om,nav .badge,.set .h,.aud-ok,.aud-df{font-size:12.5px!important}
+td,th,.dk-v,.kpi .v,.num{font-variant-numeric:tabular-nums}
+/* בסיס בהיר-פרימיום (סגול כמו בשכר) + כרטיס «השורה התחתונה» */
+:root{--bg:#f5f4fa;--card:#fff;--ink:#1b1830;--muted:#5f5b78;--line:#e3e0ef;--line2:#efedf6;--accent:#6d28d9;--accent-soft:#efe9fd;--head:#f3f0fb;--sub:#faf9fd;--total:#efeafc;--pos:#16855a;--neg:#c2363f}
+body{background:var(--bg)!important}
+.card,.tw,.kpi{border-radius:14px!important;border-color:var(--line)!important;box-shadow:0 1px 2px rgba(27,24,48,.04),0 6px 20px rgba(27,24,48,.05)!important}
+#topbar{background:rgba(255,255,255,.92)!important;border-bottom:1px solid var(--line)!important}
+#nav button[data-tab]{color:#3b3463!important;border-radius:10px!important}
+#nav button[data-tab]:hover{background:#efe9fd!important}
+#nav button[data-tab].on{background:#6d28d9!important;color:#fff!important;box-shadow:0 4px 14px rgba(109,40,217,.28)!important}
+.btn{border-radius:10px!important}.btn.primary{background:#6d28d9!important;border-color:#6d28d9!important}
+table.g th{background:#f3f0fb!important;color:#3b3463}
+table.g tr.sec td{background:#faf8ff!important;color:#5b21b6!important}
+table.g tr.big td{background:#efeafc!important;color:#1b1830!important;border-top:2px solid #6d28d9!important;border-bottom:2px solid #6d28d9!important}
+table.g td.yr,table.g tr.tot td.yr{background:#f6f3fd!important}table.g tr.big td.yr{background:#e6defb!important}
+a,.lnk{color:#6d28d9!important}
+.lk-hide{display:none!important}
+#plHero{position:relative;overflow:hidden;margin:0 0 16px;padding:26px 28px 22px;border-radius:22px;color:#f4f1ff;
+  background:radial-gradient(900px 400px at 100% 0%,#5b3bb8 0%,transparent 60%),radial-gradient(700px 380px at 0% 100%,#2d1f63 0%,transparent 65%),#1c1538;
+  box-shadow:0 18px 40px rgba(28,21,56,.28)}
+#plHero .hh{display:flex;justify-content:space-between;gap:28px;flex-wrap:wrap;align-items:flex-start}
+#plHero .hk{font-size:14px;letter-spacing:.04em;color:#c9bdfc;font-weight:600}
+#plHero .hv{font-size:64px;line-height:1.05;font-weight:800;letter-spacing:-.02em;direction:ltr;text-align:right;margin:6px 0 4px;font-variant-numeric:tabular-nums}
+#plHero.loss .hv{color:#ff9aa5}
+#plHero .hs{font-size:16px;color:#ddd5ff}
+#plHero .hc{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+#plHero .hc span{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 12px;font-size:13.5px;color:#e9e4ff}
+#plHero .dg{color:#6ee7b7!important}#plHero .dr{color:#ff9aa5!important}#plHero .dz{color:#c9bdfc}
+#plHero .hh-side{min-width:260px;text-align:start}
+#plHero .hq{font-size:19px;line-height:1.5;color:#e9e4ff;margin-bottom:14px}
+#plHero .hq b{color:#fff}#plHero .hq-n{font-size:30px;color:#7cf0c0!important}
+#plHero.loss .hq-n{color:#ff9aa5!important}
+#plHero .hi{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:14px;color:#c9bdfc;margin-top:4px}
+#plHero .hi b{color:#fff;font-size:16px;font-variant-numeric:tabular-nums}#plHero .hi em{font-style:normal;font-size:13px}
+#plHero .hbar{display:flex;height:22px;border-radius:999px;overflow:hidden;margin:22px 0 14px;background:rgba(255,255,255,.08);gap:2px}
+#plHero .hbar i{display:block;height:100%;transform-origin:right;animation:hbIn .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes hbIn{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){#plHero .hbar i{animation:none}}
+.hb-cg{background:#a78bfa}.hb-sl{background:#60a5fa}.hb-sg{background:#f0abfc}.hb-ot{background:#9ca3af}.hb-net{background:#34d399}
+#plHero.loss .hb-net{background:#fb7185}
+#plHero .hleg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 18px}
+#plHero .hl{display:flex;gap:9px;align-items:flex-start}
+#plHero .hd{width:12px;height:12px;border-radius:4px;margin-top:5px;flex:none}
+#plHero .hl-n{font-size:13.5px;color:#c9bdfc}
+#plHero .hl-v{font-size:17px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}#plHero .hl-v small{font-weight:500;color:#c9bdfc;font-size:13px}
+#plHero .hl-c{font-size:12.5px;color:#c9bdfc}
+#plHero .hl-net .hl-v{color:#7cf0c0}#plHero.loss .hl-net .hl-v{color:#ff9aa5}
+@media (max-width:700px){#plHero{padding:20px 18px;border-radius:18px}#plHero .hv{font-size:46px}#plHero .hh-side{min-width:0}}
+#plHero .hc span span{background:none!important;border:0!important;padding:0!important}
+header{display:none!important}
+#navTools #stat,#navTools #autoS{display:none}
+#navTools #stat.lk-show,#navTools #autoS.lk-show{display:inline}
+#lkWrap{position:relative;display:inline-flex}
+#lkMenu{position:absolute;top:calc(100% + 4px);inset-inline-start:0;z-index:60;display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:210px;padding:6px;background:var(--card,#fff);border:1px solid var(--line,#d5dde5);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.15)}
+#lkMenu[hidden]{display:none}
+#lkMenu .btn{display:block;width:100%;text-align:start;border-color:transparent;background:transparent;box-shadow:none}
+#lkMenu .btn:hover,#lkMenu .btn:focus-visible{background:var(--accent-soft,#e3eef8)}
+.dins{display:flex;flex-direction:column}
+.dins li{display:list-item}
+.dins li.i-r,.dins li.i-g{color:var(--ink)!important}
+.dins li.i-r{order:-1}
+.dins li.i-r::marker{color:var(--neg)}
+.dins li.i-g::marker{color:var(--pos)}
+table tr:not(.tot):not(.big):not(.sub):not(.pct) td.neg{color:var(--ink)!important}
+}
+</script>
+<script type="text/plain" id="lookJs">
+(function(){
+  if(window.__plLook) return; window.__plLook=1;
+  var d=document;
+  /* 1. «⬇ ייצוא ועוד ▾» */
+  function menu(){
+    var tools=d.getElementById('navTools'); if(!tools||d.getElementById('lkWrap')) return;
+    var items=['bPrint','bXls','bBak','bExportRO'].map(function(i){ return d.getElementById(i); }).filter(Boolean);
+    if(!items.length) return;
+    var wrap=d.createElement('span'); wrap.id='lkWrap';
+    var b=d.createElement('button'); b.type='button'; b.className='btn'; b.id='lkMore'; b.textContent='⬇ ייצוא ועוד ▾';
+    b.setAttribute('aria-haspopup','menu'); b.setAttribute('aria-expanded','false');
+    var m=d.createElement('div'); m.id='lkMenu'; m.hidden=true;
+    items.forEach(function(x){ m.appendChild(x); });
+    wrap.appendChild(b); wrap.appendChild(m);
+    var save=d.getElementById('bSave');
+    if(save&&save.parentNode===tools) tools.insertBefore(wrap,save.nextSibling); else tools.appendChild(wrap);
+    function set(o){ m.hidden=!o; b.setAttribute('aria-expanded',o?'true':'false'); }
+    b.addEventListener('click',function(e){ e.stopPropagation(); set(m.hidden); });
+    m.addEventListener('click',function(){ setTimeout(function(){ set(false); },0); });   /* החלון של הכפתור (אקסל, גיבוי…) נשאר פתוח */
+    d.addEventListener('click',function(e){ if(!wrap.contains(e.target)) set(false); });
+    d.addEventListener('keydown',function(e){ if(e.key==='Escape') set(false); });
+  }
+  /* «נשמר…» מוצג בשורה העליונה של הענן — כאן רק כשיש בעיה */
+  var dirtyT=null;
+  function status(){
+    var s=d.getElementById('stat'), a=d.getElementById('autoS');
+    if(s){
+      if(s.classList.contains('dirty')){ if(!dirtyT&&!s.classList.contains('lk-show')) dirtyT=setTimeout(function(){ dirtyT=null; if(s.classList.contains('dirty')) s.classList.add('lk-show'); },4000); }
+      else { clearTimeout(dirtyT); dirtyT=null; if(s.classList.contains('lk-show')) s.classList.remove('lk-show'); }
+    }
+    if(a){ var bad=!!a.querySelector('#bAuto,[style*="--warn"]')||/לא תומך/.test(a.textContent); if(bad!==a.classList.contains('lk-show')) a.classList.toggle('lk-show',bad); }
+  }
+  function run(){ menu(); status(); }
+  run();
+  var t=null; new MutationObserver(function(){ if(t) return; t=setTimeout(function(){ t=null; run(); },60); }).observe(d.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class']});
+})();
+/* «השורה התחתונה» — כרטיס פתיחה בדשבורד. לוקח את המספרים מהכרטיסים שהמערכת כבר חישבה (.dk), כך שהם זהים למסך. אם משהו לא נמצא — לא מציג כלום */
+(function(){
+  if(window.__plHero) return; window.__plHero=1;
+  var d=document;
+  function num(t){ var m=String(t||'').replace(/[,\s₪]/g,'').match(/-?\d+(\.\d+)?/); return m?+m[0]:null; }
+  function cards(){ var o={}; d.querySelectorAll('.dks .dk').forEach(function(c){ var t=(c.querySelector('.dk-t')||{}).textContent||''; o[t.trim()]=c; }); return o; }
+  function esc(s){ return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+  function money(x){ return (x<0?'-':'')+'₪'+Math.round(Math.abs(x)).toLocaleString('en-US'); }
+  function build(){
+    var dks=d.querySelector('#main .dks'); if(!dks||d.getElementById('plHero')) return;
+    var C=cards(), inc=C['הכנסות'], net=C['רווח נקי'], cg=C['עלות מכר'], sl=C['שכר'], sg=C['קבועות + הנהלה'], pre=C['רווח לפני ניכויים'];
+    if(!inc||!net||!cg||!sl||!sg) return;
+    var I=num(inc.querySelector('.dk-v').textContent), N=num(net.querySelector('.dk-v').textContent);
+    var amt=function(c){ return num((c.querySelector('.dk-s')||{}).textContent); }, pct=function(c){ return num(c.querySelector('.dk-v').textContent); };
+    var G=amt(cg), S=amt(sl), F=amt(sg); if([I,N,G,S,F].some(function(x){return x===null;})||I<=0) return;
+    var O=I-G-S-F-N;   /* כל השאר (מימון, הכנסות/הוצאות אחרות) — כדי שהסכום יסתדר בדיוק */
+    var month=((d.getElementById('curM')||{}).selectedOptions||[{}])[0].textContent||'';
+    var cmp=function(c,i){ var x=c.querySelectorAll('.dk-c')[i]; return x?x.innerHTML:''; };
+    var parts=[['cg','עלות מכר',G,pct(cg),cmp(cg,1)],['sl','שכר',S,pct(sl),cmp(sl,1)],['sg','קבועות + הנהלה',F,pct(sg),cmp(sg,1)]];
+    if(Math.abs(O)>=1) parts.push(['ot',O>0?'שאר ההוצאות':'שאר ההכנסות',Math.abs(O),Math.abs(O)/I*100,'']);
+    var pos=parts.filter(function(p){return p[0]!=='ot'||O>0;}), tot=pos.reduce(function(s,p){return s+p[2];},0)+Math.max(N,0);
+    var w=function(v){ return (v/tot*100).toFixed(2)+'%'; };
+    var bar=pos.map(function(p){ return '<i class="hb-'+p[0]+'" style="width:'+w(p[2])+'" title="'+esc(p[1])+' '+money(p[2])+'"></i>'; }).join('')+(N>0?'<i class="hb-net" style="width:'+w(N)+'" title="רווח נקי '+money(N)+'"></i>':'');
+    var per100=(N/I*100);
+    var leg=parts.map(function(p){ return '<div class="hl"><span class="hd hb-'+p[0]+'"></span><div><div class="hl-n">'+esc(p[1])+'</div><div class="hl-v">'+money(p[2])+' <small>· '+p[3].toFixed(1)+'%</small></div>'+(p[4]?'<div class="hl-c">'+p[4]+'</div>':'')+'</div></div>'; }).join('')+
+      '<div class="hl hl-net"><span class="hd hb-net"></span><div><div class="hl-n">'+(N>=0?'נשאר לך':'הפסד')+'</div><div class="hl-v">'+money(N)+' <small>· '+per100.toFixed(1)+'%</small></div></div></div>';
+    var h=d.createElement('section'); h.id='plHero'; h.className=N<0?'loss':'';
+    h.innerHTML='<div class="hh"><div class="hh-main"><div class="hk">השורה התחתונה · '+esc(month)+'</div>'+
+      '<div class="hv">'+money(N)+'</div><div class="hs">'+(N>=0?'רווח נקי':'הפסד')+' · '+per100.toFixed(1)+'% מההכנסות</div>'+
+      '<div class="hc"><span>'+cmp(net,0)+'</span><span>'+cmp(net,1)+'</span></div></div>'+
+      '<div class="hh-side"><div class="hq">מכל <b>100 ₪</b> שנכנסו ב'+esc(month)+'<br>'+(N>=0?'נשארו לך <b class="hq-n">'+per100.toFixed(1)+' ₪</b>':'יצאו <b class="hq-n">'+(100-per100).toFixed(1)+' ₪</b>')+'</div>'+
+      '<div class="hi"><span>הכנסות</span><b>'+money(I)+'</b><em>'+cmp(inc,0)+'</em></div>'+(pre?'<div class="hi"><span>רווח לפני ניכויים</span><b>'+esc(pre.querySelector('.dk-v').textContent)+'</b></div>':'')+'</div></div>'+
+      '<div class="hbar" role="img" aria-label="ההכנסות מתחלקות ל: '+parts.map(function(p){return p[1]+' '+p[3].toFixed(1)+'%';}).join(', ')+', רווח '+per100.toFixed(1)+'%">'+bar+'</div>'+
+      '<div class="hleg">'+leg+'</div>';
+    dks.parentNode.insertBefore(h,dks); dks.classList.add('lk-hide');
+  }
+  var t=null; build(); new MutationObserver(function(){ if(t) return; t=setTimeout(function(){ t=null; build(); },40); }).observe(d.getElementById('main')||d.body,{childList:true,subtree:true});
+})();
+</script>
 <script>
 (function(){
 'use strict';
@@ -113,13 +276,21 @@ var PATCHES=[
   ["const _saveFileAS = saveFile;","const _saveFileAS = saveFile;"]
 ];
 var SOFT=[["💾 שמירה לקובץ","💾 שמירה"],["🔄 הקובץ עודכן מבחוץ","🔄 הענן עודכן מבחוץ"],["'נשמר בקובץ · '","'נשמר בענן · '"],["toast('✅ נשמר לקובץ · שמירה אוטומטית פעילה')","toast('✅ נשמר בענן')"],["🟢 שמירה אוטומטית פעילה","🟢 נשמר בענן אוטומטית"]];
+/* «🎨» — מעבר בין «פחות עומס» למראה הקודם (נשמר בדפדפן) */
+function useLook(){ try{ return localStorage.getItem('pnl-look')!=='plain'; }catch(_){ return true; } }
+(function(){ var b=$('lookBtn'); if(!b) return; b.title=useLook()?'עכשיו: פחות עומס · לחיצה = המראה הקודם':'עכשיו: המראה הקודם · לחיצה = פחות עומס';
+  b.onclick=function(){ try{ localStorage.setItem('pnl-look',useLook()?'plain':'look'); }catch(_){} location.reload(); }; })();
 function patch(html){
   PATCHES.forEach(function(p){ var n=html.split(p[0]).length-1; if(n!==1) throw new Error('הקוד של המערכת השתנה ולא מתאים לענן ('+p[0].slice(0,30)+'…, '+n+'). לא נפתח לעריכה כדי לא לאבד שינויים.'); html=html.replace(p[0],p[1]); });
   SOFT.forEach(function(p){ html=html.split(p[0]).join(p[1]); });
   var pre='<script>/* ענן */ try{ if(parent!==window && parent.__PLC_BRIDGE){ window.__PLC=parent.__PLC_BRIDGE;'+
     ' if(!window.showSaveFilePicker){ window.showSaveFilePicker=async function(){ return window.__PLC.handle; }; window.showOpenFilePicker=async function(){ return [window.__PLC.handle]; }; } } }catch(e){}<\/script>';
   var h=html.indexOf('<head>'); if(h<0) throw new Error('הקוד בענן לא תקין (head)');
-  return html.slice(0,h+6)+pre+html.slice(h+6);
+  html=html.slice(0,h+6)+pre+html.slice(h+6);
+  /* «פחות עומס» (05.11.2026) — בסוף הדף, אחרי שהמערכת בנתה את שורת הכפתורים. «🎨» בשורה העליונה מחזיר למראה הקודם */
+  if(useLook()){ var b=html.lastIndexOf('</body>'), look='<style id="plLook">'+$('lookCss').textContent+'</style><script id="plLookJs">'+$('lookJs').textContent.replace(/<\/script/gi,'<\\/script')+'<\/script>';
+    html=b<0?html+look:html.slice(0,b)+look+html.slice(b); }
+  return html;
 }
 /* «קובץ» מדומה: מה שהמערכת קוראת וכותבת — הולך לענן */
 function makeHandle(){
