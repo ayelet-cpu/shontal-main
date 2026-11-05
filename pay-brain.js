@@ -62,6 +62,19 @@
         +x.n.map(function(n){ return '<div style="color:var(--wmut)">📝 '+(n.topic?'<b>'+esc(n.topic)+':</b> ':'')+esc(n.t)+(n.resp?' — תשובה: '+esc(n.resp):'')+'</div>'; }).join("")+'</div>'; }).join("")
       +'<div style="margin-top:6px">'+(p.months||[]).map(function(x){ return esc(mLbl(x.m))+': '+(x.slip?"ברוטו "+nf(x.gross)+(x.hours?" · "+nf(x.hours)+" ש׳":""):"בלי תלוש"); }).join(" | ")+'</div></div></details>';
     return h; }catch(e){ return ""; } };
+  /* 6.11 (איילת: «אני צריכה לדעת מה היה השכר השעתי לפני חודש ולפני חודשיים, והאם הייתה הבראה») */
+  window.empHist=function(o){ try{ const f=find(o); if(!f) return ""; const M=(f.p.months||[]).slice(-3);
+    if(!M.length) return "";
+    const role=(o.dept&&/אירוח|מארח/.test(o.dept))?"אירוח":null;
+    const rateOf=x=>{ const R=x.rates||{}; const ks=Object.keys(R).filter(k=>!/התלמדות|מתלמד|הדרכה/.test(k)); const k=(role&&ks.find(k=>k.indexOf(role)>=0))||ks[0];
+      if(k) return {v:R[k],k:k}; if(x.glob) return {v:null,k:"גלובלי"}; return x.rate?{v:x.rate,k:"",approx:true}:null; };
+    const recOf=x=>{ const L=x.lines||[]; const p1=L.find(l=>/הבראה/.test(l[0]||"")&&+l[2]===1); if(p1) return "+1 לשעה ("+nf(p1[3])+" ₪)"; const r=L.filter(l=>/הבראה/.test(l[0]||"")).reduce((a,l)=>a+(+l[3]||0),0)||x.recup; return r?nf(r)+" ₪":"אין"; };
+    let prev=null, h='<table class="wv-cmp" style="margin:0 0 12px;border:1.5px solid #ece6f8;border-radius:12px;overflow:hidden;border-collapse:separate;border-spacing:0;width:100%"><tr><th>חודש</th><th>לשעה</th><th>הבראה</th></tr>';
+    M.forEach(x=>{ const r=rateOf(x); const v=r&&r.v!=null?nf(r.v)+(r.approx?"*":""):(r&&r.k)||"—"; const ch=prev!=null&&r&&r.v!=null&&Math.abs(prev-r.v)>0.01;
+      h+='<tr><td><b>'+esc(mLbl(x.m))+'</b></td><td style="font-weight:800'+(ch?';color:#c2263d':'')+'">'+esc(v)+(ch?' ('+(r.v>prev?"↑":"↓")+')':'')+'</td><td>'+esc(x.slip?recOf(x):"אין תלוש")+'</td></tr>';
+      if(r&&r.v!=null) prev=r.v; });
+    const ap=M.some(x=>{ const r=rateOf(x); return r&&r.approx; });
+    return h+'</table>'+(ap?'<div style="font-size:12.5px;color:#6b6788;margin:-8px 0 12px">* בלי פירוט שורות באותו חודש — התעריף מהסיכום</div>':''); }catch(e){ return ""; } };
   /* ספר הכללים — לכרטיס/לבדיקה: כללים לכל המסעדות + למסעדה הזו */
   window.payRules=function(){ var s=sysOf(); return (J("pay_rules",[])||[]).filter(function(r){ return !r.scope||r.scope==="all"||r.scope===s; }); };
 })();
