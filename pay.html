@@ -141,8 +141,9 @@ function txt(u){ return fetch(u,{cache:'no-cache'}).then(function(r){ return r.o
 /* 📄 צילום התלוש — החודש (iframe) קורא לזה דרך parent.__paySlipImg(שם בתלוש) */
 window.__paySlipImg=function(name){ return rpc('pay_slip_img',{p_sys:SYS,p_month:MON,p_name:name}); };
 /* pay-notes.* = מסך «הערות שכר» החדש (3.11.2026) — נטען אחרי pay-rows6, כדי שהכללים שלו (בלי «טופל» לבד) יחולו גם שם */
-function loadRows(){ return Promise.all([txt('pay-rows6.css'),txt('pay-rows6.js'),txt('pay-notes.css'),txt('pay-notes.js')]).then(function(r){
-  ROWS_CSS=r[0]+'\n'+r[2]; ROWS_JS=r[1]+(r[3]?'\n;try{'+r[3]+'\n}catch(_nx){console.warn("pay-notes",_nx);}':''); }); }
+/* pay-brain.js = 🧠 תיק עובד (5.11.2026) — קריאה בלבד, מוצג בכרטיס העובד באסא ובצ'אקולי */
+function loadRows(){ return Promise.all([txt('pay-rows6.css'),txt('pay-rows6.js'),txt('pay-notes.css'),txt('pay-notes.js'),txt('pay-brain.js')]).then(function(r){
+  ROWS_CSS=r[0]+'\n'+r[2]; ROWS_JS=r[1]+(r[3]?'\n;try{'+r[3]+'\n}catch(_nx){console.warn("pay-notes",_nx);}':'')+(r[4]?'\n;try{'+r[4]+'\n}catch(_bx){console.warn("pay-brain",_bx);}':''); }); }
 
 /* ---------- טעינה ---------- */
 var FILES=[], SYS=null, MON=null;
