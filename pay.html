@@ -35,7 +35,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 </style>
 </head>
 <body>
-<div class="bar hid" id="bar"><b id="btitle">בקרת שכר</b><select id="ssel" aria-label="מסעדה"></select><select id="msel" aria-label="חודש"></select><span class="st" id="st">טוען…</span><button id="look" class="look" title="מעבר בין מצב כהה למצב בהיר">☀️ מצב בהיר</button><a href="mission.html">מרכז הבקרה ←</a></div>
+<div class="bar hid" id="bar"><b id="btitle">בקרת שכר</b><select id="ssel" aria-label="מסעדה"></select><select id="msel" aria-label="חודש"></select><span class="st" id="st">טוען…</span><button id="wa" class="look hid" title="הודעות שכר מהוואטסאפ שמחכות שתבחרי מה לעשות">💬</button><button id="look" class="look" title="מעבר בין מצב כהה למצב בהיר">☀️ מצב בהיר</button><a href="mission.html">מרכז הבקרה ←</a></div>
 <div id="view"></div>
 <script>
 (function(){
@@ -145,6 +145,17 @@ var ROWS_CSS='', ROWS_JS='';
 function txt(u){ return fetch(u,{cache:'no-cache'}).then(function(r){ return r.ok?r.text():''; },function(){ return ''; }); }
 /* 📄 צילום התלוש — החודש (iframe) קורא לזה דרך parent.__paySlipImg(שם בתלוש) */
 window.__paySlipImg=function(name){ return rpc('pay_slip_img',{p_sys:SYS,p_month:MON,p_name:name}); };
+/* 💬 הודעות שכר מהוואטסאפ (6.11.2026) — הבוט מכניס, מסך «הערות שכר» בחודש מציג ומציע; כאן רק המונה בפס העליון */
+window.__payWa={
+  sys:function(){ return SYS; }, month:function(){ return MON; },
+  list:function(){ return rpc('pay_wa_list',{p_sys:SYS,p_month:MON}); },
+  set:function(id,st,o){ return rpc('pay_wa_set',{p_id:+id,p_state:st,p_sys:(o&&o.sys)||null,p_month:(o&&o.month)||null,p_rest:(o&&o.rest!=null)?o.rest:null}); },
+  badge:waBadge };
+function waBadge(){ var b=$('wa'); if(!b||!SYS||SYS==='hz'){ if(b) b.classList.add('hid'); return; }
+  rpc('pay_wa_list',{p_sys:SYS,p_month:MON}).then(function(a){ var L=(a||[]).filter(function(w){ return !w.state; }), q=L.filter(function(w){ return w.kind==='ask'&&w.sys; }).length;
+    b.textContent='💬 '+L.length+' מהוואטסאפ'+(q?' · ❓'+q:''); b.classList.toggle('hid',!L.length); },function(){}); }
+function waOpenNotes(){ try{ var w=$('fr')&&$('fr').contentWindow; if(w&&w.__nxOpen){ w.__nxOpen(); return; } if(w&&w.openNotes) w.openNotes(); }catch(_){} }
+
 /* pay-notes.* = מסך «הערות שכר» החדש (3.11.2026) — נטען אחרי pay-rows6, כדי שהכללים שלו (בלי «טופל» לבד) יחולו גם שם */
 /* pay-brain.js = 🧠 תיק עובד (5.11.2026) — קריאה בלבד, מוצג בכרטיס העובד באסא ובצ'אקולי */
 function loadRows(){ return Promise.all([txt('pay-rows6.css'),txt('pay-rows6.js'),txt('pay-notes.css'),txt('pay-notes.js'),txt('pay-brain.js')]).then(function(r){
@@ -182,7 +193,7 @@ function open(){
     $('look').textContent=useTheme()?'☀️ מצב בהיר':'🌙 מצב כהה';
     $('view').innerHTML=''; $('view').appendChild(fr); fr.srcdoc=html;
     fr.onload=function(){ var w=fr.contentWindow; if(w&&w.__PAY_FAIL){ setSt('⚠ לא הצלחתי לחבר את השמירה לענן — לא לעבוד כאן ('+w.__PAY_FAIL+')','bad'); }
-      else setSt('☁ בענן · '+monLbl(MON),'ok'); };
+      else setSt('☁ בענן · '+monLbl(MON),'ok'); waBadge(); };
   });
 }
 function go(s,m){ flush(); var q='?s='+encodeURIComponent(s)+(m?'&m='+encodeURIComponent(m):''); history.replaceState(null,'',q); SYS=s; MON=m; open().catch(fail); }
@@ -198,6 +209,8 @@ function start(){
   Promise.all([rpc('pay_list'),rpc('pay_kv_load'),loadTheme(),loadRows()]).then(function(res){
     FILES=res[0]||[]; KV=res[1]||{}; lastPull=new Date().toISOString();
     setInterval(pull,60000);
+    setInterval(function(){ if(document.hidden) return; waBadge(); try{ var w=$('fr')&&$('fr').contentWindow; if(w&&w.__waRefresh&&w.document.documentElement.classList.contains('nx-on')) w.__waRefresh(); }catch(_){} },60000);
+    $('wa').onclick=waOpenNotes;
     if(!SYS) return list();
     return open();
   }).catch(fail);

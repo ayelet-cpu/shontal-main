@@ -85,7 +85,7 @@
     root.addEventListener('click',onClick); root.addEventListener('input',onInput); root.addEventListener('change',onChange);
     document.addEventListener('keydown',function(ev){ if(root.hidden) return; if(ev.key==='Escape'){ if(V.edit) closeEdit(); else if(V.view==='send'){ V.view='list'; draw(); } else close(); } });
     return root; }
-  function open(){ mount(); V.view='list'; root.hidden=false; document.documentElement.classList.add('nx-on'); draw(); try{ parent.__nxOpen=false; }catch(_){} }
+  function open(){ mount(); V.view='list'; root.hidden=false; setTimeout(waLoad,0); document.documentElement.classList.add('nx-on'); draw(); try{ parent.__nxOpen=false; }catch(_){} }
   function close(){ if(!root) return; root.hidden=true; V.edit=null; document.documentElement.classList.remove('nx-on'); }
 
   function all(){ return NOTES2.filter(function(n){ return String(n.t||'').trim()||n.id===(V.edit&&V.edit.id); }); }
@@ -147,7 +147,7 @@
       +'<div class="nx-c nx-dep">'+E(d||'—')+'</div>'
       +'<div class="nx-c">'+tsel+'</div>'
       +'<div class="nx-c nx-body"><div class="nx-text nx-ed" data-act="itext" data-id="'+id+'" title="לחיצה לעריכה">'+hl(n.t)+'</div>'
-      +(n.royT?'<div class="nx-roysrc">🔎 רועי רשם: '+E(n.royT)+'</div>':'')+royLine(n)
+      +(n.royT?'<div class="nx-roysrc">🔎 רועי רשם: '+E(n.royT)+'</div>':'')+(n.waT?'<div class="nx-roysrc nx-wasrc">💬 מהוואטסאפ: '+E(String(n.waT).slice(0,300))+'</div>':'')+royLine(n)
       +(n.resp?'<div class="nx-resp">💬 החשבת: '+E(n.resp)+'</div>':'')
       +(info?'<div class="nx-info'+(/^❗/.test(info)?' bad':'')+'">'+E(info)+'</div>':'')+'</div>'
       +'<div class="nx-c nx-amt"><input class="nx-ain" data-act="irow" data-f="amt" data-id="'+id+'" inputmode="decimal" value="'+(a?F0(a):'')+'" placeholder="—" title="סכום"><span>₪</span></div>'
@@ -208,7 +208,7 @@
       +'<div class="nx-menu"><button class="nx-btn" data-act="menu">⋯</button><div class="nx-mlist" hidden>'
       +'<button data-act="xls">📊 ייצוא Excel</button><button data-act="pdf">📄 PDF</button><button data-act="print">🖨️ הדפסה</button><button data-act="copytxt">📋 העתקה כטקסט</button>'
       +'<button data-act="nextm">➡️ העתקת הערות לחודש הבא</button><button data-act="oldwin">🗂 החלון הישן</button></div></div></div></header>'
-      +'<div class="nx-wrap">'+kpis()+tabs()+'<div class="nx-sticky">'+filters()+'</div>'+tabBar()+'<div class="nx-list">'+listHtml()+'</div>'+bulkHtml()+'</div>'
+      +'<div class="nx-wrap">'+kpis()+tabs()+'<div class="nx-sticky">'+filters()+'</div>'+tabBar()+'<div class="nx-list">'+waGroup()+listHtml()+'</div>'+bulkHtml()+'</div>'
       +(V.edit?drawerHtml():'');
     root.scrollTop=y; }
 
@@ -265,6 +265,7 @@
   function onClick(ev){ var b=ev.target.closest('[data-act]'); if(!b||!root.contains(b)) { if(!ev.target.closest('.nx-menu')) hideMenu(); var r=ev.target.closest('.nx-row'); if(r&&r.dataset.id&&!r.classList.contains('nx-th')&&!ev.target.closest('input,button,label,select,textarea')) openEdit(r.dataset.id); return; }
     var a=b.dataset.act;
     if(a!=='menu') hideMenu();
+    if(a==='wa'){ waAct(b.dataset.k,b.dataset.id); return; }
     if(a==='itext'){ var nn=byId(b.dataset.id); if(nn) inlineEdit(b,function(){ return nn.t||''; },function(v){ addLog(nn,'הטקסט שונה'); nn.t=v; save(); }); return; }
     if(a==='iflag'){ var fi=+b.dataset.i; inlineEdit(b,function(){ var L=flagsAll()[MON()]||[]; return (L[fi]||{}).t||''; },function(v){ var A=flagsAll(), L=A[MON()]||[]; if(!L[fi]) return; L[fi].t=v; L[fi].edited=today(); try{ localStorage.setItem('pay-flags-v1',JSON.stringify(A)); }catch(_){} }); return; }
     if(a==='irow') return;
@@ -433,6 +434,51 @@
       L.filter(function(n){ return ids[n.id]; }).forEach(function(n){ if(have[(n.emp||'')+'|'+n.t]) return; var c=JSON.parse(JSON.stringify(n)); c.id=n2id(); c.done=false; c.doneAt=undefined; c.sentAt=undefined; c.st=undefined; c.r=1; c.resp=''; c.log=[{at:nowS(),w:'הועתקה מ-'+MON()}]; T.push(c); k++; });
       try{ localStorage.setItem(key,JSON.stringify(T)); }catch(_){}
       done(); toastNx(k+' הערות הועתקו ל-'+nm); }; }
+
+
+  /* ---------- 💬 מהוואטסאפ (6.11.2026, איילת: «שיולבשו בבקרת שכר … אם ענו לי — יתעדכן שתקין, או אם אני צריכה לענות») ----------
+     הבוט מכניס כל הודעת שכר לטבלה בענן (pay_wa). כאן — רק הצעות: שום הערה לא נכתבת ושום סטטוס לא משתנה עד שאיילת לוחצת. */
+  var WA={rows:[],on:true};
+  function waFn(){ try{ return window.__payWa||(window.parent!==window&&window.parent.__payWa)||null; }catch(_){ return null; } }
+  function waRest(){ return (typeof R2REST!=='undefined'&&R2REST)||''; }
+  function waOpen(){ var r=waRest(); return WA.rows.filter(function(w){ return !w.state&&(!w.rest||!r||w.rest===r); }); }
+  function waLoad(){ var f=waFn(); if(!f) return; f.list().then(function(a){ WA.rows=a||[]; draw(); try{ f.badge&&f.badge(); }catch(_){} },function(){}); }
+  window.__waRefresh=waLoad;
+  function waNote(w){ if(!w.note_id) return null; return byId(w.note_id)||null; }
+  function waEmpNote(w){ var nm=flagEmp({emp:w.emp}); return nm?all().find(function(n){ return n.emp===nm&&!n.done; }):null; }
+  function waWhen(w){ try{ var d=new Date(w.ts); return d.getDate()+'.'+(d.getMonth()+1)+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }catch(_){ return ''; } }
+  function waCard(w){ var nm=flagEmp({emp:w.emp})||w.emp, n=waNote(w), en=n?null:waEmpNote(w), K=w.kind;
+    var ic={ask:'❓',reply:'↩️',note:'📝',info:'💬'}[K]||'💬', lbl={ask:'מחכה לתשובה שלך',reply:'נראה שענו',note:'הערת שכר חדשה',info:'עדכון'}[K]||'עדכון';
+    var btn='';
+    if(!w.sys) btn+='<button class="nx-btn p sm" data-act="wa" data-k="here" data-id="'+w.id+'">שייך למסעדה הזו</button>';
+    else if(K==='ask') btn+='<button class="nx-btn ok sm" data-act="wa" data-k="answered" data-id="'+w.id+'">✓ עניתי</button>';
+    else if(K==='reply'&&n) btn+='<button class="nx-btn ok sm" data-act="wa" data-k="done" data-id="'+w.id+'">✓ לסמן את ההערה טופלה</button><button class="nx-btn sm" data-act="wa" data-k="in" data-id="'+w.id+'">לצרף להערה בלי לסגור</button>';
+    else { btn+='<button class="nx-btn p sm" data-act="wa" data-k="acc" data-id="'+w.id+'">לחשבת</button><button class="nx-btn sm" data-act="wa" data-k="me" data-id="'+w.id+'">לעצמי</button>';
+      if(en) btn+='<button class="nx-btn sm" data-act="wa" data-k="in" data-id="'+w.id+'" title="יש כבר הערה פתוחה לעובד/ת">✓ כלול בהערה הקיימת</button>'; }
+    btn+='<button class="nx-btn ghost sm" data-act="wa" data-k="no" data-id="'+w.id+'">לא רלוונטי</button>';
+    return '<div class="nx-wa k-'+E(K)+'"><div class="nx-wah"><span class="nx-wak">'+ic+' '+lbl+'</span><b>'+E(nm||'כללי')+'</b>'+(deptOf(nm)?'<span class="nx-wad">'+E(deptOf(nm))+'</span>':'')
+      +'<span class="nx-was">'+E(w.chat)+(w.sender&&w.sender!==w.chat?' · '+E(w.sender):'')+(w.from_me?' · את':'')+' · '+E(waWhen(w))+'</span></div>'
+      +'<div class="nx-wat">'+hl(w.summary||w.msg)+'</div>'
+      +(n?'<div class="nx-wan">ההערה: '+E(String(n.t||'').slice(0,160))+'</div>':(en&&K!=='ask'?'<div class="nx-wan">יש כבר הערה: '+E(String(en.t||'').slice(0,160))+'</div>':''))
+      +(w.msg&&w.msg!==w.summary?'<details class="nx-wam"><summary>ההודעה המקורית</summary>'+E(w.msg)+(w.file_name?'<br>📎 '+E(w.file_name):'')+'</details>':(w.file_name?'<div class="nx-wam">📎 '+E(w.file_name)+'</div>':''))
+      +'<div class="nx-wab">'+btn+'</div></div>'; }
+  function waGroup(){ var L=waOpen(); if(!L.length) return '';
+    var ord={ask:0,reply:1,note:2,info:3}; L=L.slice().sort(function(a,b){ return (!a.sys)-(!b.sys)||(ord[a.kind]-ord[b.kind])||(a.id-b.id); });
+    var asks=L.filter(function(w){ return w.kind==='ask'&&w.sys; }).length;
+    return '<section class="nx-wabox"><button class="nx-wahd" data-act="wa" data-k="tog">💬 מהוואטסאפ — לבחור מה לעשות <span>'+L.length+'</span>'+(asks?'<em>❓ '+asks+' מחכות לתשובה שלך</em>':'')+'<i>'+(WA.on?'▾':'◂')+'</i></button>'
+      +(WA.on?'<div class="nx-walist">'+L.map(waCard).join('')+'</div>':'')+'</section>'; }
+  function waAct(k,id){ var f=waFn(); if(k==='tog'){ WA.on=!WA.on; draw(); return; }
+    var w=WA.rows.find(function(x){ return String(x.id)===String(id); }); if(!w||!f) return;
+    var src='וואטסאפ · '+w.chat+(w.sender&&w.sender!==w.chat?' · '+w.sender:'')+' ('+waWhen(w)+')', st=k, msg='';
+    if(k==='here'){ f.set(w.id,null,{sys:f.sys(),month:f.month(),rest:waRest()}).then(waLoad); toastNx('שויך — עכשיו אפשר לבחור מה לעשות'); return; }
+    if(k==='acc'||k==='me'){ var nn={id:n2id(),emp:flagEmp({emp:w.emp}),topic:'הערות שוטפות',t:w.summary||w.msg,done:false,me:k==='me',r:DATA.prepay?1:2,resp:'',st:'new',src:src,waT:w.msg};
+      addLog(nn,'נוצרה מהוואטסאפ'+(nn.me?' · לעצמי':' · לחשבת')); NOTES2.push(nn); st=k==='me'?'me':'note'; msg=nn.me?'נשמר בהערות לעצמי':'נוסף להערות לחשבת'; }
+    else if(k==='in'){ var t=waNote(w)||waEmpNote(w); if(t){ t.waT=(t.waT?t.waT+'\n':'')+(w.summary||w.msg); addLog(t,'צורף מהוואטסאפ: '+src); } st='ok'; msg='צורף להערה'; }
+    else if(k==='done'){ var t2=waNote(w); if(t2){ addLog(t2,'ענו בוואטסאפ: '+src+' — '+(w.summary||'').slice(0,120)); setStatus(t2,'done'); } st='ok'; msg='ההערה סומנה טופלה'; }
+    else if(k==='answered'){ msg='סומן שענית'; }
+    else if(k==='no'){ msg='הוסר מהרשימה'; }
+    w.state=st; if(k==='acc'||k==='me'||k==='in'||k==='done') save(); draw(); toastNx(msg);
+    f.set(w.id,st).then(function(){ try{ f.badge&&f.badge(); }catch(_){} },function(){ w.state=''; draw(); toastNx('לא נשמר בענן — לנסות שוב'); }); }
 
   /* ---------- חיבור: כל מקום שפותח את החלון הישן — פותח את המסך החדש ---------- */
   window.openNotes=function(name,suggest){ open(); if(name){ var ex=NOTES2.find(function(x){ return x.emp===name&&!String(x.t||'').trim(); }); openEdit(ex?ex.id:null,{emp:name,t:suggest||''}); } };

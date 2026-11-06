@@ -204,3 +204,28 @@ html:has(#payTheme) #nx .nx-mine{background:#1d2027;color:#dde3e6;border-color:#
 html:has(#payTheme) #nx .nx-roytxt,html:has(#payTheme) #nx .nx-roysrc{color:#f0c8c1}
 html:has(#payTheme) #nx .nx-tabbar span{color:#c9d0d4}
 .nx-mine{overflow:hidden}.nx-roylive{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:#fdf1ef;border-radius:8px;padding:4px 8px;margin-top:5px}html:has(#payTheme) #nx .nx-roylive{background:#3a2a2a}
+
+/* 💬 מהוואטסאפ (6.11.2026) */
+.nx-wabox{margin:0 0 14px;border:1px solid #ddd5f3;border-radius:14px;background:#faf8ff;overflow:hidden}
+.nx-wahd{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:center;width:100%;padding:11px 14px;cursor:pointer;font-weight:700;color:#4b3a8f}
+.nx-wahd span{background:#6d55d6;color:#fff;border-radius:20px;padding:1px 9px;font-size:12px}
+.nx-wahd em{font-style:normal;color:#b0473b;font-size:13px}
+.nx-wahd i{margin-inline-start:auto;font-style:normal;color:#8a7fb5}
+.nx-walist{display:flex;flex-direction:column;gap:8px;padding:0 12px 12px}
+.nx-wa{background:#fff;border:1px solid #e8e3f6;border-radius:12px;padding:10px 12px}
+.nx-wa.k-ask{border-color:#f0c2bb;background:#fff9f8}
+.nx-wa.k-reply{border-color:#bfe3cf;background:#f7fcf9}
+.nx-wah{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;font-size:13px}
+.nx-wak{font-weight:700;color:#6d55d6}.nx-wa.k-ask .nx-wak{color:#b0473b}.nx-wa.k-reply .nx-wak{color:#2c7a4f}
+.nx-wad{color:#8a7fb5;font-size:12px}
+.nx-was{color:#9a93b3;font-size:12px;margin-inline-start:auto}
+.nx-wat{margin:6px 0 2px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.nx-wan{font-size:12.5px;color:#6b6385;margin-top:2px}
+.nx-wam{font-size:12px;color:#7d7699;margin-top:4px;white-space:pre-wrap}
+.nx-wam summary{cursor:pointer}
+.nx-wab{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.nx-wasrc{color:#5b4bb0}
+html:has(#payTheme) #nx .nx-wabox{background:#221d35;border-color:#3a3257}
+html:has(#payTheme) #nx .nx-wa{background:#2a2440;border-color:#3a3257}
+html:has(#payTheme) #nx .nx-wahd{color:#d5ccff}
+html:has(#payTheme) #nx .nx-wasrc{color:#c9bfff}
