@@ -93,3 +93,31 @@ summary{color:#6d28d9}
   .wvf .apr{padding:5px 12px!important}
   .wvf .dec{padding-top:6px!important;padding-bottom:6px!important;margin-top:0!important}
 }
+
+/* 6.11.2026 (איילת: «את לשונית הדוחות לא עיצבת כמו שאר בקרת השכר… רק שתגדיל את הכתב ותדגיש אותו בכל המסעדות ותעצב בסגנון של ההערות»)
+   «דוח עלות ופירוט שכר» — רק מראה: כתב גדול ומודגש, טבלאות בכרטיסים לבנים עם מסגרת סגולה עדינה, שורות סיכום בגווני סגול. התוכן והמספרים לא משתנים.
+   פאסטל/אריאלה/טופול: #viewReport · אסא/צ'אקולי: #viewCost (שם «בדיקת תלושים» היא #viewCheck) */
+@media screen{
+  #viewReport,html:has([data-view="check"]) #viewCost{font-size:16.5px!important;color:#1b1830}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) :is(td,th,div,span,b){font-family:Rubik,Assistant,system-ui,sans-serif!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) :is(h2,h3,.sech,.sech3){font-size:19px!important;font-weight:800!important;color:#3b3463!important;margin:18px 0 8px!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .bt{font-size:16px!important;background:#fff!important;border:1.5px solid #e3e0ef!important;border-radius:14px!important;box-shadow:0 1px 2px rgba(27,24,48,.04),0 6px 20px rgba(27,24,48,.06)!important;overflow:hidden;border-collapse:separate!important;border-spacing:0!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .bt td{font-size:16px!important;font-weight:700!important;padding:10px 14px!important;border-bottom:1px solid #eeebf6!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .bt th{font-size:15px!important;font-weight:800!important;padding:11px 14px!important;color:#3b3463!important;background:#f3f0fb!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .bt td.rl{font-weight:700!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .bt tr.dt-dep td{background:#efe9fd!important;color:#5b21b6!important;font-weight:800!important;font-size:16.5px!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .bt tr.dt-sub td{background:#f6f2fe!important;font-weight:800!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .bt tr.bt-tot td,:is(#viewReport,html:has([data-view="check"]) #viewCost) .bt tfoot td{background:#ede7fc!important;font-weight:800!important;font-size:17px!important;color:#1b1830!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .utile{border:1.5px solid #e3e0ef!important;border-radius:16px!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) :is(.ut-l,.us-l){font-size:15px!important;font-weight:700!important;color:#5f5b78!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .us-v{font-size:20px!important;font-weight:800!important;color:#1b1830!important;white-space:nowrap!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .ut-n{font-size:15.5px!important;font-weight:700!important;color:#3b3463!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .ut-row{display:flex!important;gap:12px 22px!important;flex-wrap:wrap!important;align-items:flex-end}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .ut-s{flex:0 0 auto!important;width:auto!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .pbar-t{font-size:17px!important;font-weight:800!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .pbar-s{font-size:19px!important;font-weight:800!important;color:#1b1830!important;white-space:nowrap}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .pbar-s i{font-size:14.5px!important;font-weight:700!important;font-style:normal;color:#5f5b78!important;margin-inline-end:6px}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .pbar-s.big{font-size:24px!important}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) .ut-s{min-width:0}
+  :is(#viewReport,html:has([data-view="check"]) #viewCost) :is(.muted,.sumline,.rec){font-size:15.5px!important;font-weight:600!important}
+}
