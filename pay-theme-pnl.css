@@ -49,3 +49,47 @@ summary{color:#6d28d9}
 /* טלפון: שורת הלשוניות נשברת לשורות ולא דוחפת את הדף הצידה */
 @media (max-width:900px){.tabs,.revbar,#revbar,.rvbar{flex-wrap:wrap!important}.tabs .tbtn,.tbtn{white-space:normal}body{overflow-x:hidden}}
 }
+
+/* 6.11.2026 (איילת: «ממש קשה לי לגלול הרבה כדי לראות נתונים — בחלק העליון יש הרבה אפשרויות לצמצום בלי להקטין את הכתב»)
+   החלק העליון צפוף יותר: פחות ריווח, ריבועי ספירה נמוכים, חיפוש וכפתורים בשורה אחת. הכתב באותו גודל. */
+@media screen and (min-width:901px){
+  .wrap{padding-top:8px!important}
+  .top{padding-bottom:8px!important;margin-bottom:8px!important;gap:6px 18px!important}
+  .top h1{margin:0!important}
+  .tabs{margin-bottom:8px!important}
+  .tabs .tbtn,.tabs button{padding-top:7px!important;padding-bottom:7px!important}
+  /* כפתורי «כללים / הערות שכר / PDF» והחיפוש — שורה אחת */
+  #viewCheck{display:grid!important;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:center}
+  #viewCheck>*{grid-column:1/-1}
+  #viewCheck>div:first-child{grid-column:2;grid-row:1}
+  #viewCheck>.srow{grid-column:1;grid-row:1;margin-bottom:8px!important}
+  /* ריבועי הספירה — נמוכים יותר, אותו כתב */
+  .wvk{gap:10px!important;margin-bottom:8px!important}
+  .wvk .kt{padding:8px 16px!important;border-radius:16px!important}
+  .wvk .kt .ic{width:40px!important;height:40px!important;flex:0 0 40px!important}
+  .wvk .kt .ic svg{width:20px!important;height:20px!important}
+  .wvk .kt>div{display:flex;align-items:baseline;gap:12px;flex-wrap:nowrap;white-space:nowrap}
+  /* שורת הסינונים */
+  .wvf{gap:6px!important;margin-bottom:8px!important;row-gap:6px!important}
+  .wvf .ch{padding:5px 12px!important}
+  .wvf .apr{padding:7px 16px!important}
+}
+
+/* 6.11.2026 — צמצום נוסף (איילת: «אפשר לעשות עוד משהו — רק לא להקטין את הכתב»). הכתב באותו גודל. */
+@media screen and (min-width:901px){
+  /* הכותרת ושורת «חודש · גרסה» באותה שורה */
+  .top .brand{display:flex!important;flex-direction:row!important;align-items:baseline;gap:14px;flex:1 1 auto;flex-wrap:nowrap;min-width:0}
+  .top .brand .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top .brand .sub{margin:0!important}
+  .top{padding-bottom:6px!important}
+  /* ריבועי הספירה — לפי התוכן, לא חופפים, נמוכים יותר */
+  .wvk{display:flex!important;flex-wrap:wrap}
+  .wvk .kt{flex:1 1 auto!important;min-width:0;padding:5px 14px!important}
+  .wvk .kt .ic{width:34px!important;height:34px!important;flex:0 0 34px!important}
+  .wvk .kt .ic svg{width:18px!important;height:18px!important}
+  /* שורת הסינונים בשורה אחת */
+  .wvf{gap:5px!important}
+  .wvf .ch{padding:3px 9px!important}
+  .wvf .apr{padding:5px 12px!important}
+  .wvf .dec{padding-top:6px!important;padding-bottom:6px!important;margin-top:0!important}
+}
