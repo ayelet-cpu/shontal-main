@@ -133,12 +133,13 @@ function inject(html){
 /* מראה «קריסטל לילה» (בחירת איילת 03.11.2026) — רק מראה, מוזרק בסוף החודש; «🎨» בסרגל מחזיר למראה הרגיל */
 var THEME='';
 function useTheme(){ try{ return localStorage.getItem('pay-look')!=='plain'; }catch(_){ return true; } }
-function themed(){ return SYS!=='hz'&&useTheme()&&!!THEME; }   /* התקזזויות — מערכת אחרת, נשארת כמו שהיא */
+function themed(){ return SYS==='hz'?(useTheme()&&!!THEME3):(useTheme()&&!!THEME); }   /* 6.11.2026: גם התקזזויות — במראה החדש (pay-theme-hz.css) */
 /* 5.11.2026: באסא ובצ'אקולי — המראה החדש כמו רווח והפסד (pay-theme-pnl.css, איילת בחרה); פאסטל ואריאלה/טופול — «קריסטל לילה» עד שיותאמו */
-var THEME2='';
-function themeOf(){ return (SYS==='asa'||SYS==='pincus')&&THEME2?THEME2:THEME; }
-function loadTheme(){ return Promise.all([fetch('pay-theme.css',{cache:'no-cache'}).then(function(r){ return r.ok?r.text():''; },function(){return '';}),
-  fetch('pay-theme-pnl.css',{cache:'no-cache'}).then(function(r){ return r.ok?r.text():''; },function(){return '';})]).then(function(t){ THEME=t[0]; THEME2=t[1]; }); }
+var THEME2='', THEME3='';
+/* 6.11.2026 (איילת: «גם פאסטל, אריאלה וטופול»): כל המסעדות במראה החדש; התקזזויות — pay-theme-hz.css */
+function themeOf(){ if(SYS==='hz') return THEME3; return THEME2||THEME; }
+function loadTheme(){ var g=function(u){ return fetch(u,{cache:'no-cache'}).then(function(r){ return r.ok?r.text():''; },function(){return '';}); };
+  return Promise.all([g('pay-theme.css'),g('pay-theme-pnl.css'),g('pay-theme-hz.css')]).then(function(t){ THEME=t[0]; THEME2=t[1]; THEME3=t[2]; }); }
 /* שורת עובד «דוגמה 6» (איילת 3.11) — rows6.css + rows6.js מוזרקים לכל חודש; אם לא נטענו — השורה הרגילה */
 var ROWS_CSS='', ROWS_JS='';
 function txt(u){ return fetch(u,{cache:'no-cache'}).then(function(r){ return r.ok?r.text():''; },function(){ return ''; }); }
@@ -176,7 +177,7 @@ function open(){
     var html=inject(f.html);
     document.title=(f.title||'בקרת שכר')+' · ענן';
     var fr=document.createElement('iframe'); fr.id='fr'; fr.title=f.title||'בקרת שכר';
-    if(themed()) fr.style.background=(themeOf()===THEME2?'#f5f4fa':'#17122b');
+    if(themed()) fr.style.background=((themeOf()===THEME2||themeOf()===THEME3)?'#f5f4fa':'#17122b');
     $('look').classList.toggle('hid',SYS==='hz');
     $('look').textContent=useTheme()?'☀️ מצב בהיר':'🌙 מצב כהה';
     $('view').innerHTML=''; $('view').appendChild(fr); fr.srcdoc=html;

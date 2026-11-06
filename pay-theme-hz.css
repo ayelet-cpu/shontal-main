@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap');
+/* דוח ההתקזזויות — אותו מראה כמו בקרת השכר החדשה (איילת 6.11.2026: «גם דוח התקזזויות תקן עיצוב בהתאם»).
+   סגול אחד בגוונים, כתב Rubik מודגש, רקע בהיר. כל מסעדה — גוון אחר של סגול. רק מראה: לא נוגע בחישובים ובנתונים. רק למסך. */
+@media screen{
+html:root,html:root[data-theme],html:root:not([data-theme="light"]){
+  --bg:#f5f4fa!important; --surface:#ffffff!important; --ink:#1b1830!important; --muted:#5f5b78!important; --faint:#8a86a3!important;
+  --line:#e3e0ef!important; --good:#16855a!important; --crit:#c2363f!important;
+  --gold:#6d28d9!important; --gold-soft:#efe9fd!important;
+  --asa:#6d28d9!important; --asa-soft:#f3effd!important; --asa-line:#d9cdfa!important; --asa-ink:#5b21b6!important;
+  --chak:#9f67f2!important; --chak-soft:#f7f3ff!important; --chak-line:#e6dcfd!important; --chak-ink:#7c3aed!important;
+  --shadow:0 1px 2px rgba(27,24,48,.04),0 6px 20px rgba(27,24,48,.05)!important;
+  color-scheme:light;
+}
+html,body{background:#f5f4fa!important;color:#1b1830!important}
+body,button,input,select,textarea{font-family:Rubik,"Segoe UI",Arial,sans-serif!important}
+h1,h2,h3,.title,[class*="title"]{font-family:Rubik,"Segoe UI",Arial,sans-serif!important;font-weight:800!important}
+.cdot.hel{background:#b794f6!important}.cdot.nero{background:#4c1d95!important}
+.pc-col.hel .pc-ch{background:#f3eefe!important}.pc-col.nero .pc-ch{background:#ebe4fb!important}
+}
