@@ -200,6 +200,42 @@ table tr:not(.tot):not(.big):not(.sub):not(.pct) td.neg{color:var(--ink)!importa
   var t=null; build(); new MutationObserver(function(){ if(t) return; t=setTimeout(function(){ t=null; build(); },40); }).observe(d.getElementById('main')||d.body,{childList:true,subtree:true});
 })();
 </script>
+<!-- צפייה בלבד (7.11.2026, איילת: «אי אפשר לצפות שם בחשבוניות»): לצופה אין עריכה, אז לחיצה על סכום פותחת חלון עם ההסבר של התא
+     והחשבוניות שלו (📄) — אותו תוכן כמו בריחוף (cellExplainHtml של המערכת), אבל קבוע, ועובד גם בטלפון. -->
+<script type="text/plain" id="viewJs">
+(function(){
+  if(window.__plView) return; window.__plView=1;
+  var d=document;
+  d.head.insertAdjacentHTML('beforeend','<style>#vwOv{position:fixed;inset:0;z-index:90;background:rgba(20,16,40,.45);display:flex;align-items:flex-start;justify-content:center;padding:6vh 14px;overflow:auto}'+
+    '#vwOv .vw-b{background:#fff;border-radius:14px;max-width:560px;width:100%;padding:16px 18px;box-shadow:0 18px 50px rgba(0,0,0,.25);direction:rtl;text-align:right;line-height:1.6;font-size:14px}'+
+    '#vwOv .vw-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}#vwOv .vw-h b{font-size:16px}'+
+    '#vwOv .hx-h{font-weight:600;margin-top:8px;color:#6d28d9}#vwOv .hx-man{background:#f2f8fc;border-radius:6px;padding:4px 6px}#vwOv .hx-ln{color:#455b6b;margin-top:6px}'+
+    '#vwOv a.aud-doc{font-size:18px;text-decoration:none;margin-inline-end:4px}#vwOv .vw-x{border:0;background:#efe9fd;color:#4c1d95;border-radius:9px;padding:5px 12px;font:inherit;font-weight:600;cursor:pointer}'+
+    '#main td[data-p][data-m]:not(.empty){cursor:pointer}</style>');
+  function close(){ var o=d.getElementById('vwOv'); if(o) o.remove(); }
+  function show(title,html){
+    close(); var o=d.createElement('div'); o.id='vwOv';
+    o.innerHTML='<div class="vw-b"><div class="vw-h"><b></b><button type="button" class="vw-x">✕ סגירה</button></div><div class="vw-c"></div></div>';
+    o.querySelector('b').textContent=title; o.querySelector('.vw-c').innerHTML=html; d.body.appendChild(o);
+  }
+  /* הקוד של המערכת סגור — משתמשים בחלון הריחוף שלה (.hx-pop): מפעילים אותו ומעתיקים את התוכן לחלון קבוע */
+  d.addEventListener('click',function(e){
+    if(e.target.closest('#vwOv')){ if(e.target.id==='vwOv'||e.target.closest('.vw-x')) close(); return; }
+    var td=e.target.closest('#main td[data-p][data-m]'); if(!td) return;
+    e.preventDefault(); e.stopPropagation();
+    if(!td.hasAttribute('data-hx')){ show('','<div style="color:#5f5b78">אין פירוט או חשבוניות לסכום הזה.</div>'); return; }
+    if(!d.querySelector('.hx-pop')) td.dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));   /* בעכבר — החלון כבר פתוח על התא הזה */
+    var n=0, t=setInterval(function(){
+      var hp=d.querySelector('.hx-pop');
+      if(hp||++n>40){ clearInterval(t);
+        if(!hp){ show('','<div style="color:#5f5b78">אין פירוט או חשבוניות לסכום הזה.</div>'); return; }
+        var h=hp.querySelector('.hx-t'), title=h?h.textContent:''; if(h) h.remove();
+        var html=hp.innerHTML; hp.remove(); show(title,html); }
+    },50);
+  },true);
+  d.addEventListener('keydown',function(e){ if(e.key==='Escape') close(); });
+})();
+</script>
 <script>
 (function(){
 'use strict';
@@ -291,8 +327,9 @@ function patch(html){
   var docJs='<script id="plDocJs">(function(){ var P="file:///C:/Users/PC/"; document.addEventListener("click",function(e){'+
     ' var a=e.target&&e.target.closest&&e.target.closest("a[href^=\'"+P+"\']"); if(!a||!window.__PLC||!window.__PLC.openDoc) return;'+
     ' e.preventDefault(); e.stopPropagation(); var w=window.open("about:blank","_blank"); window.__PLC.openDoc(a.getAttribute("href"),w); },true);'+
-    ' if(window.__PLC&&window.__PLC.view){ var fix=function(){ var b=document.querySelector(".ro-banner"); if(b&&!b.dataset.v){ b.dataset.v=1; b.textContent="👁 צפייה בלבד — הנתונים מתעדכנים מהענן. אפשר לייצא ולפתוח חשבוניות (📄), אבל לא לשנות."; } };'+
+    ' if(window.__PLC&&window.__PLC.view){ var fix=function(){ var b=document.querySelector(".ro-banner"); if(b&&!b.dataset.v){ b.dataset.v=1; b.textContent="👁 צפייה בלבד — הנתונים מתעדכנים מהענן. לחיצה על סכום מציגה את הפירוט והחשבוניות שלו (📄). אפשר לייצא, אבל לא לשנות."; } };'+
     ' fix(); document.addEventListener("DOMContentLoaded",fix); setTimeout(fix,500); } })();<\/script>';
+  if(VIEW) docJs+='<script id="plViewJs">'+$('viewJs').textContent.replace(/<\/script/gi,'<\\/script')+'<\/script>';
   var be=html.lastIndexOf('</body>'); html=be<0?html+docJs:html.slice(0,be)+docJs+html.slice(be);
   /* «פחות עומס» (05.11.2026) — בסוף הדף, אחרי שהמערכת בנתה את שורת הכפתורים. «🎨» בשורה העליונה מחזיר למראה הקודם */
   if(useLook()){ var b=html.lastIndexOf('</body>'), look='<style id="plLook">'+$('lookCss').textContent+'</style><script id="plLookJs">'+$('lookJs').textContent.replace(/<\/script/gi,'<\\/script')+'<\/script>';
@@ -353,8 +390,8 @@ function open(rest){
     if(!g||!g.code) throw new Error('אין במערכת מסעדה כזו: '+rest);
     var docs=g.docs||{}; BASE=(docs.data||{}).stamp; FILE_NAME=(((docs.data||{}).data||{}).meta||{}).fileName||'';
     PEEK={}; Object.keys(docs).forEach(function(k){ PEEK[k]={stamp:docs[k].stamp}; });
-    var html=patch(build(g.code,docs));
     VIEW=g.can_edit===false;   /* צפייה בלבד (pl_users.can_edit) — השרת כבר שלח את הנתונים במצב «לצפייה בלבד» וחוסם שמירה */
+    var html=patch(build(g.code,docs));
     window.__PLC_BRIDGE={handle:makeHandle(),rest:rest,openDoc:openDoc,view:VIEW};
     if(VIEW) $('back').classList.add('hid');
     document.title=(g.title||'רווח והפסד')+' · ענן';
