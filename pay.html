@@ -125,11 +125,18 @@ var PRE='<script>/* ענן: הזיכרון של הדפדפן = הענן */(funct
   'clear:function(){B.keys().forEach(function(k){B.del(k);});},key:function(i){var a=B.keys();return i<a.length?a[i]:null;}};'+
   'Object.defineProperty(ls,"length",{get:function(){return B.keys().length;}});'+
   'Object.defineProperty(window,"localStorage",{value:ls,configurable:true});window.__PAY_CLOUD=1;}catch(e){window.__PAY_FAIL=String(e);}})();<\/script>';
+/* 7.11.2026 (איילת: «למה קודם קופץ העיצוב הישן?»): החודש מוסתר עד שהמראה החדש (בסוף הקובץ) נטען — בלי הבהוב של העיצוב הישן */
+var HIDE='<style id="payHide">html{visibility:hidden!important}</style>', SHOW='<script>(function(){var h=document.getElementById("payHide");if(h)h.remove();})();<\/script>';
 function inject(html){
   var i=html.search(/<script[\s>]/i); if(i<0) throw new Error('החודש בענן לא תקין');
-  return html.slice(0,i)+PRE+html.slice(i)+(themed()?'<style id="payTheme">'+themeOf()+'</style>':'')
+  var out=html.slice(0,i)+PRE+html.slice(i)+(themed()?'<style id="payTheme">'+themeOf()+'</style>':'')
     +(SYS!=='hz'&&ROWS_CSS&&ROWS_JS?'<style id="payRows">'+ROWS_CSS+'</style><script id="payRowsJs">'+ROWS_JS.replace(/<\/script/gi,'<\\/script')+'<\/script>':'');
+  if(!themed()) return out;
+  var dt=/^\s*<!doctype[^>]*>/i.exec(out);   /* מיד אחרי ה-doctype — לפני כל תוכן של החודש */
+  var at=dt?dt[0].length:0;
+  return out.slice(0,at)+HIDE+out.slice(at)+SHOW;
 }
+function unhide(fr){ try{ var d=fr.contentDocument, h=d&&d.getElementById('payHide'); if(h) h.remove(); }catch(_){} }
 /* מראה «קריסטל לילה» (בחירת איילת 03.11.2026) — רק מראה, מוזרק בסוף החודש; «🎨» בסרגל מחזיר למראה הרגיל */
 var THEME='';
 function useTheme(){ try{ return localStorage.getItem('pay-look')!=='plain'; }catch(_){ return true; } }
@@ -192,7 +199,8 @@ function open(){
     $('look').classList.toggle('hid',SYS==='hz');
     $('look').textContent=useTheme()?'☀️ מצב בהיר':'🌙 מצב כהה';
     $('view').innerHTML=''; $('view').appendChild(fr); fr.srcdoc=html;
-    fr.onload=function(){ var w=fr.contentWindow; if(w&&w.__PAY_FAIL){ setSt('⚠ לא הצלחתי לחבר את השמירה לענן — לא לעבוד כאן ('+w.__PAY_FAIL+')','bad'); }
+    var guard=setTimeout(function(){ unhide(fr); },8000);   /* ביטחון: לא להשאיר מסך ריק */
+    fr.onload=function(){ clearTimeout(guard); unhide(fr); var w=fr.contentWindow; if(w&&w.__PAY_FAIL){ setSt('⚠ לא הצלחתי לחבר את השמירה לענן — לא לעבוד כאן ('+w.__PAY_FAIL+')','bad'); }
       else setSt('☁ בענן · '+monLbl(MON),'ok'); waBadge(); };
   });
 }
