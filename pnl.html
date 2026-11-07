@@ -256,7 +256,7 @@ function fail(e){
 }
 
 /* ---------- טעינת המערכת ---------- */
-var REST=null, BASE=null, PEEK=null, FILE_NAME='';
+var REST=null, BASE=null, PEEK=null, FILE_NAME='', VIEW=false;
 var OPEN=function(k){ return '<script id="pl-'+k+'" type="application/json">'; }, CLOSE='</'+'script>';
 function js(o){ return JSON.stringify(o).replace(/</g,'\\u003c'); }
 function build(code,docs){
@@ -287,6 +287,13 @@ function patch(html){
     ' if(!window.showSaveFilePicker){ window.showSaveFilePicker=async function(){ return window.__PLC.handle; }; window.showOpenFilePicker=async function(){ return [window.__PLC.handle]; }; } } }catch(e){}<\/script>';
   var h=html.indexOf('<head>'); if(h<0) throw new Error('הקוד בענן לא תקין (head)');
   html=html.slice(0,h+6)+pre+html.slice(h+6);
+  /* 📄 חשבונית (7.11.2026): במערכת הקישור הוא לקובץ במחשב של איילת (file:///…), שלא נפתח מהענן — פותחים את העותק מהענן של שונטל */
+  var docJs='<script id="plDocJs">(function(){ var P="file:///C:/Users/PC/"; document.addEventListener("click",function(e){'+
+    ' var a=e.target&&e.target.closest&&e.target.closest("a[href^=\'"+P+"\']"); if(!a||!window.__PLC||!window.__PLC.openDoc) return;'+
+    ' e.preventDefault(); e.stopPropagation(); var w=window.open("about:blank","_blank"); window.__PLC.openDoc(a.getAttribute("href"),w); },true);'+
+    ' if(window.__PLC&&window.__PLC.view){ var fix=function(){ var b=document.querySelector(".ro-banner"); if(b&&!b.dataset.v){ b.dataset.v=1; b.textContent="👁 צפייה בלבד — הנתונים מתעדכנים מהענן. אפשר לייצא ולפתוח חשבוניות (📄), אבל לא לשנות."; } };'+
+    ' fix(); document.addEventListener("DOMContentLoaded",fix); setTimeout(fix,500); } })();<\/script>';
+  var be=html.lastIndexOf('</body>'); html=be<0?html+docJs:html.slice(0,be)+docJs+html.slice(be);
   /* «פחות עומס» (05.11.2026) — בסוף הדף, אחרי שהמערכת בנתה את שורת הכפתורים. «🎨» בשורה העליונה מחזיר למראה הקודם */
   if(useLook()){ var b=html.lastIndexOf('</body>'), look='<style id="plLook">'+$('lookCss').textContent+'</style><script id="plLookJs">'+$('lookJs').textContent.replace(/<\/script/gi,'<\\/script')+'<\/script>';
     html=b<0?html+look:html.slice(0,b)+look+html.slice(b); }
@@ -304,6 +311,7 @@ function makeHandle(){
     createWritable:function(){ var buf='';
       return Promise.resolve({ write:function(x){ buf+=x; return Promise.resolve(); },
         close:function(){
+          if(VIEW) return Promise.reject(new Error('צפייה בלבד'));
           var i=buf.indexOf(AS_OPEN), j=buf.indexOf(CLOSE,i);
           if(i<0||j<0) return Promise.reject(new Error('שמירה לא תקינה'));
           var data=JSON.parse(buf.slice(i+AS_OPEN.length,j));
@@ -314,6 +322,20 @@ function makeHandle(){
           },function(e){ setSt('⚠ לא נשמר בענן: '+e.message,'bad'); throw e; });
         } }); }
   };
+}
+/* 📄 פתיחת חשבונית מהענן של שונטל: השרת בודק שהמסמך שייך למסעדה הזו ונותן קישור ל-5 דקות (pl-doc-url → pl_doc) */
+function openDoc(href,w){
+  var rel='', PFX='Users/PC/האחסון שלי/חשבוניות ווטסאפ/';
+  try{ rel=String(href).replace(/^file:\/\/\/[A-Za-z]:\//,'').split('/').map(decodeURIComponent).join('/'); }catch(_){}
+  var bad=function(t){ try{ if(w) w.close(); }catch(_){} setSt(t,'warn'); };
+  if(rel.indexOf(PFX)!==0) return bad('⚠ המסמך הזה נמצא רק במחשב של איילת — אין לו עותק בענן');
+  rel=rel.slice(PFX.length);
+  fresh().then(function(){ return fetch(SB+'/functions/v1/pl-doc-url',{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+S.access_token,'Content-Type':'application/json'},body:JSON.stringify({rest:REST,path:rel})}); })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(j&&j.url){ if(w&&!w.closed) w.location.href=j.url; else window.open(j.url,'_blank'); return; }
+      bad(j&&j.found===false?'⚠ החשבונית הזו עוד לא הועלתה לענן של שונטל':'⚠ החשבונית לא נפתחה: '+((j&&j.error)||''));
+    },function(e){ bad('⚠ החשבונית לא נפתחה: '+e.message); });
 }
 function setSt(t,c,btn){ var s=$('st'); s.className='st '+(c||''); s.textContent=t; if(btn){ var b=document.createElement('button'); b.textContent=btn; b.onclick=function(){ location.reload(); }; s.appendChild(b); } }
 
@@ -332,13 +354,15 @@ function open(rest){
     var docs=g.docs||{}; BASE=(docs.data||{}).stamp; FILE_NAME=(((docs.data||{}).data||{}).meta||{}).fileName||'';
     PEEK={}; Object.keys(docs).forEach(function(k){ PEEK[k]={stamp:docs[k].stamp}; });
     var html=patch(build(g.code,docs));
-    window.__PLC_BRIDGE={handle:makeHandle(),rest:rest};
+    VIEW=g.can_edit===false;   /* צפייה בלבד (pl_users.can_edit) — השרת כבר שלח את הנתונים במצב «לצפייה בלבד» וחוסם שמירה */
+    window.__PLC_BRIDGE={handle:makeHandle(),rest:rest,openDoc:openDoc,view:VIEW};
+    if(VIEW) $('back').classList.add('hid');
     document.title=(g.title||'רווח והפסד')+' · ענן';
     $('rsel').innerHTML=a.map(function(x){ return '<option value="'+esc(x.rest)+'"'+(x.rest===rest?' selected':'')+'>'+esc(NAMES[x.rest]||x.rest)+'</option>'; }).join('');
     $('rsel').onchange=function(){ location.search='?r='+encodeURIComponent(this.value); };
     $('bar').classList.remove('hid');
     var u=(docs.data||{}).updated_by, at=(docs.data||{}).updated_at;
-    setSt('☁ בענן'+(at?' · עודכן '+new Date(at).toLocaleString('he-IL',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})+(u?' ('+u+')':''):''),'ok');
+    setSt((VIEW?'👁 צפייה בלבד':'☁ בענן')+(at?' · עודכן '+new Date(at).toLocaleString('he-IL',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})+(u?' ('+u+')':''):''),'ok');
     var fr=document.createElement('iframe'); fr.id='fr'; fr.title=g.title||'רווח והפסד';
     $('view').innerHTML=''; $('view').appendChild(fr); fr.srcdoc=html;
     setInterval(watch,60000);
