@@ -218,6 +218,16 @@ table tr:not(.tot):not(.big):not(.sub):not(.pct) td.neg{color:var(--ink)!importa
     o.innerHTML='<div class="vw-b"><div class="vw-h"><b></b><button type="button" class="vw-x">✕ סגירה</button></div><div class="vw-c"></div></div>';
     o.querySelector('b').textContent=title; o.querySelector('.vw-c').innerHTML=html; d.body.appendChild(o);
   }
+  /* בלי כפילות (איילת 7.11): חשבונית שכבר מופיעה ב«חישוב» (עם 📄) לא מוצגת שוב ברשימת «שונטל (N)» */
+  function dedup(root){
+    var hs=[].slice.call(root.querySelectorAll('.hx-h')), blocks=hs.map(function(h){ var L=[], n=h.nextElementSibling; while(n&&!n.classList.contains('hx-h')){ L.push(n); n=n.nextElementSibling; } return {h:h,L:L}; });
+    var calc=blocks.filter(function(b){ return /^\s*חישוב/.test(b.h.textContent); }), seen={};
+    calc.forEach(function(b){ b.L.forEach(function(x){ [].forEach.call(x.querySelectorAll('a.aud-doc'),function(a){ seen[a.getAttribute('href')]=1; }); }); });
+    if(!Object.keys(seen).length) return;
+    blocks.forEach(function(b){ if(!/^\s*שונטל/.test(b.h.textContent)) return; var left=0;
+      b.L.forEach(function(x){ var a=x.querySelector('a.aud-doc'); if(a&&seen[a.getAttribute('href')]) x.remove(); else left++; });
+      if(!left) b.h.remove(); else b.h.textContent='עוד בשונטל ('+left+')'; });
+  }
   /* הקוד של המערכת סגור — משתמשים בחלון הריחוף שלה (.hx-pop): מפעילים אותו ומעתיקים את התוכן לחלון קבוע */
   d.addEventListener('click',function(e){
     if(e.target.closest('#vwOv')){ if(e.target.id==='vwOv'||e.target.closest('.vw-x')) close(); return; }
@@ -230,7 +240,7 @@ table tr:not(.tot):not(.big):not(.sub):not(.pct) td.neg{color:var(--ink)!importa
       if(hp||++n>40){ clearInterval(t);
         if(!hp){ show('','<div style="color:#5f5b78">אין פירוט או חשבוניות לסכום הזה.</div>'); return; }
         var h=hp.querySelector('.hx-t'), title=h?h.textContent:''; if(h) h.remove();
-        var html=hp.innerHTML; hp.remove(); show(title,html); }
+        dedup(hp); var html=hp.innerHTML; hp.remove(); show(title,html); }
     },50);
   },true);
   d.addEventListener('keydown',function(e){ if(e.key==='Escape') close(); });
