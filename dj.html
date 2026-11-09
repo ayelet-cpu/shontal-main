@@ -164,7 +164,34 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
     D.invoices.forEach(function(v){ if((v.gmonths||[]).length) return; var nums=String(v.gnote||'').match(/\d{4,6}/g)||[];
       var ref=D.invoices.filter(function(x){ return x!==v&&x.sheet===v.sheet&&nums.indexOf(String(x.num))>=0&&(x.gmonths||[]).length; })[0];
       /* קבלה «עבור חשבונית NNNN» = אישור שהחשבונית שולמה → נחשבת שולמה (קבלה סתם של עוסק פטור — לא, 9.11) */
-      if(ref){ v.gmonths=ref.gmonths.slice(); v.refNum=ref.num; v.paid=true; if(!v.payDate) v.payDate=ref.payDate||v.iso; } }); }
+      if(ref){ v.gmonths=ref.gmonths.slice(); v.refNum=ref.num; v.paid=true; if(!v.payDate) v.payDate=ref.payDate||v.iso; } });
+    trAlloc(); }
+  /* שיוך העברות לחודשים (09.11.2026 איילת):
+     • העברה לפני ה-10 בחודש X — רק לחודשים עד X-2 (תחילת נובמבר ≠ אוקטובר). מה-10 — עד חודש X, ורק אם כבר יצאה חשבונית לפני ההעברה.
+     • תמיד החודש הפתוח הוותיק ביותר של אותו דיג׳יי קודם (סכום = מה שנשאר לחודש, או סכום של חשבונית אחת שלו).
+     • שיוך ידני (dj_tr_assign) גובר. העברה שלא מתאימה לאף חודש — לא מוצגת. */
+  var TRM={};
+  function trAlloc(){ TRM={}; if(!D) return; var keys={}; A.forEach(function(a){ if(a.key) keys[a.key]=1; });
+    var t0=D.transfers.map(function(t){ return t.date; }).sort()[0]||''; var from=t0?ymAdd(t0.slice(0,7),-1):'';
+    Object.keys(keys).forEach(function(key){
+      var ms={}; R.forEach(function(r){ if(art(r.artist_id).key===key) ms[r.ym]=1; });
+      var invOf=function(m){ return D.invoices.filter(function(v){ return v.sheet===key&&!v.refNum&&((v.gmonths&&v.gmonths.length)?v.gmonths.indexOf(m)>=0:gigYm(v.iso,key)===m); }); };
+      D.invoices.forEach(function(v){ if(v.sheet!==key) return; ((v.gmonths&&v.gmonths.length)?v.gmonths:[gigYm(v.iso,key)]).forEach(function(m){ ms[m]=1; }); });
+      var rem={}, one={}, first={}, pdOf={};
+      Object.keys(ms).forEach(function(m){ var iv=invOf(m), it=0, o1={}; iv.forEach(function(v){ it+=+v.amount||0; o1[Math.round(v.amount)]=1; });
+        var rt=0; R.forEach(function(r){ if(r.ym===m&&art(r.artist_id).key===key){ var t=rowTotal(r); if(t) rt+=t; } });
+        var paid=iv.length&&iv.every(function(v){ return v.paid; }); if(paid){ pdOf[m]={}; iv.forEach(function(v){ if(v.payDate) pdOf[m][v.payDate]=1; }); }
+        if(from&&m<from&&!paid) return;
+        rem[m]=Math.max(it,rt); one[m]=o1; first[m]=iv.map(function(v){ return v.iso; }).sort()[0]||''; });
+      var mlist=Object.keys(rem).sort(), trs=D.transfers.filter(function(t){ return t.sheet===key; }).sort(function(a,b){ return a.date<b.date?-1:1; });
+      trs.forEach(function(t){ var m=TRA[t.id]; if(m){ TRM[t.id]=m; if(rem[m]!=null) rem[m]-=+t.amount||0; } });
+      /* חודש ששונטל אומרת שכולו שולם — מקבל רק העברה מיום התשלום שלו; לא «גונב» העברות אחרות */
+      var fits=function(m,amt){ return rem[m]>0.5&&(Math.abs(rem[m]-amt)<=1||(one[m][amt]&&amt<=rem[m]+1)); };
+      trs.forEach(function(t){ if(TRA[t.id]) return; var amt=Math.round(+t.amount||0);
+        var m=mlist.filter(function(m){ return pdOf[m]&&pdOf[m][t.date]&&rem[m]>0.5&&amt<=rem[m]+1; })[0]; if(m){ TRM[t.id]=m; rem[m]-=amt; } });
+      trs.forEach(function(t){ if(TRA[t.id]||TRM[t.id]) return; var y=t.date.slice(0,7), lim=+t.date.slice(8,10)<10?ymAdd(y,-2):y, amt=Math.round(+t.amount||0);
+        var m=mlist.filter(function(m){ return !pdOf[m]&&m<=lim&&(m<y||(first[m]&&first[m]<=t.date))&&fits(m,amt); })[0];
+        if(m){ TRM[t.id]=m; rem[m]-=amt; } }); }); }
   function gigYm(iso,key){ var ym=iso.slice(0,7), d=+iso.slice(8,10); if(d>10) return ym; var g=(GIGS[ym]||{})[key]||[]; return g.some(function(x){ return x<=iso; })?ym:ymAdd(ym,-1); }
   function shontal(r, M, used){
     var o={a:'',b:[],c:'',st:'',docs:[],inv:[]}; if(!D) return o; var key=art(r.artist_id).key; if(!key){ o.a='—'; return o; }
@@ -182,22 +209,13 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
     if(inv.length&&inv.every(function(v){ return v.paid; })){ o.c='✅ שולם'+(pd.length?' '+dm(pd[pd.length-1]):''); o.st='ok'; }
     else if(inv.some(function(v){ return v.bank; })){ o.c='⏳ עלה לבנק — ממתין לחתימה'; o.st='wait'; }
     else if(inv.length){ o.c='🕓 לתשלום'; o.st='gray'; }
-    var amts={}, tot=0; inv.forEach(function(v){ amts[Math.round(v.amount)]=1; tot+=+v.amount; }); if(tot) amts[Math.round(tot)]=1;
-    var minIso=inv.length?inv[0].iso:M+'-01', maxIso=ymAdd(M,2)+'-10', pdm={}; pd.forEach(function(d){ pdm[d]=1; });
-    /* 09.11.2026 איילת: «האישורים פה לא תואמים את החשבוניות» — אישור לפי סכום בלבד רק כשהחשבוניות עוד לא שולמו
-       (אחרת אישור של חודש אחר באותו סכום נדבק לחודש ששולם כבר). אישור לפי יום התשלום — תמיד. */
-    var allPaid=inv.length&&inv.every(function(v){ return v.paid; });
-    /* 09.11.2026 איילת: «ההעברה הזאת שייכת לספטמבר» — העברה ששויכה ידנית לחודש (dj_tr_assign) מופיעה רק בו */
-    var tra=function(t){ return TRA[t.id]; };
-    var tr=D.transfers.filter(function(t){ if(t.sheet!==key||!t.doc||used[t.id]) return false; if(tra(t)) return tra(t)===M; return t.date<=maxIso&&(pdm[t.date]||(!allPaid&&inv.length&&t.date>=minIso&&amts[Math.round(t.amount)])); });
-    tr.forEach(function(t){ used[t.id]=1; });
-    var tAmt=tr.filter(function(t){ return !pdm[t.date]; })[0];
-    if(tAmt&&o.c==='🕓 לתשלום'){ if(tAmt.kind==='sign'){ o.c='⏳ עלה לבנק '+nis(tAmt.amount)+' ב-'+dm(tAmt.date)+' — ממתין לחתימה'; o.st='wait'; } else { o.c='✅ הועבר '+nis(tAmt.amount)+' ב-'+dm(tAmt.date)+' (לפי הבנק)'; o.st='ok'; } }
-    if(!o.c||o.c==='🕓 לתשלום'){ var rt=Math.round(+rowTotal(r)||0), want={}; if(inv.length){ if(tot) want[Math.round(tot)]=1; } else if(rt) want[rt]=1;
-      var g=((GIGS[M]||{})[key]||[]).slice().sort(), after=g.length?g[g.length-1]:''; inv.forEach(function(v){ if(v.iso>after) after=v.iso; });
-      var otherOf=function(t){ return D.invoices.some(function(v){ return v.sheet===key&&inv.indexOf(v)<0&&Math.round(v.amount)===Math.round(t.amount)&&(v.payDate===t.date||v.iso<=t.date); }); };
-      var bt=after?D.transfers.filter(function(t){ return t.sheet===key&&!used[t.id]&&!tra(t)&&t.date>=after&&t.date<=maxIso&&want[Math.round(t.amount)]&&!otherOf(t); }).slice(0,1):[];
-      if(bt.length){ var t0=bt[0]; used[t0.id]=1; if(t0.kind!=='sign'){ o.c='✅ הועבר '+nis(t0.amount)+' ב-'+dm(t0.date)+' (לפי הבנק)'; o.st='ok'; } else { o.c='⏳ עלה לבנק '+nis(t0.amount)+' ב-'+dm(t0.date)+' — ממתין לחתימה'; o.st='wait'; } if(t0.doc) tr=tr.concat(bt); } }
+    /* 09.11.2026 איילת: «העברה בתחילת נובמבר (לפני ה-10) לא יכולה להיות עבור אוקטובר; וגם אחרי — תמיד לבדוק אם יש חשבונית קודמת פתוחה של אותו ספק».
+       השיוך של כל העברה לחודש נעשה פעם אחת לכולם (trAlloc ב-prep): הוותיק הפתוח קודם. */
+    var tr=D.transfers.filter(function(t){ return t.sheet===key&&TRM[t.id]===M; });
+    var last=tr.slice().sort(function(a,b){ return a.date<b.date?-1:1; }).pop();
+    if(last&&o.c==='🕓 לתשלום'){ if(last.kind==='sign'){ o.c='⏳ עלה לבנק '+nis(last.amount)+' ב-'+dm(last.date)+' — ממתין לחתימה'; o.st='wait'; } else { o.c='✅ הועבר '+nis(last.amount)+' ב-'+dm(last.date)+' (לפי הבנק)'; o.st='ok'; } }
+    if(!inv.length&&last&&!o.c){ if(last.kind==='sign'){ o.c='⏳ עלה לבנק '+nis(last.amount)+' ב-'+dm(last.date)+' — ממתין לחתימה'; o.st='wait'; } else { o.c='✅ הועבר '+nis(last.amount)+' ב-'+dm(last.date)+' (לפי הבנק)'; o.st='ok'; } }
+    tr=tr.filter(function(t){ return t.doc; });
     o.docs=tr.map(function(t){ return {id:t.id, txt:'📎 '+dm(t.date)+' · '+nis(t.amount)}; });
     return o; }
   /* 09.11.2026 איילת: «שהמערכת תראה את כל החשבוניות לפי תאריכי האירועים — אם הכול הגיע: לתשלום; אם חסרה חשבונית:
@@ -418,7 +436,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function autoReload(){ if(!ME||busy()||$('app').classList.contains('hid')) return; var y=window.scrollY; load().then(function(){ render(); window.scrollTo(0,y); }).catch(function(){}); }
   setInterval(autoReload, 120000);
   /* «שהקישור יתעדכן מעצמו»: אם יש גרסה חדשה של הדף באתר — נטען אותה לבד (לא בזמן הקלדה). גם בתוך שונטל. */
-  var DJ_VER='2026-11-09m';
+  var DJ_VER='2026-11-09n';
   function checkVer(){ if(busy()) return; fetch(location.pathname+'?ver='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
       var m=/DJ_VER='([^']+)'/.exec(t||''); if(!m||m[1]===DJ_VER) return;
       var k='dj-ver-reload-'+m[1]; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,'1'); }catch(_){}
