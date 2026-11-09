@@ -236,7 +236,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function renderMonth(M){
     var rows=R.filter(function(r){ return r.ym===M; }), used={}, sum=0, cnt=0;
     var h='<div class="bar"><b style="font-size:16px;color:var(--subTx)">'+ymLbl(M)+'</b>'
-      +'<button class="btn" id="addRow">＋ דיג׳יי לחודש</button><button class="btn" id="newMonth">＋ חודש חדש ('+ymLbl(ymAdd(months().slice(-1)[0]||M,1))+')</button>'
+      +'<button class="btn" id="addRow">＋ דיג׳יי לחודש</button><button class="btn" id="xlM" title="קובץ אקסל של החודש">⬇ אקסל</button><button class="btn" id="pdfM" title="הדפסה / שמירה כ-PDF">🖨 PDF</button><button class="btn" id="newMonth">＋ חודש חדש ('+ymLbl(ymAdd(months().slice(-1)[0]||M,1))+')</button>'
       +'<span class="small">'+(D?'משונטל: עודכן '+new Date(D.at).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+'</span></div>';
     /* 09.11.2026 איילת: «השמות בעמודה אחת — שם במה בסוגריים», «לא להצטרך לגלול שמאלה» — פחות עמודות, הכול נכנס ברוחב */
     h+='<table class="mt">'
@@ -281,6 +281,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
     v.querySelectorAll('tr[data-cid]').forEach(function(tr){ var id=+tr.getAttribute('data-cid');
       tr.querySelectorAll('[data-c]').forEach(function(el){ el.onchange=function(){ var f=el.getAttribute('data-c'), o={}; o[f]=f==='cnt'?numOrNull(el.value):el.value; save('dj_closed',id,o); }; });
       tr.querySelector('[data-cdel]').onclick=function(){ if(confirm('להסיר?')) save('dj_closed',id,{deleted:true},function(){ CL=CL.filter(function(x){ return !x.deleted; }); renderMonth(M); }); }; });
+    $('xlM').onclick=function(){ exportXlsx(M); }; $('pdfM').onclick=function(){ exportPdf(M); };
     $('addClosed').onclick=function(){ ins('dj_closed',{ym:M,label:'',what:'סגור'}).then(function(x){ CL.push(x); renderMonth(M); }); };
     $('addRow').onclick=function(){ var names=A.filter(function(a){ return a.active; }).map(function(a,i){ return (i+1)+'. '+(a.stage?a.stage+' — ':'')+a.payee; }).join('\n');
       var n=prompt('איזה דיג׳יי להוסיף ל'+ymLbl(M)+'? (מספר מהרשימה)\n'+names); if(!n) return; var a=A.filter(function(a){ return a.active; })[+n-1]; if(!a) return;
@@ -291,6 +292,43 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
       var src=R.filter(function(r){ return r.ym===last; }), seen={}, list=[];
       src.forEach(function(r){ if(seen[r.artist_id]) return; seen[r.artist_id]=1; var a=art(r.artist_id); list.push({ym:nm,artist_id:r.artist_id,rate:a.rate!=null?a.rate:r.rate,rate_vat:a.rate_vat!=null?a.rate_vat:r.rate_vat,sort:list.length+1}); });
       call('/rest/v1/dj_rows',{method:'POST',body:JSON.stringify(list),headers:{Prefer:'return=representation'}}).then(function(xs){ R=R.concat(xs||[]); TAB=nm; prep(); render(); msg('נפתח '+ymLbl(nm)); }).catch(function(e){ msg(e.message,true); }); }; }
+
+  /* 09.11.2026 איילת: «אפשרות ליצוא לאקסל ו-PDF» — החודש המוצג, כמו בטבלה (כולל מה שבשונטל) */
+  function exportData(M){ var used={}, out=[], sum=0, cnt=0;
+    R.filter(function(r){ return r.ym===M; }).forEach(function(r,i){ var a=art(r.artist_id), t=rowTotal(r), s=shontal(r,M,used); if(t!=null) sum+=t; cnt+=(r.gigs||[]).length;
+      out.push({n:i+1, payee:a.payee||'', stage:a.stage||'', bank:a.bank||'', branch:a.branch||'', account:a.account||'',
+        rate:a.global_pay&&r.rate==null?'גלובלי':(r.rate==null?'':r.rate), rateVat:a.global_pay&&r.rate_vat==null?'גלובלי':(r.rate_vat==null?'':r.rate_vat),
+        gigs:(r.gigs||[]).slice().sort().map(dm).join(', '), cnt:(r.gigs||[]).length, total:t==null?'גלובלי':t, status:r.status||'', paid:r.paid_note||'', note:r.note||'',
+        inv:[s.a].concat(s.b.map(function(x){ return x.head+(x.more?' — '+x.more.replace(/\n/g,' '):''); })).join(' | '),
+        pay:[s.c].concat(s.docs.map(function(d){ return d.txt; })).filter(Boolean).join(' | ')}); });
+    return {rows:out, sum:sum, cnt:cnt, closed:CL.filter(function(c){ return c.ym===M; })}; }
+  var HEAD=['#','שם מוטב','שם במה','בנק','סניף','מס׳ חשבון','תשלום לערב','כולל מע״מ / פטור','תאריכי תקלוט','ערבים','סה״כ לתשלום','סטטוס העברה','שולם','הערות','חשבונית (משונטל)','תשלום (משונטל)'];
+  function rowArr(x){ return [x.n,x.payee,x.stage,x.bank,x.branch,x.account,x.rate,x.rateVat,x.gigs,x.cnt,x.total,x.status,x.paid,x.note,x.inv,x.pay]; }
+  function loadXlsx(){ if(window.XLSX) return Promise.resolve(window.XLSX); return new Promise(function(ok,bad){ var sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload=function(){ ok(window.XLSX); }; sc.onerror=function(){ bad(new Error('לא נטען רכיב האקסל')); }; document.head.appendChild(sc); }); }
+  function exportXlsx(M){ var d=exportData(M);
+    loadXlsx().then(function(X){ var aoa=[['די.ג׳יים אסא — '+ymLbl(M)],[],HEAD].concat(d.rows.map(rowArr));
+      aoa.push(['','סה״כ חודש','','','','','','','',d.cnt,d.sum]);
+      if(d.closed.length){ aoa.push([]); aoa.push(['חגים וימים סגורים']); d.closed.forEach(function(c){ aoa.push(['',c.label,c.what,c.dates,c.cnt==null?'':c.cnt]); }); }
+      var ws=X.utils.aoa_to_sheet(aoa); ws['!cols']=[4,18,14,10,7,13,10,12,26,7,12,22,18,24,48,34].map(function(w){ return {wch:w}; });
+      var wb=X.utils.book_new(); wb.Workbook={Views:[{RTL:true}]}; X.utils.book_append_sheet(wb, ws, ymLbl(M));
+      X.writeFile(wb, 'די.ג׳יים אסא - '+ymLbl(M)+'.xlsx'); msg('הקובץ ירד ✓'); }).catch(function(e){ msg(e.message,true); }); }
+  function exportPdf(M){ var d=exportData(M);
+    var h='<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8"><title>די.ג׳יים אסא — '+esc(ymLbl(M))+'</title>'
+      +'<link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet"><style>@page{size:A4 landscape;margin:10mm}'
+      +'body{font-family:"Varela Round",Arial,sans-serif;color:#15121f;font-size:11px;margin:0}h1{font-size:16px;margin:0 0 8px}'
+      +'table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #e7e4ef;padding:5px 6px;text-align:right;vertical-align:top}'
+      +'th{background:#f6f5fa;font-weight:700}td.sh{background:#faf9fd}tr.sum td{font-weight:700;background:#f6f5fa}.n{white-space:nowrap}</style></head><body>'
+      +'<h1>🎧 די.ג׳יים אסא — '+esc(ymLbl(M))+'</h1><table><thead><tr><th>#</th><th>דיג׳יי</th><th>בנק</th><th>לערב / כולל</th><th>תאריכי תקלוט</th><th>ערבים</th><th>סה״כ</th><th>סטטוס</th><th>שולם · הערות</th><th>חשבונית (משונטל)</th><th>תשלום (משונטל)</th></tr></thead><tbody>'
+      +d.rows.map(function(x){ return '<tr><td>'+x.n+'</td><td><b>'+esc(x.payee)+'</b>'+(x.stage&&x.stage!==x.payee?' ('+esc(x.stage)+')':'')+'</td><td class="n">'+esc([x.bank,x.branch].filter(Boolean).join(' ')+(x.account?' · '+x.account:''))+'</td>'
+        +'<td class="n">'+esc(x.rate)+' / '+esc(x.rateVat)+'</td><td>'+esc(x.gigs)+'</td><td>'+x.cnt+'</td><td class="n">'+(typeof x.total==='number'?nis(x.total):esc(x.total))+'</td><td>'+esc(x.status)+'</td>'
+        +'<td>'+esc([x.paid,x.note].filter(Boolean).join(' · '))+'</td><td class="sh">'+esc(x.inv)+'</td><td class="sh">'+esc(x.pay)+'</td></tr>'; }).join('')
+      +'<tr class="sum"><td></td><td>סה״כ חודש</td><td></td><td></td><td></td><td>'+d.cnt+'</td><td class="n">'+nis(d.sum)+'</td><td colspan="4"></td></tr></tbody></table>'
+      +(d.closed.length?'<h1 style="font-size:13px;margin-top:12px">חגים וימים סגורים</h1><table><tbody>'+d.closed.map(function(c){ return '<tr><td>'+esc(c.label)+'</td><td>'+esc(c.what)+'</td><td>'+esc(c.dates)+'</td><td>'+(c.cnt==null?'':c.cnt)+'</td></tr>'; }).join('')+'</tbody></table>':'')
+      +'</body></html>';
+    var f=document.createElement('iframe'); f.style.cssText='position:fixed;left:-9999px;top:0;width:10px;height:10px;border:0'; document.body.appendChild(f);
+    f.contentDocument.open(); f.contentDocument.write(h); f.contentDocument.close();
+    setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ msg(e.message,true); } setTimeout(function(){ f.remove(); },60000); }, 700); }
   function prepAndSave(id,o,M){ save('dj_rows',id,o,function(){ prep(); renderMonth(M); }); }
 
   function renderPast(){ var h='<div class="bar"><b style="font-size:16px;color:var(--subTx)">העברות עבר — השלמות</b><button class="btn" id="addPast">＋ שורה</button></div>'
@@ -334,12 +372,12 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function autoReload(){ if(!ME||busy()||$('app').classList.contains('hid')) return; var y=window.scrollY; load().then(function(){ render(); window.scrollTo(0,y); }).catch(function(){}); }
   setInterval(autoReload, 120000);
   /* «שהקישור יתעדכן מעצמו»: אם יש גרסה חדשה של הדף באתר — נטען אותה לבד (לא בזמן הקלדה). גם בתוך שונטל. */
-  var DJ_VER='2026-11-09e';
+  var DJ_VER='2026-11-09f';
   function checkVer(){ if(busy()) return; fetch(location.pathname+'?ver='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
       var m=/DJ_VER='([^']+)'/.exec(t||''); if(!m||m[1]===DJ_VER) return;
       var k='dj-ver-reload-'+m[1]; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,'1'); }catch(_){}
       location.replace(location.pathname+'?v='+encodeURIComponent(m[1])+location.hash); }).catch(function(){}); }
-  setTimeout(checkVer, 3000); setInterval(checkVer, 300000);
+  if(/^https?:/.test(location.protocol)){ setTimeout(checkVer, 3000); setInterval(checkVer, 300000); }
   document.addEventListener('visibilitychange', function(){ if(!document.hidden) autoReload(); });
 })();
 </script>
