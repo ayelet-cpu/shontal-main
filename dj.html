@@ -54,6 +54,7 @@ select.pill.st-ok{background:var(--ok);color:var(--okTx);border-color:#b9dcc3}
 select.pill.st-wait{background:var(--wait);color:var(--waitTx);border-color:#ecd6a6}
 select.pill.st-bad{background:var(--bad);color:var(--badTx);border-color:#e8c1bc}
 .okTx{color:var(--okTx)} .badTx{color:var(--badTx)}
+.dealer{display:inline-block;margin-top:3px;border-radius:999px;padding:1px 9px;font-size:13px;font-weight:600} .d-p{background:#eef6f0;color:#2f6b46} .d-m{background:#eef1fb;color:#3d4f8f}
 .st-ok:not(select){color:var(--okTx);font-weight:700} .st-wait:not(select){color:var(--waitTx);font-weight:700} .st-bad:not(select){color:var(--badTx);font-weight:700} .st-gray:not(select){color:var(--grayTx);font-weight:700}
 a.lk{color:var(--acc);cursor:pointer;text-decoration:underline;white-space:nowrap}
 tr.sum td{background:var(--sub);font-weight:700;color:var(--ink);border-bottom:none}
@@ -247,9 +248,12 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
       var bankTxt=[a.bank,a.branch].filter(Boolean).join(' ')+(a.account?' · '+a.account:'');
       h+='<tr data-id="'+r.id+'"><td>'+(i+1)+'</td>'
         +'<td class="nm"><b>'+esc(a.payee)+'</b>'+(a.stage&&a.stage!==a.payee?' <span class="small">('+esc(a.stage)+')</span>':'')
-          +(bankTxt?'<div class="small" dir="rtl">'+esc(bankTxt)+'</div>':'')+'</td>'
-        +'<td><input class="num" data-f="rate" title="תשלום לערב" value="'+(a.global_pay&&r.rate==null?'גלובלי':esc(r.rate==null?'':r.rate))+'">'
-          +'<input class="num sub" data-f="rate_vat" title="כולל מע״מ / פטור" value="'+(a.global_pay&&r.rate_vat==null?'גלובלי':esc(r.rate_vat==null?'':r.rate_vat))+'"></td>'
+          +(bankTxt?'<div class="small" dir="rtl">'+esc(bankTxt)+'</div>':'')
+          /* 09.11.2026 איילת: «אם עוסק פטור או עוסק מורשה» — מהחשבוניות בשונטל (חשבונית מס = מורשה); פטור עם מחיר כולל מע״מ — אזהרה */
+          +(a.dealer?'<div class="dealer '+(a.dealer==='פטור'?'d-p':'d-m')+'">עוסק '+esc(a.dealer)+'</div>':'')
+          +(a.dealer==='פטור'&&r.rate!=null&&r.rate_vat!=null&&+r.rate_vat!==+r.rate?'<div class="badTx" style="font-weight:700">⚠ עוסק פטור — הסכום לערב בלי מע״מ: '+esc(r.rate)+' (לא '+esc(r.rate_vat)+')</div>':'')+'</td>'
+        /* 09.11.2026 איילת: «פה תרשום רק את הסכום כולל מע״מ» */
+        +'<td><input class="num" data-f="rate_vat" title="לערב, כולל מע״מ (או פטור)" value="'+(a.global_pay&&r.rate_vat==null?'גלובלי':esc(r.rate_vat==null?'':r.rate_vat))+'"></td>'
         +'<td><div class="gigs">'+gigs+'<input type="date" data-add title="הוספת ערב"><span class="small">('+(r.gigs||[]).length+')</span></div></td>'
         +'<td><input class="num" data-f="total" placeholder="'+(t==null?'גלובלי':nis(t))+'" value="'+(r.total==null?'':esc(r.total))+'" title="ריק = ערבים × כולל מע״מ"></td>'
         +'<td>'+statusSel(r.status,'data-f="status" class="pill '+stCls(r.status)+'"')+'</td>'
@@ -296,21 +300,21 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   /* 09.11.2026 איילת: «אפשרות ליצוא לאקסל ו-PDF» — החודש המוצג, כמו בטבלה (כולל מה שבשונטל) */
   function exportData(M){ var used={}, out=[], sum=0, cnt=0;
     R.filter(function(r){ return r.ym===M; }).forEach(function(r,i){ var a=art(r.artist_id), t=rowTotal(r), s=shontal(r,M,used); if(t!=null) sum+=t; cnt+=(r.gigs||[]).length;
-      out.push({n:i+1, payee:a.payee||'', stage:a.stage||'', bank:a.bank||'', branch:a.branch||'', account:a.account||'',
+      out.push({n:i+1, payee:a.payee||'', stage:a.stage||'', dealer:a.dealer?'עוסק '+a.dealer:'', bank:a.bank||'', branch:a.branch||'', account:a.account||'',
         rate:a.global_pay&&r.rate==null?'גלובלי':(r.rate==null?'':r.rate), rateVat:a.global_pay&&r.rate_vat==null?'גלובלי':(r.rate_vat==null?'':r.rate_vat),
         gigs:(r.gigs||[]).slice().sort().map(dm).join(', '), cnt:(r.gigs||[]).length, total:t==null?'גלובלי':t, status:r.status||'', paid:r.paid_note||'', note:r.note||'',
         inv:[s.a].concat(s.b.map(function(x){ return x.head+(x.more?' — '+x.more.replace(/\n/g,' '):''); })).join(' | '),
         pay:[s.c].concat(s.docs.map(function(d){ return d.txt; })).filter(Boolean).join(' | ')}); });
     return {rows:out, sum:sum, cnt:cnt, closed:CL.filter(function(c){ return c.ym===M; })}; }
-  var HEAD=['#','שם מוטב','שם במה','בנק','סניף','מס׳ חשבון','תשלום לערב','כולל מע״מ / פטור','תאריכי תקלוט','ערבים','סה״כ לתשלום','סטטוס העברה','הערות','חשבונית (משונטל)','תשלום (משונטל)'];
-  function rowArr(x){ return [x.n,x.payee,x.stage,x.bank,x.branch,x.account,x.rate,x.rateVat,x.gigs,x.cnt,x.total,x.status,x.note,x.inv,x.pay]; }
+  var HEAD=['#','שם מוטב','שם במה','סוג עוסק','בנק','סניף','מס׳ חשבון','תשלום לערב','כולל מע״מ / פטור','תאריכי תקלוט','ערבים','סה״כ לתשלום','סטטוס העברה','הערות','חשבונית (משונטל)','תשלום (משונטל)'];
+  function rowArr(x){ return [x.n,x.payee,x.stage,x.dealer,x.bank,x.branch,x.account,x.rate,x.rateVat,x.gigs,x.cnt,x.total,x.status,x.note,x.inv,x.pay]; }
   function loadXlsx(){ if(window.XLSX) return Promise.resolve(window.XLSX); return new Promise(function(ok,bad){ var sc=document.createElement('script');
     sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload=function(){ ok(window.XLSX); }; sc.onerror=function(){ bad(new Error('לא נטען רכיב האקסל')); }; document.head.appendChild(sc); }); }
   function exportXlsx(M){ var d=exportData(M);
     loadXlsx().then(function(X){ var aoa=[['די.ג׳יים אסא — '+ymLbl(M)],[],HEAD].concat(d.rows.map(rowArr));
       aoa.push(['','סה״כ חודש','','','','','','','',d.cnt,d.sum]);
       if(d.closed.length){ aoa.push([]); aoa.push(['חגים וימים סגורים']); d.closed.forEach(function(c){ aoa.push(['',c.label,c.what,c.dates,c.cnt==null?'':c.cnt]); }); }
-      var ws=X.utils.aoa_to_sheet(aoa); ws['!cols']=[4,18,14,10,7,13,10,12,26,7,12,22,18,24,48,34].map(function(w){ return {wch:w}; }).filter(function(_,i){ return i!==12; });
+      var ws=X.utils.aoa_to_sheet(aoa); ws['!cols']=[4,18,14,11,10,7,13,10,12,26,7,12,22,18,24,48,34].map(function(w){ return {wch:w}; });
       var wb=X.utils.book_new(); wb.Workbook={Views:[{RTL:true}]}; X.utils.book_append_sheet(wb, ws, ymLbl(M));
       X.writeFile(wb, 'די.ג׳יים אסא - '+ymLbl(M)+'.xlsx'); msg('הקובץ ירד ✓'); }).catch(function(e){ msg(e.message,true); }); }
   function exportPdf(M){ var d=exportData(M);
@@ -320,7 +324,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
       +'table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #e7e4ef;padding:5px 6px;text-align:right;vertical-align:top}'
       +'th{background:#f6f5fa;font-weight:700}td.sh{background:#faf9fd}tr.sum td{font-weight:700;background:#f6f5fa}.n{white-space:nowrap}</style></head><body>'
       +'<h1>🎧 די.ג׳יים אסא — '+esc(ymLbl(M))+'</h1><table><thead><tr><th>#</th><th>דיג׳יי</th><th>בנק</th><th>לערב / כולל</th><th>תאריכי תקלוט</th><th>ערבים</th><th>סה״כ</th><th>סטטוס</th><th>הערות</th><th>חשבונית (משונטל)</th><th>תשלום (משונטל)</th></tr></thead><tbody>'
-      +d.rows.map(function(x){ return '<tr><td>'+x.n+'</td><td><b>'+esc(x.payee)+'</b>'+(x.stage&&x.stage!==x.payee?' ('+esc(x.stage)+')':'')+'</td><td class="n">'+esc([x.bank,x.branch].filter(Boolean).join(' ')+(x.account?' · '+x.account:''))+'</td>'
+      +d.rows.map(function(x){ return '<tr><td>'+x.n+'</td><td><b>'+esc(x.payee)+'</b>'+(x.stage&&x.stage!==x.payee?' ('+esc(x.stage)+')':'')+(x.dealer?'<br>'+esc(x.dealer):'')+'</td><td class="n">'+esc([x.bank,x.branch].filter(Boolean).join(' ')+(x.account?' · '+x.account:''))+'</td>'
         +'<td class="n">'+esc(x.rate)+' / '+esc(x.rateVat)+'</td><td>'+esc(x.gigs)+'</td><td>'+x.cnt+'</td><td class="n">'+(typeof x.total==='number'?nis(x.total):esc(x.total))+'</td><td>'+esc(x.status)+'</td>'
         +'<td>'+esc(x.note)+'</td><td class="sh">'+esc(x.inv)+'</td><td class="sh">'+esc(x.pay)+'</td></tr>'; }).join('')
       +'<tr class="sum"><td></td><td>סה״כ חודש</td><td></td><td></td><td></td><td>'+d.cnt+'</td><td class="n">'+nis(d.sum)+'</td><td colspan="4"></td></tr></tbody></table>'
@@ -346,9 +350,10 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
 
   function renderArt(){ var h='<div class="bar"><b style="font-size:16px;color:var(--subTx)">הדיג׳יים ופרטי בנק</b><button class="btn" id="addArt">＋ דיג׳יי חדש</button>'
       +'<span class="small">דיג׳יי חדש מופיע בשונטל אחרי שאיילת מחברת אותו.</span></div>'
-      +'<table><thead><tr><th>#</th><th>שם במה</th><th>שם מוטב</th><th>בנק</th><th>סניף</th><th>מס׳ חשבון</th><th>תשלום לערב</th><th>כולל מע״מ / פטור</th><th>גלובלי</th><th>פעיל</th><th>הערות</th></tr></thead><tbody>'
+      +'<table><thead><tr><th>#</th><th>שם במה</th><th>שם מוטב</th><th>בנק</th><th>סניף</th><th>מס׳ חשבון</th><th>תשלום לערב</th><th>כולל מע״מ / פטור</th><th>סוג עוסק</th><th>גלובלי</th><th>פעיל</th><th>הערות</th></tr></thead><tbody>'
       +A.map(function(a,i){ return '<tr data-aid="'+a.id+'"><td>'+(i+1)+'</td>'+['stage','payee','bank','branch','account'].map(function(f){ return '<td><input class="txt" data-a="'+f+'" value="'+esc(a[f])+'"'+(f==='account'?' dir="ltr"':'')+'></td>'; }).join('')
         +'<td><input class="num" data-a="rate" value="'+(a.rate==null?'':a.rate)+'"></td><td><input class="num" data-a="rate_vat" value="'+(a.rate_vat==null?'':a.rate_vat)+'"></td>'
+        +'<td><select data-a="dealer">'+['','פטור','מורשה'].map(function(x){ return '<option value="'+x+'"'+(a.dealer===x?' selected':'')+'>'+(x?'עוסק '+x:'—')+'</option>'; }).join('')+'</select></td>'
         +'<td><input type="checkbox" data-a="global_pay"'+(a.global_pay?' checked':'')+'></td><td><input type="checkbox" data-a="active"'+(a.active?' checked':'')+'></td>'
         +'<td><input class="txt" data-a="note" value="'+esc(a.note)+'"></td></tr>'; }).join('')+'</tbody></table>';
     $('view').innerHTML=h;
@@ -372,7 +377,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function autoReload(){ if(!ME||busy()||$('app').classList.contains('hid')) return; var y=window.scrollY; load().then(function(){ render(); window.scrollTo(0,y); }).catch(function(){}); }
   setInterval(autoReload, 120000);
   /* «שהקישור יתעדכן מעצמו»: אם יש גרסה חדשה של הדף באתר — נטען אותה לבד (לא בזמן הקלדה). גם בתוך שונטל. */
-  var DJ_VER='2026-11-09g';
+  var DJ_VER='2026-11-09i';
   function checkVer(){ if(busy()) return; fetch(location.pathname+'?ver='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
       var m=/DJ_VER='([^']+)'/.exec(t||''); if(!m||m[1]===DJ_VER) return;
       var k='dj-ver-reload-'+m[1]; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,'1'); }catch(_){}
