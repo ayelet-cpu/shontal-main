@@ -323,6 +323,12 @@ h3{margin:16px 0 6px;color:var(--subTx);font-size:15px}
       .catch(function(e){ if(e.auth||e.status===401) showLogin(); else msg(e.message,true); }); }
   if(S&&S.refresh_token) start(); else showLogin();
   setInterval(function(){ if(S&&(S.expires_at||0)-Date.now()/1000<900) refresh().catch(function(){}); }, 60000);
+  /* 09.11.2026 איילת: «שהקישור של צחי יתעדכן מעצמו» — הנתונים נטענים מחדש לבד כל 2 דקות (ובחזרה לחלון),
+     אבל לא בזמן שמישהו מקליד (כדי לא למחוק לו). אותו קישור תמיד; גרסה חדשה של הדף נטענת בפתיחה הבאה. */
+  function busy(){ var a=document.activeElement; return a&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName); }
+  function autoReload(){ if(!ME||busy()||$('app').classList.contains('hid')) return; var y=window.scrollY; load().then(function(){ render(); window.scrollTo(0,y); }).catch(function(){}); }
+  setInterval(autoReload, 120000);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) autoReload(); });
 })();
 </script>
 </body>
