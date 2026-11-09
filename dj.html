@@ -201,26 +201,29 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
      חסרה חשבונית ונדרשת התאמה. סטטוס העברה — גם אתה מעדכן וגם אנחנו».
      auto_st = מה שהמערכת קבעה בפעם האחרונה. משנים רק כשהחישוב השתנה מאז (כך שינוי ידני נשאר עד שמגיעה חשבונית חדשה),
      ורק מ«ריק / לתשלום / חסרה» — «שולם» ו«עלה לבנק» לא נוגעים. הפרש של יום-יומיים בתאריך — לא נחשב חסר. */
-  var ST_PAY='לתשלום - להעברה', ST_MISS='חסרה חשבונית / נדרש התאמה';
+  /* 09.11.2026 איילת (המשך): «ששונטל תשלים את סטטוס ההעברה בעצמה»:
+     טרם אושר (עלה לבנק) — רק כשיש אישור העברה / עלה לבנק בשונטל; שולם — לפי התשלומים בשונטל;
+     חסרה חשבונית / נדרש התאמה — הצלבה בין תאריכי הערבים שרשמנו לבין התאריכים בחשבוניות. ערב בלי חשבונית קודם לכול. */
+  var ST_PAY='לתשלום - להעברה', ST_MISS='חסרה חשבונית / נדרש התאמה', ST_PAID='שולם', ST_BANK='טרם אושר (עלה לבנק)';
   function autoSt(r,M,s){ var today=new Date().toISOString().slice(0,10), monthOver=today>=ymAdd(M,1)+'-01';
-    if(!D||!art(r.artist_id).key||s.st==='ok'||s.st==='wait') return null;
+    if(!D||!art(r.artist_id).key) return null;
     var gigs=(r.gigs||[]).slice().sort(), past=gigs.filter(function(g){ return g<=today; }); if(!past.length) return null;
-    var inv=s.inv||[]; if(!inv.length) return monthOver?ST_MISS:null;
-    var whole=inv.some(function(v){ return (v.gmonths||[]).indexOf(M)>=0&&!(v.gigs||[]).some(function(d){ return d.slice(0,7)===M; })&&!v.refNum; });
-    var tot=0; inv.forEach(function(v){ if(!v.refNum) tot+=+v.amount||0; }); var want=+rowTotal(r)||0;
-    if(want>0&&tot>=want-1) return ST_PAY;
-    if(whole&&!(want>0)) return ST_PAY;
-    var dates=[]; inv.forEach(function(v){ (v.gigs||[]).forEach(function(d){ dates.push(d); }); });
-    var day=864e5, left=past.filter(function(g){ var t=Date.parse(g), i=-1;
-      for(var j=0;j<dates.length;j++) if(Math.abs(Date.parse(dates[j])-t)<=2*day){ i=j; break; }
-      if(i<0) return true; dates.splice(i,1); return false; });
-    if(!left.length&&(monthOver?past.length===gigs.length:true)) return ST_PAY;
-    return monthOver?ST_MISS:null; }
+    var inv=s.inv||[], full=false;
+    if(inv.length){
+      var whole=inv.some(function(v){ return (v.gmonths||[]).indexOf(M)>=0&&!(v.gigs||[]).some(function(d){ return d.slice(0,7)===M; })&&!v.refNum; });
+      var tot=0; inv.forEach(function(v){ if(!v.refNum) tot+=+v.amount||0; }); var want=+rowTotal(r)||0;
+      var dates=[]; inv.forEach(function(v){ (v.gigs||[]).forEach(function(d){ dates.push(d); }); });
+      var day=864e5, left=past.filter(function(g){ var t=Date.parse(g), i=-1;
+        for(var j=0;j<dates.length;j++) if(Math.abs(Date.parse(dates[j])-t)<=2*day){ i=j; break; }
+        if(i<0) return true; dates.splice(i,1); return false; });
+      full=(!left.length&&(!monthOver||past.length===gigs.length))||(want>0&&tot>=want-1)||(whole&&!(want>0)); }
+    if(!full) return monthOver?ST_MISS:null;
+    return s.st==='ok'?ST_PAID:s.st==='wait'?ST_BANK:ST_PAY; }
   function autoAll(){ if(!D) return Promise.resolve(); var jobs=[];
     months().forEach(function(M){ var used={};
       R.filter(function(r){ return r.ym===M; }).forEach(function(r){ var s=shontal(r,M,used), a=autoSt(r,M,s);
         if(!a||a===(r.auto_st||'')) return;
-        var cur=r.status||'', o={auto_st:a}; if(cur===''||cur===ST_PAY||cur===ST_MISS) o.status=a;
+        var o={auto_st:a}; if((r.status||'')!==a) o.status=a;
         jobs.push(patch('dj_rows',r.id,o).then(function(x){ if(x) for(var i=0;i<R.length;i++) if(R[i].id===r.id){ R[i]=x; break; } }).catch(function(){})); }); });
     return Promise.all(jobs); }
   function openFile(kind,id){ var w=window.open('','_blank'); if(w) w.document.write('<p style="font-family:sans-serif">טוען…</p>');
@@ -412,7 +415,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function autoReload(){ if(!ME||busy()||$('app').classList.contains('hid')) return; var y=window.scrollY; load().then(function(){ render(); window.scrollTo(0,y); }).catch(function(){}); }
   setInterval(autoReload, 120000);
   /* «שהקישור יתעדכן מעצמו»: אם יש גרסה חדשה של הדף באתר — נטען אותה לבד (לא בזמן הקלדה). גם בתוך שונטל. */
-  var DJ_VER='2026-11-09k';
+  var DJ_VER='2026-11-09l';
   function checkVer(){ if(busy()) return; fetch(location.pathname+'?ver='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
       var m=/DJ_VER='([^']+)'/.exec(t||''); if(!m||m[1]===DJ_VER) return;
       var k='dj-ver-reload-'+m[1]; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,'1'); }catch(_){}
