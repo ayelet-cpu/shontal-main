@@ -68,6 +68,7 @@ tr.sum td{background:var(--sub);font-weight:700;color:var(--ink);border-bottom:n
 h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
 @media (max-width:700px){ header h1{font-size:16px} main,.tabs{padding-left:8px;padding-right:8px} }
 .bar b{color:var(--ink)!important}
+.nmBox{display:inline-flex;align-items:center;gap:6px;margin-inline-start:10px;font-weight:700;color:var(--subTx,#5b4a9e);font-size:14px}.nmBox input{font:inherit;font-weight:400;padding:4px 6px;border:1px solid #d9d2ee;border-radius:8px}
 </style>
 </head>
 <body>
@@ -216,7 +217,8 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
     if(last&&o.c==='🕓 לתשלום'){ if(last.kind==='sign'){ o.c='⏳ עלה לבנק '+nis(last.amount)+' ב-'+dm(last.date)+' — ממתין לחתימה'; o.st='wait'; } else { o.c='✅ הועבר '+nis(last.amount)+' ב-'+dm(last.date)+' (לפי הבנק)'; o.st='ok'; } }
     if(!inv.length&&last&&!o.c){ if(last.kind==='sign'){ o.c='⏳ עלה לבנק '+nis(last.amount)+' ב-'+dm(last.date)+' — ממתין לחתימה'; o.st='wait'; } else { o.c='✅ הועבר '+nis(last.amount)+' ב-'+dm(last.date)+' (לפי הבנק)'; o.st='ok'; } }
     tr=tr.filter(function(t){ return t.doc; });
-    o.docs=tr.map(function(t){ return {id:t.id, txt:'📎 '+dm(t.date)+' · '+nis(t.amount)}; });
+    /* 09.11.2026 איילת: «זה שיש אישור העברה, לא אומר שאושר בבנק» — מסמך של העברה שממתינה לחתימה מסומן ככזה */
+    o.docs=tr.map(function(t){ return {id:t.id, txt:(t.kind==='sign'?'📝 ממתין לחתימה · ':'📎 בוצע · ')+dm(t.date)+' · '+nis(t.amount)}; });
     return o; }
   /* 09.11.2026 איילת: «שהמערכת תראה את כל החשבוניות לפי תאריכי האירועים — אם הכול הגיע: לתשלום; אם חסרה חשבונית:
      חסרה חשבונית ונדרשת התאמה. סטטוס העברה — גם אתה מעדכן וגם אנחנו».
@@ -264,8 +266,10 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
     var h=ms.map(function(m){ return '<button class="tab'+(TAB===m?' on':'')+'" data-t="'+m+'">'+ymLbl(m)+'</button>'; }).join('')
       +'<button class="tab'+(TAB==='past'?' on':'')+'" data-t="past">העברות עבר — השלמות</button>'
       +'<button class="tab'+(TAB==='art'?' on':'')+'" data-t="art">הדיג׳יים ופרטי בנק</button>'
-      +(ME&&ME.owner?'<button class="tab'+(TAB==='hist'?' on':'')+'" data-t="hist">🕓 היסטוריה</button>':'');
-    $('tabs').innerHTML=h; Array.prototype.forEach.call($('tabs').children,function(b){ b.onclick=function(){ TAB=b.getAttribute('data-t'); render(); }; });
+      +(ME&&ME.owner?'<button class="tab'+(TAB==='hist'?' on':'')+'" data-t="hist">🕓 היסטוריה</button>':'')
+      +'<span class="nmBox" title="פתיחת חודש — כל חודש, גם באמצע החודש או מראש">＋ חודש: <input type="month" id="nmPick" value="'+ymAdd((ms.slice(-1)[0]||new Date().toISOString().slice(0,7)),1)+'"><button class="btn" id="nmGo">פתיחה</button></span>';
+    $('tabs').innerHTML=h; Array.prototype.forEach.call($('tabs').querySelectorAll('.tab'),function(b){ b.onclick=function(){ TAB=b.getAttribute('data-t'); render(); }; });
+    $('nmGo').onclick=function(){ openMonth($('nmPick').value); };
     if(TAB==='past') renderPast(); else if(TAB==='art') renderArt(); else if(TAB==='hist') renderHist(); else renderMonth(TAB); }
 
   /* 09.11.2026 איילת: היסטוריה של כל שינוי — מה היה, מה נהיה, מי ומתי (רק איילת; dj_history) */
@@ -293,7 +297,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function renderMonth(M){
     var rows=R.filter(function(r){ return r.ym===M; }), used={}, sum=0, cnt=0;
     var h='<div class="bar"><b style="font-size:16px;color:var(--subTx)">'+ymLbl(M)+'</b>'
-      +'<button class="btn" id="addRow">＋ דיג׳יי לחודש</button><button class="btn" id="xlM" title="קובץ אקסל של החודש">⬇ אקסל</button><button class="btn" id="pdfM" title="הדפסה / שמירה כ-PDF">🖨 PDF</button><button class="btn" id="newMonth">＋ חודש חדש ('+ymLbl(ymAdd(months().slice(-1)[0]||M,1))+')</button>'
+      +'<button class="btn" id="addRow">＋ דיג׳יי לחודש</button><button class="btn" id="xlM" title="קובץ אקסל של החודש">⬇ אקסל</button><button class="btn" id="pdfM" title="הדפסה / שמירה כ-PDF">🖨 PDF</button>'
       +'<span class="small">'+(D?'משונטל: עודכן '+new Date(D.at).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+'</span></div>';
     /* 09.11.2026 איילת: «השמות בעמודה אחת — שם במה בסוגריים», «לא להצטרך לגלול שמאלה» — פחות עמודות, הכול נכנס ברוחב */
     h+='<table class="mt">'
@@ -347,11 +351,18 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
       var n=prompt('איזה דיג׳יי להוסיף ל'+ymLbl(M)+'? (מספר מהרשימה)\n'+names); if(!n) return; var a=A.filter(function(a){ return a.active; })[+n-1]; if(!a) return;
       var srt=R.filter(function(r){ return r.ym===M; }).reduce(function(m,r){ return Math.max(m,r.sort||0); },0)+1;
       ins('dj_rows',{ym:M,artist_id:a.id,rate:a.rate,rate_vat:a.rate_vat,sort:srt}).then(function(x){ R.push(x); renderMonth(M); }); };
-    $('newMonth').onclick=function(){ var last=months().slice(-1)[0]||M, nm=ymAdd(last,1);
-      if(!confirm('לפתוח את '+ymLbl(nm)+' עם הדיג׳יים של '+ymLbl(last)+'?')) return;
-      var src=R.filter(function(r){ return r.ym===last; }), seen={}, list=[];
-      src.forEach(function(r){ if(seen[r.artist_id]) return; seen[r.artist_id]=1; var a=art(r.artist_id); list.push({ym:nm,artist_id:r.artist_id,rate:a.rate!=null?a.rate:r.rate,rate_vat:a.rate_vat!=null?a.rate_vat:r.rate_vat,sort:list.length+1}); });
-      call('/rest/v1/dj_rows',{method:'POST',body:JSON.stringify(list),headers:{Prefer:'return=representation'}}).then(function(xs){ R=R.concat(xs||[]); TAB=nm; prep(); render(); msg('נפתח '+ymLbl(nm)); }).catch(function(e){ msg(e.message,true); }); }; }
+  }
+
+  /* 09.11.2026 איילת: «אפשרות להוסיף חודש חדש בכל רגע — צחי ירצה לעדכן אירועים כבר באמצע חודש או לפני».
+     בוחרים כל חודש (גם עתידי). חודש שכבר קיים — פשוט נפתח. חדש — עם הדיג׳יים של החודש הקרוב שלפניו. */
+  function openMonth(nm){ if(!/^\d{4}-\d{2}$/.test(nm||'')) return; var ms=months();
+    if(ms.indexOf(nm)>=0){ TAB=nm; render(); return; }
+    var before=ms.filter(function(m){ return m<nm; }), from=before.length?before[before.length-1]:ms[ms.length-1];
+    if(!confirm('לפתוח את '+ymLbl(nm)+(from?' עם הדיג׳יים של '+ymLbl(from):'')+'?')) return;
+    var src=R.filter(function(r){ return r.ym===from; }), seen={}, list=[];
+    src.forEach(function(r){ if(seen[r.artist_id]) return; seen[r.artist_id]=1; var a=art(r.artist_id); if(a.active===false) return; list.push({ym:nm,artist_id:r.artist_id,rate:a.rate!=null?a.rate:r.rate,rate_vat:a.rate_vat!=null?a.rate_vat:r.rate_vat,sort:list.length+1}); });
+    if(!list.length){ var act=A.filter(function(a){ return a.active!==false; }); act.forEach(function(a){ list.push({ym:nm,artist_id:a.id,rate:a.rate,rate_vat:a.rate_vat,sort:list.length+1}); }); }
+    call('/rest/v1/dj_rows',{method:'POST',body:JSON.stringify(list),headers:{Prefer:'return=representation'}}).then(function(xs){ R=R.concat(xs||[]); TAB=nm; prep(); render(); msg('נפתח '+ymLbl(nm)); }).catch(function(e){ msg(e.message,true); }); }
 
   /* 09.11.2026 איילת: «אפשרות ליצוא לאקסל ו-PDF» — החודש המוצג, כמו בטבלה (כולל מה שבשונטל) */
   function exportData(M){ var used={}, out=[], sum=0, cnt=0;
@@ -436,7 +447,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function autoReload(){ if(!ME||busy()||$('app').classList.contains('hid')) return; var y=window.scrollY; load().then(function(){ render(); window.scrollTo(0,y); }).catch(function(){}); }
   setInterval(autoReload, 120000);
   /* «שהקישור יתעדכן מעצמו»: אם יש גרסה חדשה של הדף באתר — נטען אותה לבד (לא בזמן הקלדה). גם בתוך שונטל. */
-  var DJ_VER='2026-11-09n';
+  var DJ_VER='2026-11-09o';
   function checkVer(){ if(busy()) return; fetch(location.pathname+'?ver='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
       var m=/DJ_VER='([^']+)'/.exec(t||''); if(!m||m[1]===DJ_VER) return;
       var k='dj-ver-reload-'+m[1]; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,'1'); }catch(_){}
