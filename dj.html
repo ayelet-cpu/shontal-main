@@ -195,12 +195,32 @@ h3{margin:16px 0 6px;color:var(--subTx);font-size:15px}
   function numOrNull(v){ v=String(v||'').replace(/[^\d.\-]/g,''); return v===''?null:+v; }
 
   /* ---------- תצוגה ---------- */
-  function render(){ var ms=months(); if(!TAB||(TAB!=='past'&&TAB!=='art'&&ms.indexOf(TAB)<0)) TAB=ms[ms.length-1]||'art';
+  function render(){ var ms=months(); if(!TAB||(TAB!=='past'&&TAB!=='art'&&TAB!=='hist'&&ms.indexOf(TAB)<0)) TAB=ms[ms.length-1]||'art';
     var h=ms.map(function(m){ return '<button class="tab'+(TAB===m?' on':'')+'" data-t="'+m+'">'+ymLbl(m)+'</button>'; }).join('')
       +'<button class="tab'+(TAB==='past'?' on':'')+'" data-t="past">העברות עבר — השלמות</button>'
-      +'<button class="tab'+(TAB==='art'?' on':'')+'" data-t="art">הדיג׳יים ופרטי בנק</button>';
+      +'<button class="tab'+(TAB==='art'?' on':'')+'" data-t="art">הדיג׳יים ופרטי בנק</button>'
+      +(ME&&ME.owner?'<button class="tab'+(TAB==='hist'?' on':'')+'" data-t="hist">🕓 היסטוריה</button>':'');
     $('tabs').innerHTML=h; Array.prototype.forEach.call($('tabs').children,function(b){ b.onclick=function(){ TAB=b.getAttribute('data-t'); render(); }; });
-    if(TAB==='past') renderPast(); else if(TAB==='art') renderArt(); else renderMonth(TAB); }
+    if(TAB==='past') renderPast(); else if(TAB==='art') renderArt(); else if(TAB==='hist') renderHist(); else renderMonth(TAB); }
+
+  /* 09.11.2026 איילת: היסטוריה של כל שינוי — מה היה, מה נהיה, מי ומתי (רק איילת; dj_history) */
+  var FL={stage:'שם במה',payee:'שם מוטב',bank:'בנק',branch:'סניף',account:'מס׳ חשבון',rate:'תשלום לערב',rate_vat:'כולל מע״מ',global_pay:'גלובלי',active:'פעיל',note:'הערות',
+    gigs:'תאריכי תקלוט',total:'סה״כ לתשלום',status:'סטטוס העברה',paid_note:'שולם',deleted:'הוסר',label:'מה',what:'סטטוס',dates:'תאריכים',cnt:'ערבים',sort:'סדר',ym:'חודש',artist_id:'דיג׳יי',key:'התאמה לשונטל'};
+  function hv(k,v){ if(v==null||v==='') return '—'; if(k==='gigs'&&Array.isArray(v)) return v.map(dm).join(', ')||'—'; if(k==='artist_id') return esc(art(v).payee||v);
+    if(v===true) return 'כן'; if(v===false) return 'לא'; return esc(typeof v==='object'?JSON.stringify(v):v); }
+  function renderHist(){ $('view').innerHTML='<div class="small">טוען…</div>';
+    rpc('dj_history',{p_limit:500}).then(function(H){ H=H||[];
+      var h='<div class="bar"><b style="font-size:16px;color:var(--subTx)">🕓 היסטוריה</b><span class="small">כל שינוי — מה היה ומה נהיה. רק את רואה את זה.</span></div>'
+        +'<table><thead><tr><th>מתי</th><th>מי</th><th>איפה</th><th>שדה</th><th>לפני</th><th>אחרי</th></tr></thead><tbody>';
+      H.forEach(function(x){ var t=new Date(x.at).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+        var where=x.tbl==='dj_artists'?'דיג׳יי: '+esc(art(x.row_id).payee||x.row_id):x.tbl==='dj_rows'?(function(){ var r=R.filter(function(y){ return y.id===x.row_id; })[0]; return r?ymLbl(r.ym)+' · '+esc(art(r.artist_id).payee):'שורה '+x.row_id; })()
+          :x.tbl==='dj_closed'?'יום סגור':'העברות עבר';
+        var keys=Object.keys(x.op==='insert'?(x.new||{}):(x.new||{})).filter(function(k){ return ['id','updated_at','updated_by'].indexOf(k)<0&&(x.op!=='insert'||(x.new[k]!==''&&x.new[k]!=null&&!(Array.isArray(x.new[k])&&!x.new[k].length))); });
+        if(x.op==='insert') keys=keys.filter(function(k){ return k!=='deleted'&&k!=='sort'&&k!=='active'&&k!=='global_pay'; });
+        keys.forEach(function(k,i){ h+='<tr>'+(i===0?'<td rowspan="'+keys.length+'" style="white-space:nowrap">'+t+'</td><td rowspan="'+keys.length+'">'+esc(x.by_email||'—')+'</td><td rowspan="'+keys.length+'">'+(x.op==='insert'?'➕ ':'')+where+'</td>':'')
+          +'<td>'+esc(FL[k]||k)+'</td><td style="color:#8a2f27">'+(x.op==='insert'?'':hv(k,(x.old||{})[k]))+'</td><td style="color:#235c35;font-weight:700">'+hv(k,(x.new||{})[k])+'</td></tr>'; }); });
+      if(!H.length) h+='<tr><td colspan="6" class="small">עוד אין שינויים.</td></tr>';
+      $('view').innerHTML=h+'</tbody></table>'; }).catch(function(e){ $('view').innerHTML=''; msg(e.message,true); }); }
 
   function statusSel(v, attr){ return '<select '+attr+'>'+STATUSES.concat(STATUSES.indexOf(v)<0?[v]:[]).map(function(s){ return '<option'+(s===v?' selected':'')+'>'+esc(s)+'</option>'; }).join('')+'</select>'; }
   function stCls(v){ return /^שולם/.test(v)?'st-ok':/עלה לבנק/.test(v)?'st-wait':/חסרה/.test(v)?'st-bad':/לתשלום/.test(v)?'st-wait':''; }
