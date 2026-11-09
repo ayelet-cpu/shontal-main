@@ -277,8 +277,8 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
     v.querySelectorAll('tr[data-id]').forEach(function(tr){ var id=+tr.getAttribute('data-id'); var r=R.filter(function(x){ return x.id===id; })[0];
       tr.querySelectorAll('[data-f]').forEach(function(el){ el.onchange=function(){ var f=el.getAttribute('data-f'), o={};
         o[f]=(f==='status'||f==='paid_note'||f==='note')?el.value:numOrNull(el.value); save('dj_rows',id,o,function(){ renderMonth(M); }); }; });
-      var add=tr.querySelector('[data-add]'); add.onchange=function(){ if(!add.value) return; var g=(r.gigs||[]).concat([add.value]).filter(function(x,i,a){ return a.indexOf(x)===i; }).sort(); prepAndSave(id,{gigs:g},M); };
-      tr.querySelectorAll('[data-rm]').forEach(function(b){ b.onclick=function(){ var g=(r.gigs||[]).filter(function(x){ return x!==b.getAttribute('data-rm'); }); prepAndSave(id,{gigs:g},M); }; });
+      var add=tr.querySelector('[data-add]'); add.onchange=function(){ if(!add.value) return; var g=(r.gigs||[]).concat([add.value]).filter(function(x,i,a){ return a.indexOf(x)===i; }).sort(); prepAndSave(id,gigPatch(r,g),M); };
+      tr.querySelectorAll('[data-rm]').forEach(function(b){ b.onclick=function(){ var g=(r.gigs||[]).filter(function(x){ return x!==b.getAttribute('data-rm'); }); prepAndSave(id,gigPatch(r,g),M); }; });
       tr.querySelector('[data-del]').onclick=function(){ if(confirm('להסיר את '+(art(r.artist_id).payee||'השורה')+' מ'+ymLbl(M)+'?')) save('dj_rows',id,{deleted:true},function(){ R=R.filter(function(x){ return !x.deleted; }); prep(); renderMonth(M); }); }; });
     v.querySelectorAll('[data-inv]').forEach(function(a){ a.onclick=function(){ openFile('inv',a.getAttribute('data-inv')); }; });
     v.querySelectorAll('[data-bank]').forEach(function(a){ a.onclick=function(){ openFile('bank',a.getAttribute('data-bank')); }; });
@@ -333,6 +333,9 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
     var f=document.createElement('iframe'); f.style.cssText='position:fixed;left:-9999px;top:0;width:10px;height:10px;border:0'; document.body.appendChild(f);
     f.contentDocument.open(); f.contentDocument.write(h); f.contentDocument.close();
     setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ msg(e.message,true); } setTimeout(function(){ f.remove(); },60000); }, 700); }
+  /* 09.11.2026 איילת: «כשאני מוסיפה אירוע — הסכום לתשלום לא מתעדכן». הסה״כ מחושב לבד (ערבים × לערב);
+     אם היה רשום בו בדיוק החישוב הישן — מתעדכן עם הערבים. סכום שהוקלד ביד (שונה מהחישוב) נשאר. */
+  function gigPatch(r,g){ var o={gigs:g}; if(r.total!=null&&r.total!==''&&r.rate_vat!=null&&+r.total===(r.gigs||[]).length*(+r.rate_vat)) o.total=null; return o; }
   function prepAndSave(id,o,M){ save('dj_rows',id,o,function(){ prep(); renderMonth(M); }); }
 
   function renderPast(){ var h='<div class="bar"><b style="font-size:16px;color:var(--subTx)">העברות עבר — השלמות</b><button class="btn" id="addPast">＋ שורה</button></div>'
@@ -377,7 +380,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function autoReload(){ if(!ME||busy()||$('app').classList.contains('hid')) return; var y=window.scrollY; load().then(function(){ render(); window.scrollTo(0,y); }).catch(function(){}); }
   setInterval(autoReload, 120000);
   /* «שהקישור יתעדכן מעצמו»: אם יש גרסה חדשה של הדף באתר — נטען אותה לבד (לא בזמן הקלדה). גם בתוך שונטל. */
-  var DJ_VER='2026-11-09i';
+  var DJ_VER='2026-11-09j';
   function checkVer(){ if(busy()) return; fetch(location.pathname+'?ver='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
       var m=/DJ_VER='([^']+)'/.exec(t||''); if(!m||m[1]===DJ_VER) return;
       var k='dj-ver-reload-'+m[1]; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,'1'); }catch(_){}
