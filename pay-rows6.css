@@ -133,3 +133,6 @@ html:has(#payTheme) .row.r6 .r6days{background:rgba(255,255,255,.05);border-colo
 .row.r6 .r6todo.ok.big{font-size:15.5px;padding:10px 14px;margin:6px 0}
 .row.r6 .r6chk{display:block;margin-top:3px;font-size:12.5px;color:#5b7a66}
 .row.r6 .r6chk i{font-style:normal;margin-inline-end:8px;white-space:nowrap}.row.r6 .r6chk i.w{color:#9a6a12}
+/* 9.11.2026 (איילת: «כן, להוריד») — עובדים זרים (פקדון, אשרות) ומילואים עברו לפנקס העובדים, לפי מסעדה.
+   בבקרת השכר הלשוניות, «רשימת מילואים לחשבת» וחלון «אשרה נגמרת» מוסתרים (הנתונים לא נמחקו מהקובץ). */
+.tabs [data-view="mil"],.tabs [data-view="zarim"],button[data-view="mil"],button[data-view="zarim"],#milCopyAcc,#zrVisaPop{display:none!important}
