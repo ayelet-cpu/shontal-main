@@ -240,7 +240,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
       +'<span class="small">'+(D?'משונטל: עודכן '+new Date(D.at).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+'</span></div>';
     /* 09.11.2026 איילת: «השמות בעמודה אחת — שם במה בסוגריים», «לא להצטרך לגלול שמאלה» — פחות עמודות, הכול נכנס ברוחב */
     h+='<table class="mt">'
-      +'<thead><tr><th>#</th><th>דיג׳יי</th><th>לערב<br><span class="small">כולל מע״מ</span></th><th>תאריכי תקלוט</th><th>סה״כ לתשלום</th><th>סטטוס העברה</th><th>שולם · הערות</th>'
+      +'<thead><tr><th>#</th><th>דיג׳יי</th><th>לערב<br><span class="small">כולל מע״מ</span></th><th>תאריכי תקלוט</th><th>סה״כ לתשלום</th><th>סטטוס העברה</th><th>הערות</th>'
       +'<th class="sh">📄 חשבונית (משונטל)</th><th class="sh">💳 תשלום (משונטל)</th><th></th></tr></thead><tbody>';
     rows.forEach(function(r,i){ var a=art(r.artist_id), t=rowTotal(r), s=shontal(r,M,used); if(t!=null) sum+=t; cnt+=(r.gigs||[]).length;
       var gigs=(r.gigs||[]).slice().sort().map(function(g){ return '<span class="gig">'+dm(g)+'<b data-rm="'+g+'" title="הסרה">✕</b></span>'; }).join('');
@@ -253,7 +253,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
         +'<td><div class="gigs">'+gigs+'<input type="date" data-add title="הוספת ערב"><span class="small">('+(r.gigs||[]).length+')</span></div></td>'
         +'<td><input class="num" data-f="total" placeholder="'+(t==null?'גלובלי':nis(t))+'" value="'+(r.total==null?'':esc(r.total))+'" title="ריק = ערבים × כולל מע״מ"></td>'
         +'<td>'+statusSel(r.status,'data-f="status" class="pill '+stCls(r.status)+'"')+'</td>'
-        +'<td><input class="txt" data-f="paid_note" placeholder="שולם…" value="'+esc(r.paid_note)+'"><input class="txt sub" data-f="note" placeholder="הערות…" value="'+esc(r.note)+'"></td>'
+        +'<td><input class="txt" data-f="note" placeholder="הערות…" value="'+esc(r.note)+'"></td>'
         +'<td class="sh"><div class="'+(s.a.indexOf('✅')===0?'okTx':'badTx')+'" style="font-weight:700">'+s.a+'</div>'
           +s.b.map(function(x){ return (x.k?'<a class="lk" data-inv="'+esc(x.k)+'">📄 '+esc(x.head)+'</a>':esc(x.head))+(x.more?'\n'+esc(x.more):''); }).join('\n')+'</td>'
         +'<td class="sh'+(s.st?' st-'+s.st:'')+'">'+esc(s.c)+(s.docs.length?'\n':'')+s.docs.map(function(d){ return '<a class="lk" data-bank="'+esc(d.id)+'">'+esc(d.txt)+'</a>'; }).join('\n')+'</td>'
@@ -302,15 +302,15 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
         inv:[s.a].concat(s.b.map(function(x){ return x.head+(x.more?' — '+x.more.replace(/\n/g,' '):''); })).join(' | '),
         pay:[s.c].concat(s.docs.map(function(d){ return d.txt; })).filter(Boolean).join(' | ')}); });
     return {rows:out, sum:sum, cnt:cnt, closed:CL.filter(function(c){ return c.ym===M; })}; }
-  var HEAD=['#','שם מוטב','שם במה','בנק','סניף','מס׳ חשבון','תשלום לערב','כולל מע״מ / פטור','תאריכי תקלוט','ערבים','סה״כ לתשלום','סטטוס העברה','שולם','הערות','חשבונית (משונטל)','תשלום (משונטל)'];
-  function rowArr(x){ return [x.n,x.payee,x.stage,x.bank,x.branch,x.account,x.rate,x.rateVat,x.gigs,x.cnt,x.total,x.status,x.paid,x.note,x.inv,x.pay]; }
+  var HEAD=['#','שם מוטב','שם במה','בנק','סניף','מס׳ חשבון','תשלום לערב','כולל מע״מ / פטור','תאריכי תקלוט','ערבים','סה״כ לתשלום','סטטוס העברה','הערות','חשבונית (משונטל)','תשלום (משונטל)'];
+  function rowArr(x){ return [x.n,x.payee,x.stage,x.bank,x.branch,x.account,x.rate,x.rateVat,x.gigs,x.cnt,x.total,x.status,x.note,x.inv,x.pay]; }
   function loadXlsx(){ if(window.XLSX) return Promise.resolve(window.XLSX); return new Promise(function(ok,bad){ var sc=document.createElement('script');
     sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload=function(){ ok(window.XLSX); }; sc.onerror=function(){ bad(new Error('לא נטען רכיב האקסל')); }; document.head.appendChild(sc); }); }
   function exportXlsx(M){ var d=exportData(M);
     loadXlsx().then(function(X){ var aoa=[['די.ג׳יים אסא — '+ymLbl(M)],[],HEAD].concat(d.rows.map(rowArr));
       aoa.push(['','סה״כ חודש','','','','','','','',d.cnt,d.sum]);
       if(d.closed.length){ aoa.push([]); aoa.push(['חגים וימים סגורים']); d.closed.forEach(function(c){ aoa.push(['',c.label,c.what,c.dates,c.cnt==null?'':c.cnt]); }); }
-      var ws=X.utils.aoa_to_sheet(aoa); ws['!cols']=[4,18,14,10,7,13,10,12,26,7,12,22,18,24,48,34].map(function(w){ return {wch:w}; });
+      var ws=X.utils.aoa_to_sheet(aoa); ws['!cols']=[4,18,14,10,7,13,10,12,26,7,12,22,18,24,48,34].map(function(w){ return {wch:w}; }).filter(function(_,i){ return i!==12; });
       var wb=X.utils.book_new(); wb.Workbook={Views:[{RTL:true}]}; X.utils.book_append_sheet(wb, ws, ymLbl(M));
       X.writeFile(wb, 'די.ג׳יים אסא - '+ymLbl(M)+'.xlsx'); msg('הקובץ ירד ✓'); }).catch(function(e){ msg(e.message,true); }); }
   function exportPdf(M){ var d=exportData(M);
@@ -319,10 +319,10 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
       +'body{font-family:"Varela Round",Arial,sans-serif;color:#15121f;font-size:11px;margin:0}h1{font-size:16px;margin:0 0 8px}'
       +'table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #e7e4ef;padding:5px 6px;text-align:right;vertical-align:top}'
       +'th{background:#f6f5fa;font-weight:700}td.sh{background:#faf9fd}tr.sum td{font-weight:700;background:#f6f5fa}.n{white-space:nowrap}</style></head><body>'
-      +'<h1>🎧 די.ג׳יים אסא — '+esc(ymLbl(M))+'</h1><table><thead><tr><th>#</th><th>דיג׳יי</th><th>בנק</th><th>לערב / כולל</th><th>תאריכי תקלוט</th><th>ערבים</th><th>סה״כ</th><th>סטטוס</th><th>שולם · הערות</th><th>חשבונית (משונטל)</th><th>תשלום (משונטל)</th></tr></thead><tbody>'
+      +'<h1>🎧 די.ג׳יים אסא — '+esc(ymLbl(M))+'</h1><table><thead><tr><th>#</th><th>דיג׳יי</th><th>בנק</th><th>לערב / כולל</th><th>תאריכי תקלוט</th><th>ערבים</th><th>סה״כ</th><th>סטטוס</th><th>הערות</th><th>חשבונית (משונטל)</th><th>תשלום (משונטל)</th></tr></thead><tbody>'
       +d.rows.map(function(x){ return '<tr><td>'+x.n+'</td><td><b>'+esc(x.payee)+'</b>'+(x.stage&&x.stage!==x.payee?' ('+esc(x.stage)+')':'')+'</td><td class="n">'+esc([x.bank,x.branch].filter(Boolean).join(' ')+(x.account?' · '+x.account:''))+'</td>'
         +'<td class="n">'+esc(x.rate)+' / '+esc(x.rateVat)+'</td><td>'+esc(x.gigs)+'</td><td>'+x.cnt+'</td><td class="n">'+(typeof x.total==='number'?nis(x.total):esc(x.total))+'</td><td>'+esc(x.status)+'</td>'
-        +'<td>'+esc([x.paid,x.note].filter(Boolean).join(' · '))+'</td><td class="sh">'+esc(x.inv)+'</td><td class="sh">'+esc(x.pay)+'</td></tr>'; }).join('')
+        +'<td>'+esc(x.note)+'</td><td class="sh">'+esc(x.inv)+'</td><td class="sh">'+esc(x.pay)+'</td></tr>'; }).join('')
       +'<tr class="sum"><td></td><td>סה״כ חודש</td><td></td><td></td><td></td><td>'+d.cnt+'</td><td class="n">'+nis(d.sum)+'</td><td colspan="4"></td></tr></tbody></table>'
       +(d.closed.length?'<h1 style="font-size:13px;margin-top:12px">חגים וימים סגורים</h1><table><tbody>'+d.closed.map(function(c){ return '<tr><td>'+esc(c.label)+'</td><td>'+esc(c.what)+'</td><td>'+esc(c.dates)+'</td><td>'+(c.cnt==null?'':c.cnt)+'</td></tr>'; }).join('')+'</tbody></table>':'')
       +'</body></html>';
@@ -372,7 +372,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function autoReload(){ if(!ME||busy()||$('app').classList.contains('hid')) return; var y=window.scrollY; load().then(function(){ render(); window.scrollTo(0,y); }).catch(function(){}); }
   setInterval(autoReload, 120000);
   /* «שהקישור יתעדכן מעצמו»: אם יש גרסה חדשה של הדף באתר — נטען אותה לבד (לא בזמן הקלדה). גם בתוך שונטל. */
-  var DJ_VER='2026-11-09f';
+  var DJ_VER='2026-11-09g';
   function checkVer(){ if(busy()) return; fetch(location.pathname+'?ver='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
       var m=/DJ_VER='([^']+)'/.exec(t||''); if(!m||m[1]===DJ_VER) return;
       var k='dj-ver-reload-'+m[1]; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,'1'); }catch(_){}
