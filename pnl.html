@@ -518,6 +518,9 @@ function openDoc(href,w){
   var rel='', PFX='Users/PC/האחסון שלי/חשבוניות ווטסאפ/';
   try{ rel=String(href).replace(/^file:\/\/\/[A-Za-z]:\//,'').split('/').map(decodeURIComponent).join('/'); }catch(_){}
   var bad=function(t){ try{ if(w) w.close(); }catch(_){} setSt(t,'warn'); };
+  /* 10.11.2026: חשבונית שירדה מהענן לתיקייה «מסמכים מהענן» במחשב — הנתיב שאחריה הוא הנתיב בענן של שונטל */
+  var CACHE='/מסמכים מהענן/', ci=rel.indexOf(CACHE);
+  if(ci>=0) rel=PFX+rel.slice(ci+CACHE.length);
   if(rel.indexOf(PFX)!==0) return bad('⚠ המסמך הזה נמצא רק במחשב של איילת — אין לו עותק בענן');
   rel=rel.slice(PFX.length);
   fresh().then(function(){ return fetch(SB+'/functions/v1/pl-doc-url',{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+S.access_token,'Content-Type':'application/json'},body:JSON.stringify({rest:REST,path:rel})}); })
