@@ -302,6 +302,8 @@ table tr:not(.tot):not(.big):not(.sub):not(.pct) td.neg{color:var(--ink)!importa
 <script type="text/plain" id="hxLkB">
     let lk = null, lkN = 0, lkOk = false;
     (EXT.shontal.groups || []).forEach(g => { if (g.paths.includes(path)) { const e = g.m[String(m)]; if (e) e[1].forEach(x => docs.push(x)); const k = (g.lk || {})[String(m)]; if (k && k[0] !== null && k[0] !== undefined) { lk = (lk || 0) + k[0]; lkN = g.paths.length; lkOk = lkOk || !!k[1]; } } });
+    /* ספק ששויך לשורה (extMap.s) ועדיין «לא משויך» בהשוואה — גם החשבוניות שלו (10.11.2026: «למה אין פה את החשבוניות») */
+    Object.entries((D.extMap || {}).s || {}).forEach(([v, p]) => { if (p !== path) return; (((EXT.shontal.unmatched || {})[String(m)]) || []).forEach(u => { if (u[0] === v) (u[3] || []).forEach(d => docs.push([u[0]].concat(d))); }); });
     if (lk !== null) out.push(`<div class="hx-h">🔒 קיבוע שונטל ${String(m + 1).padStart(2, '0')}.2026: ₪${nf2.format(lk)}${lkOk ? ' · הגיול אושר ✓' : ''}</div>` + (lkN > 1 ? '<div class="small muted">הקיבוע של הספק כולו — מתחלק בין כמה שורות</div>' : ''));
     if (docs.length) {
       const tot = docs.reduce((s, x) => s + (+x[3] || 0), 0);
@@ -309,6 +311,31 @@ table tr:not(.tot):not(.big):not(.sub):not(.pct) td.neg{color:var(--ink)!importa
         `<div style="border-top:1px solid var(--line);margin-top:3px;padding-top:2px"><b>סה"כ חשבוניות: ₪${nf2.format(tot)}</b></div>` +
         (lk !== null && Math.abs(tot - lk) > 1 ? `<div style="color:#b3261e"><b>פער מול הקיבוע: ₪${nf2.format(tot - lk)}</b></div>` : ''));
     } else if (lk !== null) out.push('<div class="small muted">אין חשבוניות בשונטל לחודש הזה</div>');
+</script>
+<!-- 🧮 פירוט החישוב (איילת 10.11.2026: «לא מפורט מאיפה הגיע כל הסכום»): מספר בנוסחה שלא נמצא בחודש עצמו — מחפשים אותו
+     בחשבוניות של אותה שורה בחודשים אחרים (למשל חוזה שנתי ‎=14986/12 — ח׳ מיולי). ובחלון — גם המספרים שלא נמצא להם מקור. -->
+<script type="text/plain" id="fbA1">
+    if (hit) used.add(hit);
+    return { n, hit, net };
+</script>
+<script type="text/plain" id="fbB1">
+    if (!hit) { hit = fbOther(path, m).find(c => !used.has(c) && Math.abs(Math.abs(c.v) - n) < 0.011); }
+    if (hit) used.add(hit);
+    return { n, hit, net };
+</script>
+<script type="text/plain" id="fbB2">
+function fbOther(path, m) {   /* חשבוניות של השורה בחודשים אחרים — למספר בנוסחה שלא נמצא בחודש עצמו (10.11.2026) */
+  const out = [];
+  ((EXT.shontal || {}).groups || []).forEach(g => { if (!g.paths.includes(path)) return; Object.keys(g.m).forEach(mm => { if (+mm === m) return; g.m[mm][1].forEach(x => out.push({ v: x[3], t: 'שונטל', n: x[0], s: x[1] + ' · ' + dmy(x[2]) + ' (מ' + M[+mm] + ')', doc: x })); }); });
+  return out;
+}
+function fBreak(path, m) {
+</script>
+<script type="text/plain" id="fbA3">
+  if (forHover) return r.rows.filter(o => o.hit).map(o => `<div>${nf2.format(o.n)} = ${o.hit.doc ? docLink(o.hit.doc) + ' ' : ''}${esc(o.hit.t)} · ${esc(o.hit.n)}${o.hit.s ? ' · ' + esc(o.hit.s) : ''}</div>`).join('');
+</script>
+<script type="text/plain" id="fbB3">
+  if (forHover) return r.rows.map(o => o.hit ? `<div>${nf2.format(o.n)} = ${o.hit.doc ? docLink(o.hit.doc) + ' ' : ''}${esc(o.hit.t)} · ${esc(o.hit.n)}${o.hit.s ? ' · ' + esc(o.hit.s) : ''}</div>` : `<div style="color:#b3261e">${nf2.format(o.n)} = לא נמצא מקור (שונטל / אשראי / קונפורטי)</div>`).join('');
 </script>
 <!-- 🟨 «צפוי / לא בטוח» (איילת 10.11.2026): לחיצה ימנית על תא = סימון צהוב, שוב = ביטול. נשמר בנתונים (D.cmark[path][חודש]). נכנס לקוד המערכת דרך PATCHES. -->
 <script type="text/plain" id="estJs">
@@ -422,7 +449,19 @@ var PATCHES=[
   ["function render() {\n  renderNav(); renderStatus();","function render() {\n  renderNav(); renderStatus(); estChip();"],
   ["function refresh() { R = PL.compute(D); render(); }","function refresh() { R = PL.compute(D); render(); }\n"+$('estJs').textContent],
   /* 🔒 קיבוע + חשבוניות + סה"כ + פער בחלון של התא (10.11.2026) */
-  [$('hxLkA').textContent.slice(1, -1), $('hxLkB').textContent.slice(1, -1)]
+  [$('hxLkA').textContent.slice(1, -1), $('hxLkB').textContent.slice(1, -1)],
+  /* 🧮 פירוט החישוב — גם מחודשים אחרים, וגם מה שלא נמצא (10.11.2026) */
+  [$('fbA1').textContent.slice(1, -1), $('fbB1').textContent.slice(1, -1)],
+  ["function fBreak(path, m) {\n", $('fbB2').textContent.slice(1)],
+  [$('fbA3').textContent.slice(1, -1), $('fbB3').textContent.slice(1, -1)],
+  /* 📅 החודש הקודם (לפי התאריך של היום) נחשב «סגור» לתצוגה ונפתח כברירת מחדל — איילת 10.11.2026: «עכשיו התאריך 10.11, הדוח צריך להפתח אוטומטית על החודש הקודם»
+     (וגם «החודש שעובדים עליו = סגור לתצוגה»). closedThrough בהגדרות נשאר כמו שהוא; לוקחים את הגדול מבין שניהם. */
+  ["const cT = (S.closedThrough === null || S.closedThrough === undefined || S.closedThrough === '') ? 11 : +S.closedThrough;",
+   "const cT = (S.closedThrough === null || S.closedThrough === undefined || S.closedThrough === '') ? 11 : Math.max(+S.closedThrough, (d => +D.year === d.getFullYear() ? d.getMonth() - 1 : (+D.year < d.getFullYear() ? 11 : -1))(new Date()));"],
+  ["const cTc = (S.closedThrough === null || S.closedThrough === undefined || S.closedThrough === '') ? 11 : +S.closedThrough;",
+   "const cTc = (S.closedThrough === null || S.closedThrough === undefined || S.closedThrough === '') ? 11 : Math.max(+S.closedThrough, (d => +D.year === d.getFullYear() ? d.getMonth() - 1 : (+D.year < d.getFullYear() ? 11 : -1))(new Date()));"],
+  ["const CT0 = D.settings.closedThrough;",
+   "const CT0 = (c => (c === null || c === undefined || c === '') ? c : Math.max(+c, (d => +D.year === d.getFullYear() ? d.getMonth() - 1 : (+D.year < d.getFullYear() ? 11 : -1))(new Date())))(D.settings.closedThrough);"]
 ];
 var SOFT=[["💾 שמירה לקובץ","💾 שמירה"],["🔄 הקובץ עודכן מבחוץ","🔄 הענן עודכן מבחוץ"],["'נשמר בקובץ · '","'נשמר בענן · '"],["toast('✅ נשמר לקובץ · שמירה אוטומטית פעילה')","toast('✅ נשמר בענן')"],["🟢 שמירה אוטומטית פעילה","🟢 נשמר בענן אוטומטית"]];
 /* «🎨» — מעבר בין «פחות עומס» למראה הקודם (נשמר בדפדפן) */
