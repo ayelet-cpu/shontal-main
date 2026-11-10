@@ -246,6 +246,33 @@ table tr:not(.tot):not(.big):not(.sub):not(.pct) td.neg{color:var(--ink)!importa
   d.addEventListener('keydown',function(e){ if(e.key==='Escape') close(); });
 })();
 </script>
+<!-- 🟨 «צפוי / לא בטוח» (איילת 10.11.2026): לחיצה ימנית על תא = סימון צהוב, שוב = ביטול. נשמר בנתונים (D.cmark[path][חודש]). נכנס לקוד המערכת דרך PATCHES. -->
+<script type="text/plain" id="estJs">
+/* 🟨 צפוי / לא בטוח — נוסף מהענן (pnl/index.html, estJs) */
+document.head.insertAdjacentHTML('beforeend', '<style id="estCss">table td.ed.est,body table.g td.ed.est{background:#ffe27a!important;box-shadow:inset 0 0 0 2px #e0a800!important}' +
+  '#estChip{position:fixed;bottom:12px;left:12px;z-index:150;background:#fff8d6;border:1px solid #e0a800;color:#5a4500;border-radius:10px;padding:5px 10px;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,.12);direction:rtl;cursor:default}' +
+  '#estChip i{display:inline-block;width:11px;height:11px;background:#ffe27a;border:1px solid #e0a800;border-radius:2px;vertical-align:-1px;margin-left:5px}@media print{#estChip{display:none}}</style>');
+const estOn = (p, m) => !!(((D.cmark || {})[p] || {})[m]);
+function estChip() {
+  let c = document.getElementById('estChip');
+  if (!c) { c = document.createElement('div'); c.id = 'estChip'; document.body.appendChild(c); }
+  let n = 0; Object.values(D.cmark || {}).forEach(o => { if (o && o[curM]) n++; });
+  const ro = !!(EMBED.meta && EMBED.meta.readOnly);
+  c.style.display = ro && !n ? 'none' : '';
+  c.innerHTML = `<i></i>צפוי / לא בטוח: <b>${n}</b> ב${M[curM]}` + (ro ? '' : ' · לחיצה ימנית על תא מסמנת או מבטלת');
+}
+document.addEventListener('contextmenu', e => {
+  const td = e.target.closest && e.target.closest('td.ed[data-p]');
+  if (!td || (EMBED.meta && EMBED.meta.readOnly)) return;
+  e.preventDefault();
+  const p = td.dataset.p, m = +td.dataset.m, on = estOn(p, m);
+  commit(`${labelOf(p)} › ${M[m]}: ${on ? 'בוטל הסימון «צפוי / לא בטוח»' : 'סומן «צפוי / לא בטוח»'}`, () => {
+    D.cmark = D.cmark || {}; const o = D.cmark[p] = D.cmark[p] || {};
+    if (on) delete o[m]; else o[m] = 1;
+    if (!Object.keys(o).length) delete D.cmark[p];
+  });
+});
+</script>
 <script>
 (function(){
 'use strict';
@@ -321,7 +348,11 @@ var PATCHES=[
   ['async function asPut(h) {','async function asPut(h) { if (window.__PLC) return;'],
   ["const _saveFileAS = saveFile;","const _saveFileAS = saveFile;"],
   /* «חודש מודגש» — החודש שנבחר לא דהוי, גם אם עוד לא נסגר. המצטבר לא משתנה (איילת 10.11.2026) */
-  ["const preC = i => (PL.yin(i) ? '' : ' pre');","const preC = i => ((PL.yin(i) || i === curM) ? '' : ' pre');"]
+  ["const preC = i => (PL.yin(i) ? '' : ' pre');","const preC = i => ((PL.yin(i) || i === curM) ? '' : ' pre');"],
+  /* 🟨 צפוי / לא בטוח (איילת 10.11.2026) — צבע בתא, סימון בלחיצה ימנית, ספירה בפינה. הקוד ב-estJs למעלה */
+  ["  cls += preC(m);\n","  cls += preC(m);\n  if (estOn(path, m)) cls += ' est';\n"],
+  ["function render() {\n  renderNav(); renderStatus();","function render() {\n  renderNav(); renderStatus(); estChip();"],
+  ["function refresh() { R = PL.compute(D); render(); }","function refresh() { R = PL.compute(D); render(); }\n"+$('estJs').textContent]
 ];
 var SOFT=[["💾 שמירה לקובץ","💾 שמירה"],["🔄 הקובץ עודכן מבחוץ","🔄 הענן עודכן מבחוץ"],["'נשמר בקובץ · '","'נשמר בענן · '"],["toast('✅ נשמר לקובץ · שמירה אוטומטית פעילה')","toast('✅ נשמר בענן')"],["🟢 שמירה אוטומטית פעילה","🟢 נשמר בענן אוטומטית"]];
 /* «🎨» — מעבר בין «פחות עומס» למראה הקודם (נשמר בדפדפן) */
