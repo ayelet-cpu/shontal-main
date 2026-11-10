@@ -319,7 +319,9 @@ function build(code,docs){
 var PATCHES=[
   ['async function asGet() {','async function asGet() { if (window.__PLC) return window.__PLC.handle;'],
   ['async function asPut(h) {','async function asPut(h) { if (window.__PLC) return;'],
-  ["const _saveFileAS = saveFile;","const _saveFileAS = saveFile;"]
+  ["const _saveFileAS = saveFile;","const _saveFileAS = saveFile;"],
+  /* «חודש מודגש» — החודש שנבחר לא דהוי, גם אם עוד לא נסגר. המצטבר לא משתנה (איילת 10.11.2026) */
+  ["const preC = i => (PL.yin(i) ? '' : ' pre');","const preC = i => ((PL.yin(i) || i === curM) ? '' : ' pre');"]
 ];
 var SOFT=[["💾 שמירה לקובץ","💾 שמירה"],["🔄 הקובץ עודכן מבחוץ","🔄 הענן עודכן מבחוץ"],["'נשמר בקובץ · '","'נשמר בענן · '"],["toast('✅ נשמר לקובץ · שמירה אוטומטית פעילה')","toast('✅ נשמר בענן')"],["🟢 שמירה אוטומטית פעילה","🟢 נשמר בענן אוטומטית"]];
 /* «🎨» — מעבר בין «פחות עומס» למראה הקודם (נשמר בדפדפן) */
