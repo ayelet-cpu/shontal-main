@@ -246,6 +246,70 @@ table tr:not(.tot):not(.big):not(.sub):not(.pct) td.neg{color:var(--ink)!importa
   d.addEventListener('keydown',function(e){ if(e.key==='Escape') close(); });
 })();
 </script>
+<!-- ✛ הדגשת שורה ועמודה (איילת 10.11.2026): העכבר על תא (או תא בעריכה) — כל השורה וכל העמודה באותה טבלה מקבלות רקע עדין.
+     שכבה (background-image) מעל הצבע הקיים — לא מסתירה את הצהוב של «צפוי» ולא את «חודש מודגש». -->
+<script type="text/plain" id="xhJs">
+(function () {
+  var st = document.createElement('style'); st.id = 'xhCss';
+  st.textContent = 'table td.xh,table th.xh{background-image:linear-gradient(rgba(91,80,214,.09),rgba(91,80,214,.09))!important}' +
+    'table td.xh0{background-image:linear-gradient(rgba(91,80,214,.22),rgba(91,80,214,.22))!important;outline:1.5px solid rgba(91,80,214,.65);outline-offset:-1.5px}' +
+    '@media print{table td.xh,table th.xh,table td.xh0{background-image:none!important;outline:none}}';
+  document.head.appendChild(st);
+  var on = [], cur = null;
+  function clear() { for (var i = 0; i < on.length; i++) on[i].classList.remove('xh', 'xh0'); on = []; cur = null; }
+  function startCol(cell) {   /* העמודה האמיתית — כולל colspan בתאים שלפניו */
+    var c = 0, r = cell.parentElement.cells;
+    for (var i = 0; i < r.length && r[i] !== cell; i++) c += r[i].colSpan || 1;
+    return c;
+  }
+  function mark(cell) {
+    if (cell === cur) return;
+    clear();
+    var tr = cell.parentElement, tb = tr && tr.closest('table');
+    if (!tb || tr.cells.length < 4) return;
+    cur = cell;
+    var col = startCol(cell), rows = tb.rows;
+    for (var i = 0; i < rows.length; i++) {
+      var c = 0, cs = rows[i].cells;
+      for (var j = 0; j < cs.length; j++) {
+        var x = cs[j], w = x.colSpan || 1;
+        if (rows[i] === tr || (c === col && w === 1)) { x.classList.add('xh'); on.push(x); }
+        c += w; if (c > col && rows[i] !== tr) break;
+      }
+    }
+    cell.classList.add('xh0');
+  }
+  function pick(e) {
+    var t = e.target && e.target.closest && e.target.closest('td,th');
+    if (t && t.parentElement) mark(t);
+  }
+  document.addEventListener('mouseover', pick, true);
+  document.addEventListener('focusin', pick, true);
+  document.addEventListener('mouseout', function (e) {
+    if (!cur) return;
+    var to = e.relatedTarget, tb = cur.closest('table');
+    if (!to || !tb || !tb.contains(to)) { var a = document.activeElement; if (!(a && cur.contains(a))) clear(); }
+  }, true);
+  new MutationObserver(function () { if (cur && !document.contains(cur)) { on = []; cur = null; } }).observe(document.body || document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+<!-- 🔒 בחלון של התא: גם סכום הקיבוע של שונטל וגם החשבוניות, עם סה"כ ופער (איילת 10.11.2026). hxLkA = הקוד במערכת, hxLkB = במקומו.
+     g.lk = {חודש: סכום הקיבוע} — נבנה ב«כלי רענון מול שונטל/compare.py». -->
+<script type="text/plain" id="hxLkA">
+    (EXT.shontal.groups || []).forEach(g => { if (g.paths.includes(path)) { const e = g.m[String(m)]; if (e) e[1].forEach(x => docs.push(x)); } });
+    if (docs.length) out.push(`<div class="hx-h">שונטל (${docs.length})</div>` + docs.map(x => `<div>${docLink(x)} ${esc(x[0])} · ${esc(x[1])} · ${dmy(x[2])} · ₪${nf2.format(x[3])}${x[4] && x[4] !== 'חשבונית מס' ? ' · ' + esc(x[4]) : ''}</div>`).join(''));
+</script>
+<script type="text/plain" id="hxLkB">
+    let lk = null, lkN = 0, lkOk = false;
+    (EXT.shontal.groups || []).forEach(g => { if (g.paths.includes(path)) { const e = g.m[String(m)]; if (e) e[1].forEach(x => docs.push(x)); const k = (g.lk || {})[String(m)]; if (k && k[0] !== null && k[0] !== undefined) { lk = (lk || 0) + k[0]; lkN = g.paths.length; lkOk = lkOk || !!k[1]; } } });
+    if (lk !== null) out.push(`<div class="hx-h">🔒 קיבוע שונטל ${String(m + 1).padStart(2, '0')}.2026: ₪${nf2.format(lk)}${lkOk ? ' · הגיול אושר ✓' : ''}</div>` + (lkN > 1 ? '<div class="small muted">הקיבוע של הספק כולו — מתחלק בין כמה שורות</div>' : ''));
+    if (docs.length) {
+      const tot = docs.reduce((s, x) => s + (+x[3] || 0), 0);
+      out.push(`<div class="hx-h">חשבוניות בשונטל (${docs.length})</div>` + docs.map(x => `<div>${docLink(x)} ${esc(x[0])} · ${esc(x[1])} · ${dmy(x[2])} · ₪${nf2.format(x[3])}${x[4] && x[4] !== 'חשבונית מס' ? ' · ' + esc(x[4]) : ''}</div>`).join('') +
+        `<div style="border-top:1px solid var(--line);margin-top:3px;padding-top:2px"><b>סה"כ חשבוניות: ₪${nf2.format(tot)}</b></div>` +
+        (lk !== null && Math.abs(tot - lk) > 1 ? `<div style="color:#b3261e"><b>פער מול הקיבוע: ₪${nf2.format(tot - lk)}</b></div>` : ''));
+    } else if (lk !== null) out.push('<div class="small muted">אין חשבוניות בשונטל לחודש הזה</div>');
+</script>
 <!-- 🟨 «צפוי / לא בטוח» (איילת 10.11.2026): לחיצה ימנית על תא = סימון צהוב, שוב = ביטול. נשמר בנתונים (D.cmark[path][חודש]). נכנס לקוד המערכת דרך PATCHES. -->
 <script type="text/plain" id="estJs">
 /* 🟨 צפוי / לא בטוח — נוסף מהענן (pnl/index.html, estJs) */
@@ -266,11 +330,15 @@ document.addEventListener('contextmenu', e => {
   if (!td || (EMBED.meta && EMBED.meta.readOnly)) return;
   e.preventDefault();
   const p = td.dataset.p, m = +td.dataset.m, on = estOn(p, m);
-  commit(`${labelOf(p)} › ${M[m]}: ${on ? 'בוטל הסימון «צפוי / לא בטוח»' : 'סומן «צפוי / לא בטוח»'}`, () => {
-    D.cmark = D.cmark || {}; const o = D.cmark[p] = D.cmark[p] || {};
-    if (on) delete o[m]; else o[m] = 1;
-    if (!Object.keys(o).length) delete D.cmark[p];
-  });
+  /* בלי רינדור מלא (איילת 10.11: «זה מקפיץ את המסך למעלה») — כמו שמירת הערה: ביטול, יומן, שמירה, ורק ה-class של התא */
+  const desc = `${labelOf(p)} › ${M[m]}: ${on ? 'בוטל הסימון «צפוי / לא בטוח»' : 'סומן «צפוי / לא בטוח»'}`;
+  undoStack.push({ s: snap(), d: desc }); if (undoStack.length > 80) undoStack.shift(); redoStack = [];
+  D.cmark = D.cmark || {}; const o = D.cmark[p] = D.cmark[p] || {};
+  if (on) delete o[m]; else o[m] = 1;
+  if (!Object.keys(o).length) delete D.cmark[p];
+  logAdd(desc); dirty = true; persist();
+  document.querySelectorAll('td.ed[data-m="' + m + '"]').forEach(x => { if (x.dataset.p === p) x.classList.toggle('est', !on); });
+  renderStatus(); estChip();
 });
 </script>
 <script>
@@ -352,7 +420,9 @@ var PATCHES=[
   /* 🟨 צפוי / לא בטוח (איילת 10.11.2026) — צבע בתא, סימון בלחיצה ימנית, ספירה בפינה. הקוד ב-estJs למעלה */
   ["  cls += preC(m);\n","  cls += preC(m);\n  if (estOn(path, m)) cls += ' est';\n"],
   ["function render() {\n  renderNav(); renderStatus();","function render() {\n  renderNav(); renderStatus(); estChip();"],
-  ["function refresh() { R = PL.compute(D); render(); }","function refresh() { R = PL.compute(D); render(); }\n"+$('estJs').textContent]
+  ["function refresh() { R = PL.compute(D); render(); }","function refresh() { R = PL.compute(D); render(); }\n"+$('estJs').textContent],
+  /* 🔒 קיבוע + חשבוניות + סה"כ + פער בחלון של התא (10.11.2026) */
+  [$('hxLkA').textContent.slice(1, -1), $('hxLkB').textContent.slice(1, -1)]
 ];
 var SOFT=[["💾 שמירה לקובץ","💾 שמירה"],["🔄 הקובץ עודכן מבחוץ","🔄 הענן עודכן מבחוץ"],["'נשמר בקובץ · '","'נשמר בענן · '"],["toast('✅ נשמר לקובץ · שמירה אוטומטית פעילה')","toast('✅ נשמר בענן')"],["🟢 שמירה אוטומטית פעילה","🟢 נשמר בענן אוטומטית"]];
 /* «🎨» — מעבר בין «פחות עומס» למראה הקודם (נשמר בדפדפן) */
@@ -373,6 +443,7 @@ function patch(html){
     ' if(window.__PLC&&window.__PLC.view){ var fix=function(){ var b=document.querySelector(".ro-banner"); if(b&&!b.dataset.v){ b.dataset.v=1; b.textContent="👁 צפייה בלבד — הנתונים מתעדכנים מהענן. לחיצה על סכום מציגה את הפירוט והחשבוניות שלו (📄). אפשר לייצא, אבל לא לשנות."; } };'+
     ' fix(); document.addEventListener("DOMContentLoaded",fix); setTimeout(fix,500); } })();<\/script>';
   if(VIEW) docJs+='<script id="plViewJs">'+$('viewJs').textContent.replace(/<\/script/gi,'<\\/script')+'<\/script>';
+  docJs+='<script id="plXhJs">'+$('xhJs').textContent.replace(/<\/script/gi,'<\\/script')+'<\/script>';   /* ✛ הדגשת שורה ועמודה (10.11.2026) */
   var be=html.lastIndexOf('</body>'); html=be<0?html+docJs:html.slice(0,be)+docJs+html.slice(be);
   /* «פחות עומס» (05.11.2026) — בסוף הדף, אחרי שהמערכת בנתה את שורת הכפתורים. «🎨» בשורה העליונה מחזיר למראה הקודם */
   if(useLook()){ var b=html.lastIndexOf('</body>'), look='<style id="plLook">'+$('lookCss').textContent+'</style><script id="plLookJs">'+$('lookJs').textContent.replace(/<\/script/gi,'<\\/script')+'<\/script>';
