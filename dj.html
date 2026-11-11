@@ -297,7 +297,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function renderMonth(M){
     var rows=R.filter(function(r){ return r.ym===M; }), used={}, sum=0, cnt=0;
     var h='<div class="bar"><b style="font-size:16px;color:var(--subTx)">'+ymLbl(M)+'</b>'
-      +'<button class="btn" id="addRow">＋ דיג׳יי לחודש</button><button class="btn" id="xlM" title="קובץ אקסל של החודש">⬇ אקסל</button><button class="btn" id="pdfM" title="הדפסה / שמירה כ-PDF">🖨 PDF</button><button class="btn" id="waM" title="מעתיק את החודש כטקסט — להדביק בוואטסאפ">💬 העתקה לוואטסאפ</button>'
+      +'<button class="btn" id="addRow">＋ דיג׳יי לחודש</button><button class="btn" id="xlM" title="קובץ אקסל של החודש">⬇ אקסל</button><button class="btn" id="pdfM" title="הדפסה / שמירה כ-PDF">🖨 PDF</button><button class="btn" id="waM" title="בקשה להעברה: רק מה שלא שולם — ספק, סכום ופירוט חשבוניות. להדביק בוואטסאפ">💬 בקשה להעברה</button>'
       +'<span class="small">'+(D?'משונטל: עודכן '+new Date(D.at).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+'</span></div>';
     /* 09.11.2026 איילת: «השמות בעמודה אחת — שם במה בסוגריים», «לא להצטרך לגלול שמאלה» — פחות עמודות, הכול נכנס ברוחב */
     h+='<table class="mt">'
@@ -365,17 +365,18 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
     call('/rest/v1/dj_rows',{method:'POST',body:JSON.stringify(list),headers:{Prefer:'return=representation'}}).then(function(xs){ R=R.concat(xs||[]); TAB=nm; prep(); render(); msg('נפתח '+ymLbl(nm)); }).catch(function(e){ msg(e.message,true); }); }
 
   /* 09.11.2026 איילת: «אפשרות ליצוא לאקסל ו-PDF» — החודש המוצג, כמו בטבלה (כולל מה שבשונטל) */
-  /* 11.11.2026 איילת: «תן אפשרות להעתיק לוואטסאפ» — החודש המוצג כטקסט (בלי פרטי בנק) */
-  function copyWa(M){ var used={}, sum=0, cnt=0, L=['*🎧 די.ג׳יים אסא — '+ymLbl(M)+'*',''];
-    R.filter(function(r){ return r.ym===M; }).forEach(function(r,i){ var a=art(r.artist_id), t=rowTotal(r), s=shontal(r,M,used), g=(r.gigs||[]).slice().sort();
-      if(t!=null) sum+=t; cnt+=g.length;
-      L.push((i+1)+'. *'+(a.payee||'')+'*'+(a.stage&&a.stage!==a.payee?' ('+a.stage+')':''));
-      L.push('ערבים: '+(g.length?g.map(dm).join(', ')+' ('+g.length+')':'—')+' · '+(t==null?'גלובלי':nis(t)));
-      if(r.status) L.push('סטטוס: '+r.status);
-      L.push('חשבונית: '+((s.inv||[]).length?s.inv.map(function(v){ return (v.doctype||'חשבונית')+' '+(v.num||'')+' '+nis(v.amount); }).join(', '):'❌ עוד אין'));
-      if(r.note) L.push('הערה: '+r.note);
+  /* 11.11.2026 איילת: «תן אפשרות להעתיק לוואטסאפ» → «הטקסט הוא בקשה להעברה. רק מה שלא שולם — ספק + סכום + פירוט חשבוניות».
+     רק חשבוניות שלא שולמו ולא עלו לבנק (קבלה «עבור חשבונית» לא נספרת פעמיים); דיג׳יי בלי חשבונית פתוחה — לא בבקשה. */
+  function copyWa(M){ var used={}, sum=0, n=0, L=['*בקשה להעברה — די.ג׳יים אסא '+ymLbl(M)+'*',''];
+    R.filter(function(r){ return r.ym===M; }).forEach(function(r){ var a=art(r.artist_id), s=shontal(r,M,used);
+      if(s.st==='ok'||s.st==='wait') return;
+      var iv=(s.inv||[]).filter(function(v){ return !v.paid&&!v.bank&&!v.refNum; }); if(!iv.length) return;
+      var t=0; iv.forEach(function(v){ t+=+v.amount||0; }); sum+=t; n++;
+      L.push(n+'. *'+(a.payee||'')+'* — '+nis(t));
+      iv.forEach(function(v){ L.push('   '+(v.doctype||'חשבונית')+' '+(v.num||'')+' ('+dm(v.iso)+') '+nis(v.amount)); });
       L.push(''); });
-    L.push('*סה״כ: '+cnt+' ערבים · '+nis(sum)+'*');
+    if(!n){ msg('אין בחודש הזה חשבוניות פתוחות להעברה'); return; }
+    L.push('*סה״כ להעברה: '+nis(sum)+'*');
     var txt=L.join('\n');
     var done=function(){ msg('הועתק ✓ — להדביק בוואטסאפ'); };
     var fb=function(){ var ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(_){ msg('לא הצלחתי להעתיק',true); } ta.remove(); };
@@ -462,7 +463,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function autoReload(){ if(!ME||busy()||$('app').classList.contains('hid')) return; var y=window.scrollY; load().then(function(){ render(); window.scrollTo(0,y); }).catch(function(){}); }
   setInterval(autoReload, 120000);
   /* «שהקישור יתעדכן מעצמו»: אם יש גרסה חדשה של הדף באתר — נטען אותה לבד (לא בזמן הקלדה). גם בתוך שונטל. */
-  var DJ_VER='2026-11-11a';
+  var DJ_VER='2026-11-11b';
   function checkVer(){ if(busy()) return; fetch(location.pathname+'?ver='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
       var m=/DJ_VER='([^']+)'/.exec(t||''); if(!m||m[1]===DJ_VER) return;
       var k='dj-ver-reload-'+m[1]; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,'1'); }catch(_){}
