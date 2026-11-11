@@ -297,7 +297,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function renderMonth(M){
     var rows=R.filter(function(r){ return r.ym===M; }), used={}, sum=0, cnt=0;
     var h='<div class="bar"><b style="font-size:16px;color:var(--subTx)">'+ymLbl(M)+'</b>'
-      +'<button class="btn" id="addRow">＋ דיג׳יי לחודש</button><button class="btn" id="xlM" title="קובץ אקסל של החודש">⬇ אקסל</button><button class="btn" id="pdfM" title="הדפסה / שמירה כ-PDF">🖨 PDF</button>'
+      +'<button class="btn" id="addRow">＋ דיג׳יי לחודש</button><button class="btn" id="xlM" title="קובץ אקסל של החודש">⬇ אקסל</button><button class="btn" id="pdfM" title="הדפסה / שמירה כ-PDF">🖨 PDF</button><button class="btn" id="waM" title="מעתיק את החודש כטקסט — להדביק בוואטסאפ">💬 העתקה לוואטסאפ</button>'
       +'<span class="small">'+(D?'משונטל: עודכן '+new Date(D.at).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+'</span></div>';
     /* 09.11.2026 איילת: «השמות בעמודה אחת — שם במה בסוגריים», «לא להצטרך לגלול שמאלה» — פחות עמודות, הכול נכנס ברוחב */
     h+='<table class="mt">'
@@ -345,7 +345,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
     v.querySelectorAll('tr[data-cid]').forEach(function(tr){ var id=+tr.getAttribute('data-cid');
       tr.querySelectorAll('[data-c]').forEach(function(el){ el.onchange=function(){ var f=el.getAttribute('data-c'), o={}; o[f]=f==='cnt'?numOrNull(el.value):el.value; save('dj_closed',id,o); }; });
       tr.querySelector('[data-cdel]').onclick=function(){ if(confirm('להסיר?')) save('dj_closed',id,{deleted:true},function(){ CL=CL.filter(function(x){ return !x.deleted; }); renderMonth(M); }); }; });
-    $('xlM').onclick=function(){ exportXlsx(M); }; $('pdfM').onclick=function(){ exportPdf(M); };
+    $('xlM').onclick=function(){ exportXlsx(M); }; $('pdfM').onclick=function(){ exportPdf(M); }; $('waM').onclick=function(){ copyWa(M); };
     $('addClosed').onclick=function(){ ins('dj_closed',{ym:M,label:'',what:'סגור'}).then(function(x){ CL.push(x); renderMonth(M); }); };
     $('addRow').onclick=function(){ var names=A.filter(function(a){ return a.active; }).map(function(a,i){ return (i+1)+'. '+(a.stage?a.stage+' — ':'')+a.payee; }).join('\n');
       var n=prompt('איזה דיג׳יי להוסיף ל'+ymLbl(M)+'? (מספר מהרשימה)\n'+names); if(!n) return; var a=A.filter(function(a){ return a.active; })[+n-1]; if(!a) return;
@@ -365,6 +365,21 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
     call('/rest/v1/dj_rows',{method:'POST',body:JSON.stringify(list),headers:{Prefer:'return=representation'}}).then(function(xs){ R=R.concat(xs||[]); TAB=nm; prep(); render(); msg('נפתח '+ymLbl(nm)); }).catch(function(e){ msg(e.message,true); }); }
 
   /* 09.11.2026 איילת: «אפשרות ליצוא לאקסל ו-PDF» — החודש המוצג, כמו בטבלה (כולל מה שבשונטל) */
+  /* 11.11.2026 איילת: «תן אפשרות להעתיק לוואטסאפ» — החודש המוצג כטקסט (בלי פרטי בנק) */
+  function copyWa(M){ var used={}, sum=0, cnt=0, L=['*🎧 די.ג׳יים אסא — '+ymLbl(M)+'*',''];
+    R.filter(function(r){ return r.ym===M; }).forEach(function(r,i){ var a=art(r.artist_id), t=rowTotal(r), s=shontal(r,M,used), g=(r.gigs||[]).slice().sort();
+      if(t!=null) sum+=t; cnt+=g.length;
+      L.push((i+1)+'. *'+(a.payee||'')+'*'+(a.stage&&a.stage!==a.payee?' ('+a.stage+')':''));
+      L.push('ערבים: '+(g.length?g.map(dm).join(', ')+' ('+g.length+')':'—')+' · '+(t==null?'גלובלי':nis(t)));
+      if(r.status) L.push('סטטוס: '+r.status);
+      L.push('חשבונית: '+((s.inv||[]).length?s.inv.map(function(v){ return (v.doctype||'חשבונית')+' '+(v.num||'')+' '+nis(v.amount); }).join(', '):'❌ עוד אין'));
+      if(r.note) L.push('הערה: '+r.note);
+      L.push(''); });
+    L.push('*סה״כ: '+cnt+' ערבים · '+nis(sum)+'*');
+    var txt=L.join('\n');
+    var done=function(){ msg('הועתק ✓ — להדביק בוואטסאפ'); };
+    var fb=function(){ var ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(_){ msg('לא הצלחתי להעתיק',true); } ta.remove(); };
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done,fb); else fb(); }
   function exportData(M){ var used={}, out=[], sum=0, cnt=0;
     R.filter(function(r){ return r.ym===M; }).forEach(function(r,i){ var a=art(r.artist_id), t=rowTotal(r), s=shontal(r,M,used); if(t!=null) sum+=t; cnt+=(r.gigs||[]).length;
       out.push({n:i+1, payee:a.payee||'', stage:a.stage||'', dealer:a.dealer?'עוסק '+a.dealer:'', bank:a.bank||'', branch:a.branch||'', account:a.account||'',
@@ -447,7 +462,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
   function autoReload(){ if(!ME||busy()||$('app').classList.contains('hid')) return; var y=window.scrollY; load().then(function(){ render(); window.scrollTo(0,y); }).catch(function(){}); }
   setInterval(autoReload, 120000);
   /* «שהקישור יתעדכן מעצמו»: אם יש גרסה חדשה של הדף באתר — נטען אותה לבד (לא בזמן הקלדה). גם בתוך שונטל. */
-  var DJ_VER='2026-11-09o';
+  var DJ_VER='2026-11-11a';
   function checkVer(){ if(busy()) return; fetch(location.pathname+'?ver='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
       var m=/DJ_VER='([^']+)'/.exec(t||''); if(!m||m[1]===DJ_VER) return;
       var k='dj-ver-reload-'+m[1]; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,'1'); }catch(_){}
