@@ -367,6 +367,54 @@ document.addEventListener('contextmenu', e => {
   document.querySelectorAll('td.ed[data-m="' + m + '"]').forEach(x => { if (x.dataset.p === p) x.classList.toggle('est', !on); });
   renderStatus(); estChip();
 });
+/* 📝 הערה לתא + הערה כללית לספק (איילת 11.11.2026) — אותו מקום שכבר קיים: D.cnote[path][חודש] (הערה לתא) ו-l.note (💬 הערת השורה).
+   עריכה: כפתור בחלון של התא, או Ctrl+לחיצה על כל תא. תא עם הערה = משולש בפינה. עמידה על שם הספק = הערת השורה. */
+document.head.insertAdjacentHTML('beforeend', '<style id="cnCss">table td.ed.cn{position:relative;text-decoration:none!important}table td.ed.cn::after{content:"";position:absolute;top:0;left:0;border-style:solid;border-width:7px 7px 0 0;border-color:#e8590c transparent transparent transparent}' +
+  '.hx-pop .hx-edit{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}.hx-pop .hx-edit button{font:inherit;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:2px 8px;cursor:pointer}' +
+  'button[data-act="lnNote"].has-note{visibility:visible!important;opacity:1!important;filter:none}' +
+  '#lnPop{position:fixed;z-index:61;background:#fffdf3;border:1px solid #e8c34a;border-radius:9px;box-shadow:0 4px 16px rgba(0,0,0,.15);padding:7px 10px;max-width:380px;font-size:12.5px;direction:rtl;white-space:pre-wrap}</style>');
+function cnSet(p, m, v) {
+  const old = ((D.cnote || {})[p] || {})[m] || '';
+  v = (v || '').trim(); if (v === old) return;
+  const desc = `${labelOf(p)} › ${M[m]}: הערה לתא «${v || 'נמחקה'}»`;
+  undoStack.push({ s: snap(), d: desc }); if (undoStack.length > 80) undoStack.shift(); redoStack = [];
+  D.cnote = D.cnote || {}; D.cnote[p] = D.cnote[p] || {};
+  if (v) D.cnote[p][m] = v; else delete D.cnote[p][m];
+  if (!Object.keys(D.cnote[p]).length) delete D.cnote[p];
+  logAdd(desc); dirty = true; persist();
+  document.querySelectorAll('td.ed[data-m="' + m + '"]').forEach(x => { if (x.dataset.p !== p) return; x.classList.toggle('cn', !!v); if (v) { x.dataset.hx = '1'; x.removeAttribute('title'); } });
+  renderStatus();
+}
+function cnEdit(p, m) {
+  if (EMBED.meta && EMBED.meta.readOnly) return;
+  const cur = ((D.cnote || {})[p] || {})[m] || '';
+  const v = window.prompt(`הערה לתא — ${labelOf(p).split(' › ').pop()} · ${M[m]}\n(להשאיר ריק = למחוק)`, cur);
+  if (v === null) return;
+  cnSet(p, m, v);
+  const pop = document.querySelector('.hx-pop'); if (pop) pop.remove();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-cnedit]');
+  if (b) { e.preventDefault(); e.stopPropagation(); cnEdit(b.dataset.p, +b.dataset.m); return; }
+  if (e.ctrlKey || e.metaKey) {
+    const td = e.target.closest && e.target.closest('td.ed[data-p]');
+    if (td) { e.preventDefault(); e.stopPropagation(); cnEdit(td.dataset.p, +td.dataset.m); }
+  }
+}, true);
+/* הערת השורה במעבר על שם הספק */
+let _lnEl = null;
+document.addEventListener('mouseover', e => {
+  const td = e.target.closest && e.target.closest('td');
+  const btn = td && td.querySelector && td.querySelector('button[data-act="lnNote"][data-id]');
+  if (!btn) { if (_lnEl && !(e.target.closest && e.target.closest('#lnPop'))) { _lnEl.remove(); _lnEl = null; } return; }
+  const f = findLine(btn.dataset.id), note = f && f.l && f.l.note;
+  if (_lnEl) { _lnEl.remove(); _lnEl = null; }
+  if (!note) return;
+  _lnEl = document.createElement('div'); _lnEl.id = 'lnPop'; _lnEl.textContent = '💬 ' + note; document.body.appendChild(_lnEl);
+  const r = td.getBoundingClientRect();
+  _lnEl.style.top = Math.min(window.innerHeight - _lnEl.offsetHeight - 8, r.bottom + 4) + 'px';
+  _lnEl.style.left = Math.max(8, r.right - _lnEl.offsetWidth) + 'px';
+});
 </script>
 <script>
 (function(){
@@ -454,6 +502,11 @@ var PATCHES=[
   [$('fbA1').textContent.slice(1, -1), $('fbB1').textContent.slice(1, -1)],
   ["function fBreak(path, m) {\n", $('fbB2').textContent.slice(1)],
   [$('fbA3').textContent.slice(1, -1), $('fbB3').textContent.slice(1, -1)],
+  /* 📝 הערה לתא (11.11.2026): כפתור עריכה בחלון של התא · 💬 בולט כשיש הערת שורה */
+  ["  const ln = lineNote(path); if (ln) out.push(`<div class=\"hx-ln\">הערת השורה: ${esc(ln)}</div>`);\n  return out.join('');\n}",
+   "  const ln = lineNote(path); if (ln) out.push(`<div class=\"hx-ln\">💬 הערה כללית לספק: ${esc(ln)}</div>`);\n  if (!(EMBED.meta && EMBED.meta.readOnly)) out.push(`<div class=\"hx-edit\"><button data-cnedit data-p=\"${esc(path)}\" data-m=\"${m}\">📝 ${man ? 'עריכת' : 'הוספת'} הערה לתא</button></div>`);\n  return out.join('');\n}"],
+  ['<button data-act="lnNote" data-id="${l.id}" title="הערה">💬</button>',
+   '<button data-act="lnNote" data-id="${l.id}" title="${l.note ? esc(l.note) : \'הערה כללית לספק\'}"${l.note ? \' class="has-note"\' : \'\'}>💬</button>'],
   /* 📅 החודש הקודם (לפי התאריך של היום) נחשב «סגור» לתצוגה ונפתח כברירת מחדל — איילת 10.11.2026: «עכשיו התאריך 10.11, הדוח צריך להפתח אוטומטית על החודש הקודם»
      (וגם «החודש שעובדים עליו = סגור לתצוגה»). closedThrough בהגדרות נשאר כמו שהוא; לוקחים את הגדול מבין שניהם. */
   ["const cT = (S.closedThrough === null || S.closedThrough === undefined || S.closedThrough === '') ? 11 : +S.closedThrough;",
