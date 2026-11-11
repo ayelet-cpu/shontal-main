@@ -369,26 +369,28 @@ document.addEventListener('contextmenu', e => {
 });
 /* 📝 הערה לתא + הערה כללית לספק (איילת 11.11.2026) — אותו מקום שכבר קיים: D.cnote[path][חודש] (הערה לתא) ו-l.note (💬 הערת השורה).
    עריכה: כפתור בחלון של התא, או Ctrl+לחיצה על כל תא. תא עם הערה = משולש בפינה. עמידה על שם הספק = הערת השורה. */
-document.head.insertAdjacentHTML('beforeend', '<style id="cnCss">table td.ed.cn{position:relative;text-decoration:none!important}table td.ed.cn::after{content:"";position:absolute;top:0;left:0;border-style:solid;border-width:7px 7px 0 0;border-color:#e8590c transparent transparent transparent}' +
+document.head.insertAdjacentHTML('beforeend', '<style id="cnCss">table td.ed.cn,table td.ed.cnu{position:relative;text-decoration:none!important}table td.ed.cn::after,table td.ed.cnu::before{content:"";position:absolute;top:0;border-style:solid;border-width:7px 7px 0 0;border-color:#4a7bd0 transparent transparent transparent}table td.ed.cn::after{right:0;border-width:7px 0 0 7px;border-color:#4a7bd0 transparent transparent transparent}table td.ed.cnu::before{left:0;border-color:#e8590c transparent transparent transparent}' +
+  '.hx-pop .hx-me{background:#fff3e0!important;border-right:3px solid #e8590c}.hx-pop .hx-cl{color:#2c4f8a}' +
   '.hx-pop .hx-edit{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}.hx-pop .hx-edit button{font:inherit;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:2px 8px;cursor:pointer}' +
   'button[data-act="lnNote"].has-note{visibility:visible!important;opacity:1!important;filter:none}' +
   '#lnPop{position:fixed;z-index:61;background:#fffdf3;border:1px solid #e8c34a;border-radius:9px;box-shadow:0 4px 16px rgba(0,0,0,.15);padding:7px 10px;max-width:380px;font-size:12.5px;direction:rtl;white-space:pre-wrap}</style>');
+/* שני סוגי הערות (איילת 11.11.2026): D.cnoteU = ההערות של איילת (✍️, משולש כתום) · D.cnote = הערות/פירוט של קלוד (🤖, משולש כחול) */
 function cnSet(p, m, v) {
-  const old = ((D.cnote || {})[p] || {})[m] || '';
+  const old = ((D.cnoteU || {})[p] || {})[m] || '';
   v = (v || '').trim(); if (v === old) return;
-  const desc = `${labelOf(p)} › ${M[m]}: הערה לתא «${v || 'נמחקה'}»`;
+  const desc = `${labelOf(p)} › ${M[m]}: ההערה שלי «${v || 'נמחקה'}»`;
   undoStack.push({ s: snap(), d: desc }); if (undoStack.length > 80) undoStack.shift(); redoStack = [];
-  D.cnote = D.cnote || {}; D.cnote[p] = D.cnote[p] || {};
-  if (v) D.cnote[p][m] = v; else delete D.cnote[p][m];
-  if (!Object.keys(D.cnote[p]).length) delete D.cnote[p];
+  D.cnoteU = D.cnoteU || {}; D.cnoteU[p] = D.cnoteU[p] || {};
+  if (v) D.cnoteU[p][m] = v; else delete D.cnoteU[p][m];
+  if (!Object.keys(D.cnoteU[p]).length) delete D.cnoteU[p];
   logAdd(desc); dirty = true; persist();
-  document.querySelectorAll('td.ed[data-m="' + m + '"]').forEach(x => { if (x.dataset.p !== p) return; x.classList.toggle('cn', !!v); if (v) { x.dataset.hx = '1'; x.removeAttribute('title'); } });
+  document.querySelectorAll('td.ed[data-m="' + m + '"]').forEach(x => { if (x.dataset.p !== p) return; x.classList.toggle('cnu', !!v); if (v) { x.dataset.hx = '1'; x.removeAttribute('title'); } });
   renderStatus();
 }
 function cnEdit(p, m) {
   if (EMBED.meta && EMBED.meta.readOnly) return;
-  const cur = ((D.cnote || {})[p] || {})[m] || '';
-  const v = window.prompt(`הערה לתא — ${labelOf(p).split(' › ').pop()} · ${M[m]}\n(להשאיר ריק = למחוק)`, cur);
+  const cur = ((D.cnoteU || {})[p] || {})[m] || '';
+  const v = window.prompt(`ההערה שלי — ${labelOf(p).split(' › ').pop()} · ${M[m]}\n(להשאיר ריק = למחוק)`, cur);
   if (v === null) return;
   cnSet(p, m, v);
   const pop = document.querySelector('.hx-pop'); if (pop) pop.remove();
@@ -504,9 +506,16 @@ var PATCHES=[
   [$('fbA3').textContent.slice(1, -1), $('fbB3').textContent.slice(1, -1)],
   /* 📝 הערה לתא (11.11.2026): כפתור עריכה בחלון של התא · 💬 בולט כשיש הערת שורה */
   ["  const ln = lineNote(path); if (ln) out.push(`<div class=\"hx-ln\">הערת השורה: ${esc(ln)}</div>`);\n  return out.join('');\n}",
-   "  const ln = lineNote(path); if (ln) out.push(`<div class=\"hx-ln\">💬 הערה כללית לספק: ${esc(ln)}</div>`);\n  if (!(EMBED.meta && EMBED.meta.readOnly)) out.push(`<div class=\"hx-edit\"><button data-cnedit data-p=\"${esc(path)}\" data-m=\"${m}\">📝 ${man ? 'עריכת' : 'הוספת'} הערה לתא</button></div>`);\n  return out.join('');\n}"],
+   "  const ln = lineNote(path); if (ln) out.push(`<div class=\"hx-ln\">💬 הערה כללית לספק: ${esc(ln)}</div>`);\n  if (!(EMBED.meta && EMBED.meta.readOnly)) out.push(`<div class=\"hx-edit\"><button data-cnedit data-p=\"${esc(path)}\" data-m=\"${m}\">✍️ ${man ? 'עריכת ההערה שלי' : 'הוספת הערה שלי'}</button></div>`);\n  return out.join('');\n}"],
   ['<button data-act="lnNote" data-id="${l.id}" title="הערה">💬</button>',
    '<button data-act="lnNote" data-id="${l.id}" title="${l.note ? esc(l.note) : \'הערה כללית לספק\'}"${l.note ? \' class="has-note"\' : \'\'}>💬</button>'],
+  /* שני סוגי הערות (11.11.2026): ✍️ של איילת (D.cnoteU, משולש כתום שמאל) · 🤖 של קלוד (D.cnote, משולש כחול ימין) */
+  ["const man = ((D.cnote || {})[path] || {})[m]; if (man) out.push(`<div class=\"hx-man\">📝 ${esc(man)}</div>`);",
+   "const man = ((D.cnoteU || {})[path] || {})[m], clN = ((D.cnote || {})[path] || {})[m]; if (man) out.push(`<div class=\"hx-man hx-me\">✍️ ההערה שלי: ${esc(man)}</div>`); if (clN) out.push(`<div class=\"hx-man hx-cl\">🤖 קלוד: ${esc(clN)}</div>`);"],
+  ["const man = ((D.cnote || {})[path] || {})[m]; if (man) out.push('📝 ' + man);",
+   "const man = ((D.cnote || {})[path] || {})[m]; if (man) out.push('📝 ' + man); const manU = ((D.cnoteU || {})[path] || {})[m]; if (manU) out.push('✍️ ' + manU);"],
+  ["if (((D.cnote || {})[path] || {})[m]) cls += ' cn';",
+   "if (((D.cnote || {})[path] || {})[m]) cls += ' cn'; if (((D.cnoteU || {})[path] || {})[m]) cls += ' cnu';"],
   /* 📅 החודש הקודם (לפי התאריך של היום) נחשב «סגור» לתצוגה ונפתח כברירת מחדל — איילת 10.11.2026: «עכשיו התאריך 10.11, הדוח צריך להפתח אוטומטית על החודש הקודם»
      (וגם «החודש שעובדים עליו = סגור לתצוגה»). closedThrough בהגדרות נשאר כמו שהוא; לוקחים את הגדול מבין שניהם. */
   ["const cT = (S.closedThrough === null || S.closedThrough === undefined || S.closedThrough === '') ? 11 : +S.closedThrough;",
