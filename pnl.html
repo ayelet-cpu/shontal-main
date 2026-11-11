@@ -387,14 +387,42 @@ function cnSet(p, m, v) {
   document.querySelectorAll('td.ed[data-m="' + m + '"]').forEach(x => { if (x.dataset.p !== p) return; x.classList.toggle('cnu', !!v); if (v) { x.dataset.hx = '1'; x.removeAttribute('title'); } });
   renderStatus();
 }
+/* חלון כתיבה גדול להערה (איילת 11.11: «יותר גדול בזמן שאני רושמת») — במקום prompt הקטן */
 function cnEdit(p, m) {
   if (EMBED.meta && EMBED.meta.readOnly) return;
   const cur = ((D.cnoteU || {})[p] || {})[m] || '';
-  const v = window.prompt(`ההערה שלי — ${labelOf(p).split(' › ').pop()} · ${M[m]}\n(להשאיר ריק = למחוק)`, cur);
-  if (v === null) return;
-  cnSet(p, m, v);
   const pop = document.querySelector('.hx-pop'); if (pop) pop.remove();
+  const old = document.getElementById('cnModal'); if (old) old.remove();
+  const ov = document.createElement('div'); ov.id = 'cnModal';
+  ov.innerHTML = `<div class="cnm-box"><div class="cnm-t">✍️ ההערה שלי — ${esc(labelOf(p).split(' › ').pop())} · ${M[m]}</div>` +
+    `<textarea placeholder="מה לרשום?">${esc(cur)}</textarea>` +
+    `<div class="cnm-b"><button data-cnm="save" class="btn primary">שמירה</button>${cur ? '<button data-cnm="del" class="btn">מחיקת ההערה</button>' : ''}<button data-cnm="x" class="btn">ביטול</button><span class="small muted">Ctrl+Enter = שמירה · Esc = ביטול</span></div></div>`;
+  document.body.appendChild(ov);
+  const ta = ov.querySelector('textarea'); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  const close = () => ov.remove();
+  ov.addEventListener('click', e => {
+    const b = e.target.closest('[data-cnm]');
+    if (e.target === ov) return close();
+    if (!b) return;
+    if (b.dataset.cnm === 'save') cnSet(p, m, ta.value);
+    if (b.dataset.cnm === 'del') cnSet(p, m, '');
+    close();
+  });
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); close(); }
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); cnSet(p, m, ta.value); close(); }
+  });
 }
+document.head.insertAdjacentHTML('beforeend', '<style id="bigEditCss">' +
+  '#cnModal{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,40,.28);z-index:300;display:flex;align-items:center;justify-content:center;direction:rtl}' +
+  '#cnModal .cnm-box{background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.25);padding:16px 18px;width:620px!important;max-width:92vw;box-sizing:border-box;flex-shrink:0}' +
+  '#cnModal .cnm-t{font-weight:700;margin-bottom:8px;font-size:15px}' +
+  '#cnModal textarea{width:100%;min-height:180px;font:inherit;font-size:15px;line-height:1.6;padding:10px 12px;border:1px solid #e8590c;border-radius:10px;box-sizing:border-box;resize:vertical;direction:rtl}' +
+  '#cnModal .cnm-b{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}' +
+  /* תא בעריכה — שדה רחב וגדול מעל התא (איילת 11.11) */
+  'table td.ed:has(input){position:relative;overflow:visible!important}' +
+  'table td.ed input{position:absolute!important;right:0;top:50%;transform:translateY(-50%);width:max(100%,360px)!important;min-width:360px!important;height:38px!important;font-size:16px!important;padding:4px 10px!important;z-index:40;background:#fff!important;box-shadow:0 6px 20px rgba(0,0,0,.22);border-width:2px!important}' +
+  '</style>');
 document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('[data-cnedit]');
   if (b) { e.preventDefault(); e.stopPropagation(); cnEdit(b.dataset.p, +b.dataset.m); return; }
