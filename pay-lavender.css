@@ -62,3 +62,172 @@ html:has(#payTheme) body #nx .nx-wasrc{color:#5b4bb0}
 .lv-done span{color:#5f5b78;font-size:15px}
 }
 @media (prefers-reduced-motion:reduce){html:has(#payTheme) *{animation:none!important;transition:none!important}}
+
+/* ===================== שכבת עיצוב מודרנית (15.11.2026, איילת: «מיושן ולא נעים לעיניים») =====================
+   אותם אלמנטים, אותו סדר, אותם טקסטים — רק לבוש חדש: רקע לבנדר עמוק, כרטיסים לבנים מרחפים, מספרים גדולים בצבע,
+   לשוניות כמתג, פס צבע לכל עובד לפי מצבו (אדום=לשלוח לחשבת · כתום=צריך אותך · ירוק=תקין). */
+@media screen{
+html:has(#payTheme){--lv:#6d28d9;--lv2:#8b5cf6;--lvs:#f3eeff;--lvl:#ebe4fb;--ink:#1e1838;--mut:#6b6488}
+html:has(#payTheme) body{background:
+  radial-gradient(900px 480px at 92% -8%,rgba(196,181,253,.55),transparent 62%),
+  radial-gradient(780px 420px at 4% 6%,rgba(244,201,232,.38),transparent 60%),
+  radial-gradient(1100px 700px at 50% 110%,rgba(221,214,254,.5),transparent 60%),
+  #f4f1fc!important;background-attachment:fixed!important;color:var(--ink)}
+
+/* כותרת */
+html:has(#payTheme) .top{background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.9)!important;border-radius:22px;padding:14px 20px!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset,0 18px 40px -26px rgba(76,29,149,.35);margin-bottom:14px!important}
+html:has(#payTheme) .top h1{font-size:26px!important;font-weight:800!important;letter-spacing:-.3px;
+  background:linear-gradient(90deg,#2e1065,#6d28d9 60%,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent!important}
+html:has(#payTheme) .top h1 .dot{background:linear-gradient(135deg,#a855f7,#6d28d9)!important;box-shadow:0 0 0 4px rgba(139,92,246,.18)}
+html:has(#payTheme) .top .sub{color:var(--mut)!important}
+
+/* כפתורים */
+html:has(#payTheme) :is(.tbtn,.wvb,.notebtn,.rvbtn){background:#fff!important;border:1px solid var(--lvl)!important;border-radius:999px!important;
+  box-shadow:0 1px 2px rgba(30,24,56,.05),0 6px 16px -10px rgba(76,29,149,.35)!important;font-weight:700}
+html:has(#payTheme) :is(.tbtn,.wvb,.notebtn,.rvbtn):hover{background:var(--lvs)!important;border-color:#d8ccfb!important;transform:translateY(-1px)}
+html:has(#payTheme) :is(.tbtn.primary,.wvb.pri){background:linear-gradient(135deg,#8b5cf6,#6d28d9)!important;border-color:transparent!important;color:#fff!important;
+  box-shadow:0 10px 24px -10px rgba(109,40,217,.7)!important}
+
+/* לשוניות — מתג */
+html:has(#payTheme) .tabs{display:inline-flex!important;gap:4px!important;padding:5px!important;background:rgba(255,255,255,.75);border:1px solid #fff!important;border-radius:999px!important;
+  box-shadow:0 10px 28px -20px rgba(76,29,149,.45);border-bottom:1px solid #fff!important;flex-wrap:wrap}
+html:has(#payTheme) .tabs :is(.tab,.tbtn){border:0!important;background:transparent!important;box-shadow:none!important;border-radius:999px!important;padding:8px 16px!important;color:#4b4469!important;font-weight:700}
+html:has(#payTheme) .tabs :is(.tab,.tbtn):hover{background:var(--lvs)!important;transform:none}
+html:has(#payTheme) .tabs :is(.tab.on,.tbtn.primary){background:linear-gradient(135deg,#8b5cf6,#6d28d9)!important;color:#fff!important;box-shadow:0 8px 20px -10px rgba(109,40,217,.8)!important}
+html:has(#payTheme) .tabs .tab.on::after{display:none}
+
+/* חיפוש ובחירות */
+html:has(#payTheme) :is(input,select,textarea){border-radius:14px!important;border:1px solid var(--lvl)!important;background:#fff!important;box-shadow:0 1px 2px rgba(30,24,56,.04)}
+html:has(#payTheme) :is(input,select,textarea):focus{outline:none!important;border-color:#a78bfa!important;box-shadow:0 0 0 4px rgba(139,92,246,.16)!important}
+
+/* ריבועי הספירה — כרטיסים לבנים, מספר גדול בצבע, פס צבע למעלה */
+html:has(#payTheme) .one-ks{gap:14px!important}
+html:has(#payTheme) .one-k{position:relative;overflow:hidden;background:#fff!important;border:1px solid #efe9fc!important;border-radius:22px!important;padding:18px 12px 14px!important;
+  color:#4b4469!important;font-weight:700!important;box-shadow:0 1px 2px rgba(30,24,56,.04),0 16px 34px -22px rgba(76,29,149,.45)!important}
+html:has(#payTheme) .one-k::before{content:"";position:absolute;inset-inline:0;top:0;height:5px;background:var(--kc,#6d28d9);opacity:.9}
+html:has(#payTheme) .one-k::after{content:"";position:absolute;width:140px;height:140px;border-radius:50%;inset-inline-end:-50px;top:-70px;background:var(--kc,#6d28d9);opacity:.07}
+html:has(#payTheme) .one-k b{font-size:42px!important;letter-spacing:-1px;color:var(--kc,#6d28d9)!important;margin-bottom:2px}
+html:has(#payTheme) .one-k.one-r{--kc:#e11d48}
+html:has(#payTheme) .one-k.one-a{--kc:#d97706}
+html:has(#payTheme) .one-k.one-g{--kc:#16a34a}
+html:has(#payTheme) .one-k.one-all{--kc:#7c3aed}
+html:has(#payTheme) .one-k.on{background:linear-gradient(180deg,color-mix(in srgb,var(--kc) 9%,#fff),#fff)!important;border-color:color-mix(in srgb,var(--kc) 45%,#fff)!important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--kc) 16%,transparent),0 18px 36px -20px color-mix(in srgb,var(--kc) 60%,transparent)!important}
+
+/* טבלת העובדים */
+html:has(#payTheme) .wvt{border:1px solid #fff!important;border-radius:24px!important;background:#fff!important;
+  box-shadow:0 1px 2px rgba(30,24,56,.04),0 24px 50px -30px rgba(76,29,149,.45)!important}
+html:has(#payTheme) .wvt th{background:linear-gradient(180deg,#f7f3ff,#efe8fe)!important;color:#4c1d95!important;font-weight:800!important;border-bottom:1px solid #e6dcfc!important;padding:13px 14px!important}
+html:has(#payTheme) .wvt td{border-bottom:1px solid #f1edf9!important;padding:12px 14px!important}
+html:has(#payTheme) .wvt tbody tr:hover td{background:#faf7ff!important}
+html:has(#payTheme) .wvt tbody tr td:first-child{box-shadow:inset -4px 0 0 transparent}
+html:has(#payTheme) .wvt tbody tr:has(.one-st.one-r) td:first-child{box-shadow:inset -4px 0 0 #f43f5e}
+html:has(#payTheme) .wvt tbody tr:has(.one-st.one-a) td:first-child{box-shadow:inset -4px 0 0 #f59e0b}
+html:has(#payTheme) .wvt tbody tr:has(.one-st.one-g) td:first-child{box-shadow:inset -4px 0 0 #22c55e}
+html:has(#payTheme) .wvt tr.on td{background:#f1eaff!important}
+html:has(#payTheme) .wvt .nm{color:var(--ink)!important}
+
+/* תגיות */
+html:has(#payTheme) .one-st{padding:3px 11px 3px 10px!important;font-weight:700!important;border:1px solid transparent}
+html:has(#payTheme) .one-st::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-inline-end:6px;vertical-align:1px;opacity:.8}
+html:has(#payTheme) .one-st.one-r{background:#fff1f3!important;color:#e11d48!important;border-color:#fecdd6}
+html:has(#payTheme) .one-st.one-a{background:#fff8eb!important;color:#c2610c!important;border-color:#fde3b5}
+html:has(#payTheme) .one-st.one-g{background:#effbf3!important;color:#15803d!important;border-color:#c6efd4}
+html:has(#payTheme) .wv-pill{border-radius:999px!important}
+html:has(#payTheme) .wv-pill.p-auto{background:#f4efff!important;color:#5b21b6!important;border-color:#e4d9fd!important}
+html:has(#payTheme) .wvt .cnt{background:#f1edff!important;color:#5b21b6!important;border:1px solid #e1d7fd!important}
+html:has(#payTheme) .wvt .cnt.z{background:#f6f5fa!important;color:#a29db8!important;border-color:#ecebf3!important}
+
+/* כרטיסים כלליים (דוחות, תיקונים) */
+html:has(#payTheme) :is(.tile,.utile,.cmp,.revbox,.fixitem,.ci,.cmpc,.notebox,.reconbox,.crow,.setcard,.wvp){border:1px solid #fff!important;border-radius:22px!important;
+  box-shadow:0 1px 2px rgba(30,24,56,.04),0 18px 40px -28px rgba(76,29,149,.45)!important}
+}
+
+/* ===================== v3 — «מהפך» (איילת: «לא בנאלי, לא צבעים ילדותיים») =====================
+   כיוון: יוקרתי ושקט. פס עליון בשזיף עמוק, כרטיסים לבנים, מספרים בדיו כהה, צבעי מצב מושתקים — רק כנקודה/פס דק. */
+@media screen{
+html:has(#payTheme){--ink:#1c1530;--mut:#756e8c;--plum:#2a1748;--plum2:#4a2a80;--lil:#b9a7f0;--line:#ece8f3;--rose:#b4536a;--amb:#b5883a;--sage:#4f8a6e;--vio:#6b4fd8}
+html:has(#payTheme) body{background:
+  radial-gradient(700px 260px at 85% 0,rgba(167,139,250,.35),transparent 70%),
+  linear-gradient(180deg,#1f1238 0,#34195f 210px,#3d2270 262px,#f5f3f9 262px,#f5f3f9 100%)!important;background-attachment:scroll!important}
+html:has(#payTheme){background:#f5f3f9}
+
+/* כותרת על הפס הכהה */
+html:has(#payTheme) .top{background:transparent!important;border:0!important;border-bottom:1px solid rgba(255,255,255,.1)!important;border-radius:0!important;box-shadow:none!important;padding:10px 4px 14px!important}
+html:has(#payTheme) .top h1{background:none!important;-webkit-background-clip:initial;background-clip:initial;color:#fff!important;font-size:27px!important;font-weight:700!important;letter-spacing:-.2px}
+html:has(#payTheme) .top h1 .dot{background:#c4b5fd!important;box-shadow:0 0 0 5px rgba(196,181,253,.18),0 0 18px rgba(196,181,253,.7)}
+html:has(#payTheme) .top .sub,html:has(#payTheme) .top .sub *{color:#cfc4ee!important}
+html:has(#payTheme) .top .sub b{color:#fff!important}
+/* כפתורים על הפס — זכוכית */
+html:has(#payTheme) .top :is(.tbtn,.wvb,.notebtn){background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.18)!important;color:#fff!important;box-shadow:none!important}
+html:has(#payTheme) .top :is(.tbtn,.wvb,.notebtn):hover{background:rgba(255,255,255,.16)!important}
+html:has(#payTheme) .top :is(.tbtn.primary,.wvb.pri){background:#fff!important;color:#2a1748!important;border-color:#fff!important;box-shadow:0 10px 26px -12px rgba(0,0,0,.6)!important}
+
+/* לשוניות על הפס */
+html:has(#payTheme) .tabs{background:rgba(255,255,255,.07)!important;border:1px solid rgba(255,255,255,.14)!important;box-shadow:none!important}
+html:has(#payTheme) .tabs :is(.tab,.tbtn){color:#ddd3fb!important}
+html:has(#payTheme) .tabs :is(.tab,.tbtn):hover{background:rgba(255,255,255,.1)!important;color:#fff!important}
+html:has(#payTheme) .tabs :is(.tab.on,.tbtn.primary){background:#fff!important;color:#2a1748!important;box-shadow:0 8px 22px -12px rgba(0,0,0,.6)!important}
+
+/* חיפוש — לבן נקי על הפס */
+html:has(#payTheme) :is(input,select,textarea){border:1px solid var(--line)!important}
+html:has(#payTheme) :is(#viewMain,#viewCheck)>:not(.one-ks) :is(.tbtn,.wvb){color:#2a1748!important}
+
+/* ריבועי הספירה — כרטיסים לבנים, מספר בדיו, נקודת צבע מושתקת */
+html:has(#payTheme) .one-k{background:#fff!important;border:1px solid rgba(255,255,255,.9)!important;color:var(--mut)!important;font-weight:600!important;font-size:15px!important;
+  box-shadow:0 1px 2px rgba(28,21,48,.05),0 22px 40px -26px rgba(28,21,48,.55)!important;padding:18px 14px 16px!important}
+html:has(#payTheme) .one-k::before{height:0!important}
+html:has(#payTheme) .one-k::after{display:none!important}
+html:has(#payTheme) .one-k b{color:var(--ink)!important;font-weight:700!important;font-size:40px!important;letter-spacing:-1.2px}
+html:has(#payTheme) .one-k b small{color:var(--kc)!important}
+html:has(#payTheme) .one-k.one-r{--kc:var(--rose)} html:has(#payTheme) .one-k.one-a{--kc:var(--amb)}
+html:has(#payTheme) .one-k.one-g{--kc:var(--sage)} html:has(#payTheme) .one-k.one-all{--kc:var(--vio)}
+html:has(#payTheme) .one-k{border-bottom:3px solid var(--kc)!important}
+html:has(#payTheme) .one-k.on{background:linear-gradient(160deg,#2a1748,#4a2a80)!important;color:#d9cff7!important;border-color:transparent!important;border-bottom-color:var(--lil)!important;
+  box-shadow:0 22px 40px -22px rgba(42,23,72,.8)!important}
+html:has(#payTheme) .one-k.on b{color:#fff!important}
+
+/* טבלה — שקטה, מרווחת */
+html:has(#payTheme) .wvt{border:1px solid var(--line)!important;border-radius:20px!important;box-shadow:0 1px 2px rgba(28,21,48,.04),0 20px 44px -32px rgba(28,21,48,.5)!important}
+html:has(#payTheme) .wvt th{background:#faf9fc!important;color:#8a83a1!important;font-weight:600!important;font-size:13px!important;letter-spacing:.2px;border-bottom:1px solid var(--line)!important}
+html:has(#payTheme) .wvt td{border-bottom:1px solid #f2f0f6!important}
+html:has(#payTheme) .wvt tbody tr:hover td{background:#faf8fe!important}
+html:has(#payTheme) .wvt tbody tr:has(.one-st.one-r) td:first-child{box-shadow:inset -3px 0 0 var(--rose)}
+html:has(#payTheme) .wvt tbody tr:has(.one-st.one-a) td:first-child{box-shadow:inset -3px 0 0 var(--amb)}
+html:has(#payTheme) .wvt tbody tr:has(.one-st.one-g) td:first-child{box-shadow:inset -3px 0 0 var(--sage)}
+html:has(#payTheme) .wvt tr.on td{background:#f3effc!important}
+html:has(#payTheme) .wvt td.n{color:var(--ink)!important;font-weight:600!important}
+
+/* תגיות — מסגרת דקה, טקסט מושתק */
+html:has(#payTheme) .one-st{background:#fff!important;border:1px solid var(--line)!important;color:#4a4361!important;font-weight:600!important}
+html:has(#payTheme) .one-st.one-r::before{background:var(--rose)} html:has(#payTheme) .one-st.one-a::before{background:var(--amb)} html:has(#payTheme) .one-st.one-g::before{background:var(--sage)}
+html:has(#payTheme) .one-st::before{opacity:1!important}
+html:has(#payTheme) .wv-pill{background:#f6f4fa!important;color:#4a4361!important;border:1px solid var(--line)!important;font-weight:600!important}
+html:has(#payTheme) .wv-pill.p-red{color:var(--rose)!important;background:#fbf4f6!important;border-color:#efdde2!important}
+html:has(#payTheme) .wv-pill.p-amb,html:has(#payTheme) .wv-pill.p-dec{color:#8f6a2a!important;background:#fbf7ef!important;border-color:#efe3cc!important}
+html:has(#payTheme) .wvt .cnt{background:#f6f4fa!important;color:#4a4361!important;border:1px solid var(--line)!important}
+html:has(#payTheme) .wvt .pb.r{color:var(--rose)!important} html:has(#payTheme) .wvt .pb.a{color:var(--amb)!important}
+html:has(#payTheme) a{color:var(--vio)}
+}
+
+/* v3 — טבעת חלק מכלל העובדים בכל ריבוע (JS קובע --p) */
+@property --p{syntax:'<number>';inherits:true;initial-value:0}
+@media screen{
+html:has(#payTheme) .one-k{--p:0;transition:--p 1.1s cubic-bezier(.2,.8,.2,1),transform .12s ease,box-shadow .2s ease!important}
+html:has(#payTheme) .one-k.lv-ring::after{display:block!important;content:"";position:absolute;top:50%;inset-inline-start:18px;width:54px;height:54px;margin-top:-27px;border-radius:50%;opacity:1!important;
+  background:conic-gradient(var(--kc) calc(var(--p)*1%),#eee9f6 0);-webkit-mask:radial-gradient(circle,transparent 19px,#000 20px);mask:radial-gradient(circle,transparent 19px,#000 20px)}
+html:has(#payTheme) .one-k.lv-ring.on::after{background:conic-gradient(#c4b5fd calc(var(--p)*1%),rgba(255,255,255,.14) 0)}
+html:has(#payTheme) .one-k.lv-ring::before{content:attr(data-lvp);display:block!important;position:absolute;top:50%;inset-inline-start:18px;width:54px;height:16px;margin-top:-8px;text-align:center;
+  font-size:12px;font-weight:700;color:var(--mut);opacity:1!important;background:none!important}
+html:has(#payTheme) .one-k.lv-ring.on::before{color:#e9e2ff}
+@media (max-width:700px){html:has(#payTheme) .one-k.lv-ring::after,html:has(#payTheme) .one-k.lv-ring::before{display:none!important}}
+}
+
+/* v3 — הפס הכהה בגובה שנמדד (--lvH), ולשוניות קריאות גם אם נגלשו מתחת לפס (טלפון) */
+@media screen{
+html:has(#payTheme) body{background:
+  radial-gradient(700px 260px at 85% 0,rgba(167,139,250,.35),transparent 70%) no-repeat,
+  linear-gradient(180deg,#1f1238 0,#34195f calc(var(--lvH,262px) - 52px),#3d2270 var(--lvH,262px),#f5f3f9 var(--lvH,262px),#f5f3f9 100%)!important}
+html:has(#payTheme) .tabs{background:rgba(42,23,72,.55)!important}
+}

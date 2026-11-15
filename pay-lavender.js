@@ -30,6 +30,14 @@
     }
     var s0=fmt(from); node.nodeValue=s0; writing.set(b,s0); requestAnimationFrame(step);
   }
+  /* טבעת: איזה חלק מכלל העובדים בכל ריבוע (רק תצוגה) */
+  function rings(){
+    var all=D.querySelector('.one-ks .one-k.one-all b'), tot=all?numOf(all):null; if(!tot) return;
+    if(writing.get(all)!=null) return;
+    D.querySelectorAll('.one-ks .one-k').forEach(function(k){ var b=k.querySelector('b'); if(!b||writing.get(b)!=null) return; var v=numOf(b); if(v==null) return;
+      var p=Math.max(0,Math.min(100,Math.round(v/tot*100))); k.classList.add('lv-ring'); k.setAttribute('data-lvp',p+'%');
+      if(k.style.getPropertyValue('--p')!==String(p)) requestAnimationFrame(function(){ k.style.setProperty('--p',p); }); });
+  }
   function tiles(first){
     var ks=D.querySelectorAll('.one-ks .one-k'); if(!ks.length) return;
     ks.forEach(function(k,i){
@@ -47,6 +55,7 @@
       }
       last[key]=v;
     });
+    setTimeout(rings,first?750:520);
   }
 
   /* ---------- שורות ---------- */
@@ -64,6 +73,19 @@
   },true);
   var nxWas=false;
   function nxCheck(){ var o=D.documentElement.classList.contains('nx-on'); if(o&&!nxWas){ var nx=D.getElementById('nx'); if(nx) anim(nx,[{opacity:0,transform:'translateY(14px) scale(.99)'},{opacity:1,transform:'none'}],{duration:300,easing:EASE}); } nxWas=o; }
+
+  /* ---------- גובה הפס הכהה למעלה: עד אחרי הלשוניות (ושורת החיפוש, אם יש) — בכל גודל מסך ---------- */
+  function hero(){
+    try{
+      var tabs=D.querySelector('.tabs'); if(!tabs) return;
+      var y=tabs.getBoundingClientRect().bottom+scrollY+26;
+      var v=shownView(), s=v&&v.querySelector('input[type=search],#qsearch');
+      if(s&&s.offsetParent){ var r=(s.closest('.srow')||s.parentElement).getBoundingClientRect(); if(r.top+scrollY-y<90) y=Math.max(y,r.bottom+scrollY+48); }
+      D.documentElement.style.setProperty('--lvH',Math.round(y)+'px');
+    }catch(_){}
+  }
+  addEventListener('resize',function(){ if(on()) hero(); });
+  D.addEventListener('click',function(e){ if(on()&&e.target.closest&&e.target.closest('.tabs')) setTimeout(hero,30); },true);
 
   /* ---------- «אין יותר מה לבדוק» ---------- */
   function done(){
@@ -84,6 +106,7 @@
   function flushObs(){ pend=false; if(!on()) return; tiles(false); if(addedRows.length){ rows(addedRows); addedRows=[]; } nxCheck(); }
   function start(){
     if(!on()) return;
+    hero(); setTimeout(hero,400);
     tiles(true);
     var tb=D.querySelectorAll('.wvt tbody'); tb.forEach(function(t){ rows(t.children); });
     nxCheck();
