@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl" data-mode="quiet">
+<html lang="he" dir="rtl" data-mode="quiet" data-theme="warm">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,38 +9,55 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
-/* צבעי «קריסטל לילה» — אותם משתנים כמו pay/theme-crystal.css */
-:root{
-  --ground:#17122b; --ink:#ece8ff; --muted:#b9b2dc; --faint:#8f88b5; --border:rgba(255,255,255,.16);
-  --accent:#a78bfa; --accent-ink:#d8ccff; --good:#34d399; --good-bg:rgba(52,211,153,.14);
-  --warn:#fbbf24; --warn-bg:rgba(251,191,36,.14); --crit:#fb7185; --crit-bg:rgba(251,113,133,.15);
-  --glass:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.04));
-  --shadow:10px 12px 26px rgba(0,0,0,.35),inset 1px 1px 2px rgba(255,255,255,.22),inset -4px -6px 12px rgba(0,0,0,.22);
-  --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.2,1.3,.35,1);
+/* שני מראות בהירים לבחירה: «חם» (כמו בסרטון: שמנת, כחול כהה וזהב) ו«לבנדר» (לבן עם הסגול של בקרת השכר) */
+:root,[data-theme="warm"]{
+  --bg:#fbf7ee; --bg-glow:#fff3cf; --card:#ffffff; --card-2:#fffdf8; --line:#ebe4d3; --line-2:#ddd3bc;
+  --ink:#1b1f3b; --muted:#6b6f86; --faint:#9a9cb0;
+  --acc:#1f2a8c; --acc-2:#3442c9; --acc-soft:#eef0ff; --acc-ink:#1f2a8c;
+  --hi:#f5b301; --hi-2:#ffd65a; --line-c:#38c6b0;
+  --good:#1f9d63; --good-bg:#e7f6ee; --good-line:#9fdcbd;
+  --warn:#8a5a00; --warn-bg:#fff4dc; --warn-line:#f2d48c;
+  --crit:#c0262d; --crit-bg:#fdeeee; --crit-line:#f3b9b9; --crit-soft:#fecaca;
+  --chart:#1f2a8c; --chart-2:#3442c9; --dot:#f5b301;
+  --shadow:0 1px 0 rgba(0,0,0,.02),0 10px 28px -16px rgba(31,42,140,.25);
+  --on-acc:#fff;
 }
+[data-theme="lav"]{
+  --bg:#f7f5fd; --bg-glow:#ece5ff; --card:#ffffff; --card-2:#fcfbff; --line:#e7e1f5; --line-2:#d6cdef;
+  --ink:#221a3d; --muted:#6f6886; --faint:#a19bb8;
+  --acc:#6d28d9; --acc-2:#8b5cf6; --acc-soft:#f1ebff; --acc-ink:#5b21b6;
+  --hi:#8b5cf6; --hi-2:#c4b5fd; --line-c:#34c3a7;
+  --good:#15803d; --good-bg:#e9f7ee; --good-line:#a7dfbd;
+  --warn:#8a5a00; --warn-bg:#fff4dc; --warn-line:#f2d48c;
+  --crit:#b91c1c; --crit-bg:#fdecec; --crit-line:#f5b5b5; --crit-soft:#fecaca;
+  --chart:#7c3aed; --chart-2:#a78bfa; --dot:#e11d48;
+  --shadow:0 1px 0 rgba(0,0,0,.02),0 10px 28px -16px rgba(109,40,217,.28);
+  --on-acc:#fff;
+}
+:root{--ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.2,1.3,.35,1)}
 *{box-sizing:border-box}
 html,body{margin:0}
-body{font-family:Rubik,system-ui,sans-serif;color:var(--ink);min-height:100vh;line-height:1.45;
-  background:radial-gradient(1200px 700px at 85% -10%,#3b2a6b 0%,transparent 60%),radial-gradient(900px 600px at 0% 100%,#2a1f55 0%,transparent 60%),#17122b fixed}
+body{font-family:Rubik,system-ui,sans-serif;color:var(--ink);min-height:100vh;line-height:1.45;transition:background .4s;
+  background:radial-gradient(1200px 520px at 50% -140px,var(--bg-glow) 0,transparent 70%),var(--bg) fixed}
 button{font:inherit;color:inherit;cursor:pointer}
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 80px}
-.lab{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);color:#fde68a;border-radius:14px;padding:10px 14px;font-size:14px}
-.lab b{color:#fff}
+.lab{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn);border-radius:14px;padding:10px 14px;font-size:14px}
+.lab b{color:var(--ink)}
 .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0 6px}
 h1{margin:0;font-size:26px;font-weight:800}
 h1 span{color:var(--muted);font-weight:500;font-size:18px}
-.seg{display:inline-flex;gap:4px;padding:4px;border-radius:14px;background:rgba(255,255,255,.07);border:1px solid var(--border)}
+.seg{display:inline-flex;gap:4px;padding:4px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
 .seg button{border:none;background:transparent;padding:8px 14px;border-radius:10px;font-weight:500;color:var(--muted);transition:.25s var(--ease)}
-.seg button.on{background:linear-gradient(145deg,#8b5cf6,#6d28d9);color:#fff;box-shadow:0 6px 18px -6px rgba(139,92,246,.7)}
-.modeSeg button.on[data-m="bold"]{background:linear-gradient(145deg,#f472b6,#8b5cf6)}
+.seg button.on{background:var(--acc);color:var(--on-acc);box-shadow:0 6px 16px -8px var(--acc)}
+.modeSeg button.on[data-m="bold"]{background:linear-gradient(135deg,var(--hi),var(--acc-2));color:#fff}
+.themeSeg button[data-t="warm"]::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#fbf7ee 50%,#f5b301 50%);border:1px solid #1f2a8c;margin-left:6px;vertical-align:-1px}
+.themeSeg button[data-t="lav"]::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#fff 50%,#8b5cf6 50%);border:1px solid #6d28d9;margin-left:6px;vertical-align:-1px}
 .sp{margin-inline-start:auto}
-.btn{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);border-radius:12px;padding:8px 14px;font-weight:500;
-  box-shadow:inset 1px 1px 2px rgba(255,255,255,.2),4px 6px 14px rgba(0,0,0,.25);transition:transform .15s var(--ease),background .2s}
-.btn:hover{background:rgba(255,255,255,.14)}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:8px 14px;font-weight:500;color:var(--acc-ink);transition:transform .15s var(--ease),background .2s}
+.btn:hover{background:var(--acc-soft)}
 .btn:active{transform:scale(.96)}
-.glass{background:var(--glass);border:1px solid rgba(255,255,255,.17);border-radius:20px;box-shadow:var(--shadow)}
-.explain{font-size:13px;color:var(--faint);margin:4px 0 0}
-/* KPI tiles */
+.glass{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
+.explain{font-size:13px;color:var(--muted);margin:4px 0 0}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
 .tile{padding:16px 18px;position:relative;overflow:hidden}
 .tile .l{color:var(--muted);font-size:14px}
@@ -48,76 +65,71 @@ h1 span{color:var(--muted);font-weight:500;font-size:18px}
 .tile .v small{font-size:18px;color:var(--muted);font-weight:500}
 .tile .d{font-size:13px;margin-top:2px;min-height:18px}
 .tile .d.up{color:var(--crit)} .tile .d.dn{color:var(--good)}
-.tile.todo{border-color:rgba(251,113,133,.45)}
-.tile.todo .v{color:#fda4af}
-.tile.todo.clean{border-color:rgba(52,211,153,.5)}
-.tile.todo.clean .v{color:#6ee7b7}
-/* rolling digits (bold) */
+.tile.todo{border-color:var(--crit-line);background:linear-gradient(180deg,var(--crit-bg),var(--card) 70%)}
+.tile.todo .v{color:var(--crit)}
+.tile.todo.clean{border-color:var(--good-line);background:linear-gradient(180deg,var(--good-bg),var(--card) 70%)}
+.tile.todo.clean .v{color:var(--good)}
 .roll{display:inline-flex;direction:ltr}
 .dg{display:inline-block;height:44px;overflow:hidden;position:relative;width:.62em}
 .dg i{display:flex;flex-direction:column;font-style:normal;transition:transform .9s var(--spring)}
 .dg i b{height:44px;line-height:44px;font-weight:800;text-align:center}
 .sep{width:.3em;text-align:center}
-/* grid */
 .mid{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;margin-top:14px}
 .panel{padding:16px 18px}
 .panel h2{margin:0 0 4px;font-size:17px;font-weight:700}
 .trend svg{width:100%;height:190px;display:block;overflow:visible}
 .trend .ax{fill:var(--faint);font-size:11px}
 .dept .r{display:grid;grid-template-columns:76px 1fr 86px;gap:10px;align-items:center;margin:9px 0;font-size:14px}
-.dept .track{height:14px;border-radius:8px;background:rgba(255,255,255,.07);overflow:hidden;position:relative}
-.dept .fill{height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,#6d28d9,#a78bfa);position:relative;overflow:hidden}
+.dept .track{height:14px;border-radius:8px;background:var(--acc-soft);overflow:hidden;position:relative}
+.dept .fill{height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,var(--chart),var(--chart-2));position:relative;overflow:hidden}
 .dept .n{direction:ltr;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
-.dept .fill::after{content:"";position:absolute;inset:0;transform:translateX(-120%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent)}
+.dept .fill::after{content:"";position:absolute;inset:0;transform:translateX(-120%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent)}
 html[data-mode="bold"] .dept .fill.shine::after{animation:shine 1.1s .2s var(--ease)}
 @keyframes shine{to{transform:translateX(120%)}}
-/* to-do list */
 .lists{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;margin-top:14px}
 .todoList{position:relative}
-.item{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;margin:8px 0;background:var(--crit-bg);border:1px solid rgba(251,113,133,.35);
-  overflow:hidden;cursor:pointer;transform-origin:center}
-.item.wait{background:var(--warn-bg);border-color:rgba(251,191,36,.35)}
-.item .ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(251,113,133,.25);flex:none;font-weight:800}
-.item.wait .ic{background:rgba(251,191,36,.25)}
+.item{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;margin:8px 0;background:var(--crit-bg);border:1px solid var(--crit-line);overflow:hidden;cursor:pointer;transform-origin:center}
+.item.wait{background:var(--warn-bg);border-color:var(--warn-line)}
+.item .ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--crit);color:#fff;flex:none;font-weight:800}
+.item.wait .ic{background:#d99a00}
 .item .tx{flex:1;min-width:0}
 .item .nm{font-weight:700}
-.item .wh{font-size:14px;color:#fecdd3}
-.item.wait .wh{color:#fde68a}
+.item .wh{font-size:14px;color:var(--crit)}
+.item.wait .wh{color:var(--warn)}
 .item .am{direction:ltr;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
-.item .ok{border:1px solid rgba(52,211,153,.6);background:rgba(52,211,153,.12);color:#6ee7b7;border-radius:10px;padding:6px 12px;font-weight:700;white-space:nowrap}
-.item .ok:hover{background:rgba(52,211,153,.25)}
-.item.done{background:var(--good-bg)!important;border-color:rgba(52,211,153,.5)!important}
-.item.done .ic{background:rgba(52,211,153,.3)}
-.empty{text-align:center;padding:26px 10px;color:var(--muted)}
-.row{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;margin:6px 0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:background .2s}
-.row:hover{background:rgba(255,255,255,.1)}
+.item .ok{border:1px solid var(--good);background:#fff;color:var(--good);border-radius:10px;padding:6px 12px;font-weight:700;white-space:nowrap}
+.item .ok:hover{background:var(--good-bg)}
+.item.done{background:var(--good-bg)!important;border-color:var(--good-line)!important}
+.item.done .ic{background:var(--good)}
+.item.done .wh{color:var(--good)}
+.empty{text-align:center;padding:26px 10px;color:var(--good);font-weight:500}
+.row{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;margin:6px 0;background:var(--card-2);border:1px solid var(--line);cursor:pointer;transition:background .2s}
+.row:hover{background:var(--acc-soft)}
 .row .nm{flex:1}
 .row .am{direction:ltr;color:var(--muted);font-variant-numeric:tabular-nums}
 .chk{color:var(--good);font-weight:800}
-/* employee card */
-.scrim{position:fixed;inset:0;background:rgba(10,6,24,.55);opacity:0;pointer-events:none;transition:opacity .3s;z-index:20}
-html[data-mode="bold"] .scrim{backdrop-filter:blur(6px)}
+.scrim{position:fixed;inset:0;background:rgba(40,36,60,.28);opacity:0;pointer-events:none;transition:opacity .3s;z-index:20}
+html[data-mode="bold"] .scrim{backdrop-filter:blur(5px)}
 .scrim.on{opacity:1;pointer-events:auto}
 .card{position:fixed;z-index:21;width:min(520px,92vw);left:50%;top:50%;transform:translate(-50%,-50%);padding:20px 22px;
-  background:linear-gradient(145deg,rgba(46,36,86,.98),rgba(30,23,58,.98));border:1px solid rgba(255,255,255,.2);border-radius:22px;box-shadow:0 30px 80px rgba(0,0,0,.6);display:none}
+  background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 30px 70px -20px rgba(30,25,60,.45);display:none}
 .card h3{margin:0;font-size:22px}
 .card .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
-.card .grid div{background:rgba(255,255,255,.06);border-radius:12px;padding:10px}
+.card .grid div{background:var(--acc-soft);border-radius:12px;padding:10px}
 .card .grid span{display:block;font-size:12px;color:var(--muted)}
 .card .grid b{font-size:19px;direction:ltr;display:block;text-align:right}
 .hist{display:flex;align-items:flex-end;gap:8px;height:110px;padding-top:10px}
 .hist div{flex:1;text-align:center;font-size:11px;color:var(--faint);display:flex;flex-direction:column;justify-content:flex-end;height:100%}
-.hist i{display:block;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,#a78bfa,#6d28d9);height:0;transition:height .6s var(--spring)}
-.hist div.cur i{background:linear-gradient(180deg,#fda4af,#e11d48)}
-.card .x{position:absolute;top:12px;left:14px;border:none;background:rgba(255,255,255,.1);width:32px;height:32px;border-radius:50%}
-/* celebration */
+.hist i{display:block;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,var(--chart-2),var(--chart));height:0;transition:height .6s var(--spring)}
+.hist div.cur i{background:linear-gradient(180deg,#f87171,var(--crit))}
+.card .x{position:absolute;top:12px;left:14px;border:none;background:var(--acc-soft);width:32px;height:32px;border-radius:50%}
 .celebrate{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:30}
-.celebrate .box{text-align:center;opacity:0;padding:40px 60px;border-radius:40px;background:radial-gradient(closest-side,rgba(23,18,43,.92),rgba(23,18,43,.6) 70%,transparent)}
-.celebrate svg{width:130px;height:130px}
-.celebrate .t{font-size:30px;font-weight:800;margin-top:6px;text-shadow:0 4px 30px rgba(52,211,153,.5)}
+.celebrate .box{text-align:center;opacity:0;padding:34px 56px;border-radius:32px;background:var(--card);border:1px solid var(--good-line);box-shadow:0 30px 80px -20px rgba(21,128,61,.35)}
+.celebrate svg{width:120px;height:120px}
+.celebrate .t{font-size:30px;font-weight:800;margin-top:6px;color:var(--good)}
 .celebrate .s{color:var(--muted)}
 canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:29}
-.fly{position:fixed;z-index:25;pointer-events:none;font-weight:800;color:#6ee7b7;font-size:22px}
+.fly{position:fixed;z-index:25;pointer-events:none;font-weight:800;color:var(--good);font-size:24px}
 @media (max-width:860px){.kpis{grid-template-columns:1fr 1fr}.mid,.lists{grid-template-columns:1fr}.tile .v{font-size:28px}}
 @media (max-width:520px){.tile{padding:12px}.tile .v{font-size:22px}.tile .v small{font-size:14px}.item{flex-wrap:wrap}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -131,6 +143,7 @@ canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:29}
     <h1>בקרת שכר <span>· מסעדת דוגמה</span></h1>
     <div class="seg" id="monthSeg"><button data-k="2026-09">ספטמבר</button><button data-k="2026-10" class="on">אוקטובר</button></div>
     <div class="sp"></div>
+    <div class="seg themeSeg" id="themeSeg"><button data-t="warm" class="on">חם</button><button data-t="lav">לבנדר</button></div>
     <div class="seg modeSeg" id="modeSeg"><button data-m="quiet" class="on">🌙 מהודר ושקט</button><button data-m="bold">⚡ נועז</button></div>
     <button class="btn" id="replay">▶ שוב מההתחלה</button>
   </div>
@@ -158,8 +171,8 @@ canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:29}
 <div class="card" id="card"><button class="x" id="cardX">×</button><div id="cardBody"></div></div>
 <canvas id="fx"></canvas>
 <div class="celebrate"><div class="box" id="cele">
-  <svg viewBox="0 0 130 130"><circle cx="65" cy="65" r="56" fill="rgba(52,211,153,.12)" stroke="#34d399" stroke-width="6" stroke-linecap="round" id="ceC"/>
-  <path d="M40 67 l17 17 l34 -36" fill="none" stroke="#6ee7b7" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" id="ceP"/></svg>
+  <svg viewBox="0 0 130 130"><circle cx="65" cy="65" r="56" fill="none" stroke="var(--good)" stroke-width="6" stroke-linecap="round" id="ceC"/>
+  <path d="M40 67 l17 17 l34 -36" fill="none" stroke="var(--good)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" id="ceP"/></svg>
   <div class="t">החודש נקי</div><div class="s">כל החריגות טופלו</div></div></div>
 
 <script>
@@ -176,6 +189,7 @@ const DATA={
 };
 const MONTHS_HE=['נוב','דצמ','ינו','פבר','מרץ','אפר','מאי','יוני','יולי','אוג','ספט','אוק'];
 let month='2026-10', mode='quiet', todo=[], handled=0, prev=null;
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const nf=new Intl.NumberFormat('he-IL',{maximumFractionDigits:0});
 const fmt=n=>nf.format(Math.round(n));
@@ -213,10 +227,10 @@ function drawTrend(vals,animateIn){
   const pts=vals.map((v,i)=>[20+i*(W-40)/11,H-(v-min)/(max-min)*(H-20)]);
   const from=trendPts&&!animateIn?trendPts:pts.map(([x])=>[x,H]);
   trendPts=pts;
-  svg.innerHTML=`<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a78bfa" stop-opacity=".45"/><stop offset="1" stop-color="#a78bfa" stop-opacity="0"/></linearGradient>
+  svg.innerHTML=`<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${css('--chart-2')}" stop-opacity=".35"/><stop offset="1" stop-color="${css('--chart-2')}" stop-opacity="0"/></linearGradient>
     <filter id="gl"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-    <path id="tA" fill="url(#ga)"/><path id="tL" fill="none" stroke="#c4b5fd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" ${bold()?'filter="url(#gl)"':''}/>
-    <circle id="tD" r="6" fill="#fda4af" stroke="#fff" stroke-width="2"/>
+    <path id="tA" fill="url(#ga)"/><path id="tL" fill="none" stroke="${css('--chart')}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" ${bold()?'filter="url(#gl)"':''}/>
+    <circle id="tD" r="6" fill="${css('--dot')}" stroke="#fff" stroke-width="2"/>
     ${MONTHS_HE.map((m,i)=>`<text class="ax" x="${pts[i][0]}" y="188" text-anchor="middle">${m}</text>`).join('')}`;
   const L=$('#tL'),A=$('#tA'),Dt=$('#tD');
   const path=p=>p.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' ');
@@ -285,7 +299,7 @@ async function resolve(el){
     /* «✓» עף אל מונה «דורש טיפול» */
     const r=el.querySelector('.ic').getBoundingClientRect(),tgt=$('#kTodo').getBoundingClientRect();
     const f=document.createElement('div');f.className='fly';f.textContent='✓';document.body.appendChild(f);
-    f.animate([{transform:`translate(${r.left}px,${r.top}px) scale(1)`},{transform:`translate(${(r.left+tgt.left)/2}px,${Math.min(r.top,tgt.top)-60}px) scale(1.8)`,offset:.5},{transform:`translate(${tgt.left+20}px,${tgt.top}px) scale(.6)`,opacity:.2}],{duration:700,easing:'cubic-bezier(.5,0,.3,1)'}).onfinish=()=>{f.remove();burst(tgt.left+30,tgt.top+20,18,['#6ee7b7','#a78bfa','#fde68a']);bump($('#kTodoT'))};
+    f.animate([{transform:`translate(${r.left}px,${r.top}px) scale(1)`},{transform:`translate(${(r.left+tgt.left)/2}px,${Math.min(r.top,tgt.top)-60}px) scale(1.8)`,offset:.5},{transform:`translate(${tgt.left+20}px,${tgt.top}px) scale(.6)`,opacity:.2}],{duration:700,easing:'cubic-bezier(.5,0,.3,1)'}).onfinish=()=>{f.remove();burst(tgt.left+30,tgt.top+20,18,[css('--good'),css('--acc-2'),css('--hi')]);bump($('#kTodoT'))};
     await wait(250);
     await el.animate([{transform:'none',opacity:1},{transform:'translateX(-30px) scale(.97)',opacity:0}],{duration:320,easing:'ease-in',fill:'forwards'}).finished;
   }else{
@@ -319,7 +333,7 @@ let cardFrom=null;
 function openCard(from,n,isTodo){
   const t=todo.find(x=>x.n===n);
   const base=7400+n*913%5200;const hist=[.92,.97,1.01,.95,1.03,isTodo?.86:1].map(k=>Math.round(base*k));
-  $('#cardBody').innerHTML=`<h3>${NAMES[n]}</h3><div style="color:var(--muted);font-size:14px">${t?`<span style="color:#fda4af">${t.w}</span>`:'תקין החודש'}</div>
+  $('#cardBody').innerHTML=`<h3>${NAMES[n]}</h3><div style="color:var(--muted);font-size:14px">${t?`<span style="color:var(--crit)">${t.w}</span>`:'תקין החודש'}</div>
    <div class="grid"><div><span>תעריף לשעה</span><b>${45+n%6} ₪</b></div><div><span>שעות החודש</span><b>${150+n*7%40}</b></div><div><span>ברוטו</span><b>${fmt(hist[5])} ₪</b></div></div>
    <div style="font-size:13px;color:var(--muted)">ברוטו ב-6 החודשים האחרונים</div>
    <div class="hist">${hist.map((v,i)=>`<div class="${i===5&&isTodo?'cur':''}"><i data-h="${(v-Math.min(...hist)*.8)/(Math.max(...hist)-Math.min(...hist)*.8)*100}"></i>${['מאי','יוני','יולי','אוג','ספט','אוק'][i]}</div>`).join('')}</div>`;
@@ -365,7 +379,7 @@ async function celebrate(){
   const box=$('#cele'),C=$('#ceC'),P=$('#ceP');const cl=C.getTotalLength(),pl=P.getTotalLength();
   C.style.strokeDasharray=cl;P.style.strokeDasharray=pl;
   if(bold()){
-    const cols=['#a78bfa','#f472b6','#34d399','#fde68a','#60a5fa','#fff'];
+    const cols=[css('--acc'),css('--acc-2'),css('--hi'),'#f472b6','#34d399','#60a5fa'];
     burst(innerWidth*.2,innerHeight*.7,90,cols,{spread:2.2,up:3,conf:true});
     burst(innerWidth*.8,innerHeight*.7,90,cols,{spread:2.2,up:3,conf:true});
     setTimeout(()=>burst(innerWidth/2,innerHeight*.35,70,cols,{spread:2,up:1,conf:true}),350);
@@ -402,6 +416,7 @@ function restart(){
 $$('#monthSeg button').forEach(b=>b.onclick=()=>{if(b.dataset.k===month)return;$$('#monthSeg button').forEach(x=>x.classList.toggle('on',x===b));month=b.dataset.k;load(false)});
 $$('#modeSeg button').forEach(b=>b.onclick=()=>{if(b.dataset.m===mode)return;$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));mode=b.dataset.m;document.documentElement.dataset.mode=mode;restart()});
 $('#replay').onclick=restart;
+$$('#themeSeg button').forEach(b=>b.onclick=()=>{$$('#themeSeg button').forEach(x=>x.classList.toggle('on',x===b));document.documentElement.dataset.theme=b.dataset.t;drawTrend(DATA[month].trend,true)});
 prev=DATA['2026-09'];load(true);
 </script>
 </body>
