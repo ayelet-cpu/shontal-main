@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>כמה מס מגיע לנו בחזרה?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf7ee; --card:#fff; --ink:#1b1f3b; --muted:#6b6f86; --line:#e8e2d3;
+  --navy:#1f2a8c; --navy2:#2f3fc0; --gold:#f5b301; --gold2:#ffd65a; --teal:#38c6b0;
+  --red:#d63b3b; --green:#1f9d63; --r:18px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:Rubik,system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;
+  background-image:radial-gradient(1200px 500px at 50% -120px,#fff3cf 0,transparent 70%)}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:980px;margin:0 auto;padding:24px 18px 80px}
+h1{font-size:clamp(28px,5vw,46px);font-weight:800;margin:6px 0 4px;letter-spacing:-.5px}
+h2{font-size:22px;margin:0 0 12px;font-weight:700}
+.sub{color:var(--muted);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin:16px 0;
+  box-shadow:0 1px 0 rgba(0,0,0,.02),0 8px 24px -16px rgba(31,42,140,.18)}
+.deadline{display:flex;gap:12px;align-items:center;background:#fff0f0;border:1px solid #f3c4c4;color:#8a1f1f;
+  border-radius:14px;padding:12px 16px;font-weight:500}
+.deadline b{font-size:20px}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:500}
+.pill.red{background:var(--red);color:#fff}
+.privacy{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+/* people tabs */
+.people{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.ptab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;cursor:pointer;font-weight:500}
+.ptab.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.ptab.add{border-style:dashed;color:var(--navy)}
+/* steps */
+.steps{display:flex;gap:6px;margin:18px 0 0;flex-wrap:wrap}
+.step{flex:1;min-width:120px;border:none;background:#efe9da;border-radius:12px;padding:10px 12px;cursor:pointer;text-align:right;font-weight:500;color:var(--muted)}
+.step b{display:block;font-size:12px;font-weight:500;opacity:.8}
+.step.on{background:var(--navy);color:#fff}
+.step.done{background:#dff4ef;color:#11624f}
+.btn{border:none;border-radius:12px;padding:12px 20px;font-weight:700;cursor:pointer;background:var(--navy);color:#fff}
+.btn:hover{background:var(--navy2)}
+.btn.gold{background:var(--gold);color:#2a1d00}
+.btn.gold:hover{background:var(--gold2)}
+.btn.ghost{background:transparent;color:var(--navy);border:1px solid var(--line)}
+.btn.sm{padding:7px 12px;font-size:14px;font-weight:500}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.right{margin-inline-start:auto}
+/* upload */
+.drop{border:2px dashed #cfc6ae;border-radius:16px;padding:26px;text-align:center;cursor:pointer;background:#fffdf7;transition:.2s}
+.drop.over{border-color:var(--navy);background:#f1f3ff}
+.drop .big{font-size:18px;font-weight:700}
+.fan{display:flex;justify-content:center;gap:0;margin:18px 0 6px;min-height:0;perspective:900px;flex-wrap:wrap}
+.f106{width:120px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 20px -12px rgba(0,0,0,.35);
+  margin:0 -14px;overflow:hidden;font-size:11px;animation:deal .6s cubic-bezier(.2,.9,.3,1.3) both}
+.f106 .hd{background:var(--navy);color:#fff;padding:5px 8px;font-weight:700;display:flex;justify-content:space-between}
+.f106 .hd.t{background:var(--teal)}
+.f106 .bd{padding:6px 8px;line-height:1.6}
+.f106 .bd span{color:var(--muted)}
+@keyframes deal{from{opacity:0;transform:translateY(40px) rotate(-8deg) scale(.8)}to{opacity:1}}
+/* tables */
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}
+th{font-size:13px;color:var(--muted);font-weight:500}
+td input{width:100%;min-width:80px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;background:#fff;direction:ltr;text-align:right}
+td input:focus,.q input:focus,.q select:focus{outline:2px solid var(--navy2);outline-offset:1px}
+.src{font-size:12px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.warn{color:#9a5b00;font-size:13px}
+.x{border:none;background:none;cursor:pointer;color:var(--muted);font-size:18px}
+.yearhd td{background:#f6f2e7;font-weight:700}
+/* questionnaire */
+.q{display:grid;grid-template-columns:1fr;gap:6px;padding:14px 0;border-bottom:1px solid var(--line)}
+.q:last-child{border-bottom:none}
+.q label.t{font-weight:700}
+.q .h{font-size:13px;color:var(--muted)}
+.q input[type=number],.q input[type=month],.q select,.q input[type=text]{border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;max-width:240px}
+.seg{display:inline-flex;background:#efe9da;border-radius:12px;padding:3px;gap:3px;flex-wrap:wrap}
+.seg button{border:none;background:transparent;padding:7px 14px;border-radius:9px;cursor:pointer;font-weight:500}
+.seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);color:var(--navy)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{background:#eef0ff;color:var(--navy);border-radius:999px;padding:4px 6px 4px 12px;display:inline-flex;gap:6px;align-items:center}
+.chip button{border:none;background:#fff;border-radius:50%;width:20px;height:20px;cursor:pointer;line-height:1}
+.ygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.ygrid label{font-size:13px;color:var(--muted);display:block}
+.ygrid input{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px;direction:ltr;text-align:right}
+/* result */
+.hero{text-align:center;padding:30px 16px 10px}
+.hero .lbl{color:var(--muted);font-weight:500}
+.total{font-size:clamp(54px,12vw,110px);font-weight:800;color:var(--ink);line-height:1;letter-spacing:-2px;direction:ltr;display:inline-block}
+.total small{font-size:.55em;margin-left:10px}
+.hero .note{font-size:15px;color:var(--muted);margin-top:8px}
+.chart{position:relative;display:flex;align-items:flex-end;justify-content:space-around;gap:10px;height:340px;padding:40px 6px 0;margin-top:10px}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative;max-width:120px}
+.bar{width:100%;max-width:92px;position:relative;display:flex;flex-direction:column;justify-content:flex-end;height:0;transition:height 1s cubic-bezier(.2,.8,.2,1)}
+.bar .ok{background:linear-gradient(180deg,var(--navy2),var(--navy));border-radius:0 0 10px 10px;height:100%;box-shadow:inset 0 2px 0 rgba(255,255,255,.15)}
+.bar.none .ok{background:linear-gradient(180deg,#e4e5ee,#d3d5e3);border-radius:10px}
+.bar .gold{background:linear-gradient(180deg,var(--gold2),var(--gold));height:0;border-radius:10px 10px 0 0;transition:height .9s cubic-bezier(.2,.9,.3,1.2);position:relative;
+  box-shadow:0 0 0 rgba(245,179,1,0);}
+.bar.glow .gold{box-shadow:0 0 30px 6px rgba(245,179,1,.45)}
+.bar .tline{position:absolute;left:-6px;right:-6px;height:4px;border-radius:4px;background:var(--teal);opacity:0;transition:opacity .4s}
+.bar.lined .tline{opacity:1}
+.bar .amt{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%) scale(.6);background:linear-gradient(180deg,var(--gold2),var(--gold));
+  color:#3a2700;font-weight:800;border-radius:10px;padding:4px 10px;white-space:nowrap;opacity:0;transition:.4s cubic-bezier(.2,.9,.3,1.4);font-size:15px;direction:ltr}
+.bar.show .amt{opacity:1;transform:translateX(-50%) scale(1)}
+.bar .okl{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);color:var(--muted);font-weight:500;font-size:14px;white-space:nowrap}
+.bar .neg{color:var(--red)}
+.yr{margin-top:10px;font-weight:700;font-size:18px;color:#b98900}
+.yr.dim{color:#9a9cb0}
+.yr::after{content:"";display:block;width:34px;height:3px;background:currentColor;border-radius:3px;margin:3px auto 0;opacity:.8}
+.closing{position:absolute;top:0;left:50%;transform:translateX(-50%);white-space:nowrap}
+.coin{position:fixed;width:26px;height:26px;border-radius:50%;pointer-events:none;z-index:50;
+  background:radial-gradient(circle at 35% 30%,#fff6c2 0,#ffd84d 35%,#e7a800 75%,#b37f00 100%);
+  box-shadow:0 2px 4px rgba(0,0,0,.25),inset 0 -2px 0 rgba(0,0,0,.15);color:#7a5200;font-weight:800;font-size:14px;display:grid;place-items:center}
+.legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:14px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;margin-left:6px;vertical-align:middle}
+.detail td,.detail th{font-size:14px;direction:rtl}
+.num,.detail .num{direction:ltr;text-align:right;white-space:nowrap}
+.why{font-size:12px;color:var(--muted)}
+.fam{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.fam div{background:#f6f2e7;border-radius:12px;padding:12px}
+.fam b{font-size:22px;display:block;direction:ltr;text-align:right}
+ol.how li{margin-bottom:10px}
+.notice{background:#fff8e1;border:1px solid #f2dc9b;border-radius:12px;padding:12px 14px;font-size:14px}
+.notice.bad{background:#fff0f0;border-color:#f3c4c4}
+.hide{display:none!important}
+.small{font-size:13px;color:var(--muted)}
+@media (max-width:640px){
+  .wrap{padding:16px 12px 60px}
+  .chart{height:280px;gap:4px;padding-top:36px}
+  .bar .amt{font-size:11px;padding:2px 5px}
+  .detail{min-width:520px}
+  .detail td,.detail th{font-size:13px}
+  .yr{font-size:14px}
+  .f106{width:96px;margin:0 -18px}
+  .tbl-wrap{overflow-x:auto}
+  td input{min-width:90px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media print{.steps,.people,.btn,.drop,#tabIn,#tabQ{display:none!important}body{background:#fff}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="privacy">🔒 הכול נשאר רק במכשיר הזה. הקבצים והמספרים לא נשלחים לשום מקום ולא נשמרים — סוגרים את הדף והכול נמחק.</div>
+  <h1>כמה מס מגיע לנו בחזרה?</h1>
+  <p class="sub">שכירים יכולים לבקש החזר מס על 6 השנים האחרונות. מעלים את טופסי 106, עונים על כמה שאלות — והמערכת מחשבת מחדש כל שנה מ-2020.</p>
+  <div class="deadline" id="deadline"></div>
+
+  <div class="people" id="people"></div>
+
+  <div class="steps" id="steps">
+    <button class="step" data-s="in"><b>שלב 1</b>טופסי 106</button>
+    <button class="step" data-s="q"><b>שלב 2</b>שאלות קצרות</button>
+    <button class="step" data-s="res"><b>שלב 3</b>כמה מגיע</button>
+    <button class="step" data-s="how"><b>שלב 4</b>איך מגישים</button>
+  </div>
+
+  <!-- STEP 1 -->
+  <section id="tabIn">
+    <div class="card">
+      <h2>טופסי 106 של <span class="pname"></span></h2>
+      <p class="sub" style="margin-bottom:12px">את הטפסים מקבלים מכל מעסיק בסוף כל שנה. אפשר גם להוריד אותם מהאזור האישי באתר רשות המסים. אם עבדת אצל כמה מעסיקים באותה שנה — מעלים את כולם.</p>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="application/pdf" multiple hidden>
+        <div class="big">📄 גררי לכאן קבצי 106 (PDF) או לחצי לבחירה</div>
+        <div class="small">אפשר כמה קבצים יחד. הם נקראים רק כאן, במכשיר.</div>
+      </label>
+      <div id="readMsg" class="small" style="margin-top:8px"></div>
+      <div class="fan" id="fan"></div>
+    </div>
+    <div class="card">
+      <div class="row"><h2 style="margin:0">המספרים מכל טופס</h2>
+        <button class="btn sm ghost right" id="addRow">＋ להוסיף טופס ידנית</button></div>
+      <p class="small">בדקי שכל מספר תואם לטופס. הקוד ליד כל מספר הוא המספר הקטן שמופיע בטופס ליד השורה.</p>
+      <div class="tbl-wrap"><table id="rowsT">
+        <thead><tr><th>שנה</th><th>מאיפה</th><th>הכנסה חייבת<br><span class="small">קוד 158 או 172</span></th><th>מס שנוכה<br><span class="small">קוד 042</span></th><th>הפקדה לפנסיה מהשכר<br><span class="small">קוד 045 או 086</span></th><th></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <div class="notice" style="margin-top:12px">קיבלת בשנה מסוימת <b>דמי אבטלה, דמי לידה או מילואים</b>? גם הם נחשבים הכנסה. הוסיפי אותם כשורה ידנית (בשורה «מאיפה» כתבי «ביטוח לאומי»), עם המספרים מהאישור השנתי של ביטוח לאומי. אם לא מוסיפים אותם, החישוב יראה החזר גבוה מהאמת.</div>
+      <div class="row" style="margin-top:16px"><button class="btn right" data-go="q">המשך לשאלות ←</button></div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section id="tabQ" class="hide">
+    <div class="card">
+      <h2>כמה שאלות על <span class="pname"></span></h2>
+      <p class="small">כל «כן» כאן יכול להגדיל את ההחזר. המעסיק בדרך כלל לא יודע על הדברים האלה, ולכן לא התחשב בהם.</p>
+      <div class="q"><label class="t">שם</label><input type="text" id="qName" maxlength="20"></div>
+      <div class="q"><label class="t">מין</label>
+        <div class="seg" id="qGender"><button data-v="f">אישה</button><button data-v="m">גבר</button></div>
+        <div class="h">אישה מקבלת חצי נקודת זיכוי נוספת.</div></div>
+      <div class="q"><label class="t">ילדים — שנת הלידה של כל ילד</label>
+        <div class="chips" id="qKids"></div>
+        <div class="row"><input type="number" id="qKidY" placeholder="למשל 2016" min="1995" max="2025" style="max-width:140px"><button class="btn sm ghost" id="qKidAdd">＋ להוסיף ילד</button></div>
+        <div class="h">ילדים עד גיל 18. ההטבה גדולה במיוחד מ-2024: מקבלים עד 4.5 נקודות לכל ילד עד גיל 3.</div></div>
+      <div class="q" id="qAllowWrap"><label class="t">מי מקבל את קצבת הילדים מביטוח לאומי?</label>
+        <div class="seg" id="qAllow"><button data-v="1">אני</button><button data-v="0">בן/בת הזוג</button></div>
+        <div class="h">ההורה שמקבל את הקצבה (בדרך כלל האמא) מקבל יותר נקודות על ילדים מגיל 6.</div></div>
+      <div class="q"><label class="t">הורה יחיד? (גר/ה לבד עם הילדים)</label>
+        <div class="seg" id="qSingle"><button data-v="0">לא</button><button data-v="1">כן</button></div></div>
+      <div class="q"><label class="t">תואר אקדמי שהסתיים מ-2019 והלאה</label>
+        <div class="row"><select id="qDeg"><option value="">אין</option><option value="ba">תואר ראשון</option><option value="ma">תואר שני</option></select>
+          <input type="number" id="qDegY" placeholder="שנת הסיום" min="2015" max="2025" style="max-width:140px"></div>
+        <div class="h">בשנה שאחרי הסיום: תואר ראשון — נקודה שלמה, תואר שני — חצי נקודה. יש תואר ראשון וגם שני? בחרי את האחרון וכתבי את השני בהערה לרואה החשבון.</div></div>
+      <div class="q"><label class="t">שחרור מצבא / שירות לאומי מ-2017 והלאה</label>
+        <div class="row"><input type="month" id="qArmy" min="2017-01" max="2025-12">
+          <select id="qArmyFull"><option value="1">שירות מלא (לפחות 22–23 חודשים)</option><option value="0">שירות קצר יותר (לפחות שנה)</option></select></div>
+        <div class="h">עד 3 שנים אחרי השחרור מקבלים 2 נקודות (או נקודה אחת בשירות קצר).</div></div>
+      <div class="q"><label class="t">תרומות לעמותות עם סעיף 46 (סכום לשנה)</label>
+        <div class="ygrid" id="qDon"></div>
+        <div class="h">35% מהתרומות חוזרים. צריך קבלות. מספיק להכניס מספר משוער כדי לראות את הכיוון.</div></div>
+      <div class="q"><label class="t">ביטוח חיים פרטי שמשלמים לבד, לא דרך העבודה (סכום לשנה)</label>
+        <div class="ygrid" id="qLife"></div>
+        <div class="h">25% מהפרמיה חוזרים. צריך אישור שנתי מחברת הביטוח.</div></div>
+      <div class="q"><label class="t">עוד דברים שהמחשבון <u>לא</u> מחשב (סמני אם יש)</label>
+        <div class="chips" id="qOther"></div>
+        <div class="h">אם סימנת משהו כאן — ההחזר האמיתי כנראה גבוה יותר, וכדאי להגיש בכל מקרה.</div></div>
+      <div class="row" style="margin-top:16px"><button class="btn ghost" data-go="in">→ חזרה</button><button class="btn gold right" data-go="res">💰 תראו לי כמה מגיע</button></div>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section id="tabRes" class="hide">
+    <div class="card">
+      <div class="hero">
+        <div class="lbl" id="resLbl"></div>
+        <div class="total" id="total">0 <small>₪</small></div>
+        <div class="note" id="resNote"></div>
+      </div>
+      <div class="chart" id="chart"></div>
+      <div class="legend"><span><i style="background:var(--navy)"></i>המס שהיה צריך לשלם</span><span><i style="background:var(--gold)"></i>שולם יותר מדי — חוזר אלייך</span><span><i style="background:var(--teal)"></i>הקו הנכון</span><span><i style="background:#d8dae6"></i>אין החזר בשנה הזו</span></div>
+      <div class="row" style="justify-content:center;margin-top:16px"><button class="btn ghost sm" id="replay">▶ שוב את האנימציה</button></div>
+    </div>
+    <div class="card" id="famCard"><h2>כל המשפחה</h2><div class="fam" id="fam"></div></div>
+    <div class="card">
+      <h2>פירוט לכל שנה</h2>
+      <div class="tbl-wrap"><table class="detail" id="detT"></table></div>
+      <p class="small" style="margin-top:10px">החישוב לפי מדרגות המס ושווי נקודת הזיכוי של כל שנה. זו הערכה טובה, לא החלטה של רשות המסים. הסכום הסופי נקבע אחרי ההגשה, ויש שם גם ריבית והצמדה, כך שבדרך כלל מקבלים קצת יותר.</p>
+    </div>
+    <div class="row"><button class="btn ghost" data-go="q">→ לתקן תשובות</button><button class="btn right" data-go="how">איך מגישים ←</button></div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section id="tabHow" class="hide">
+    <div class="card">
+      <h2>איך מגישים בלי לשלם לאף אחד</h2>
+      <p>מגישים לבד ובחינם, באינטרנט. חברות להחזרי מס לוקחות 15%–25% מההחזר, על אותו טופס בדיוק.</p>
+      <ol class="how">
+        <li><b>נכנסים לאזור האישי באתר רשות המסים.</b> בגוגל: «רשות המסים אזור אישי». הכניסה עם תעודת זהות וקוד שמגיע לטלפון.</li>
+        <li><b>בוחרים «בקשה להחזר מס» (טופס 135) או «דוח שנתי למקבלי משכורת».</b> כל שנה מגישים בנפרד. מתחילים מ-<b id="howFirst">2020</b> — היא נסגרת ראשונה.</li>
+        <li><b>ממלאים את המספרים מה-106</b> בדיוק כמו בטבלה שבשלב 1. לכל מעסיק — שורה נפרדת.</li>
+        <li><b>מסמנים את מה שעניתם «כן» בשאלות</b> ומצרפים צילום: אישור על תואר, תעודת שחרור, קבלות על תרומות, אישור ביטוח חיים. על ילדים לא צריך מסמך.</li>
+        <li><b>שולחים.</b> הכסף מגיע לחשבון הבנק תוך כ-3 חודשים. אם מתעכב יותר — מוסיפים לו ריבית.</li>
+      </ol>
+      <div class="notice" id="howWarn"></div>
+      <h2 style="margin-top:20px">מה להכין לכל שנה</h2>
+      <div id="howList"></div>
+      <div class="row" style="margin-top:14px"><button class="btn ghost sm" onclick="print()">🖨 הדפסה / שמירה כ-PDF</button></div>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+/* ---------- tax rules per year (Israel, resident individual, salaried) ---------- */
+const YEARS=[2020,2021,2022,2023,2024,2025];
+const RULES={
+  2020:{b:[75960,108960,174960,243120,505920],sur:651600,pt:2628,cap:8700,don:190},
+  2021:{b:[75480,108360,173880,241680,502920],sur:647640,pt:2616,cap:8700,don:190},
+  2022:{b:[77400,110880,178080,247440,514920],sur:663240,pt:2676,cap:8900,don:190},
+  2023:{b:[81480,116760,187440,260520,542160],sur:698280,pt:2820,cap:9700,don:200},
+  2024:{b:[84120,120720,193800,269280,560280],sur:721560,pt:2904,cap:9700,don:207},
+  2025:{b:[84120,120720,193800,269280,560280],sur:721560,pt:2904,cap:9700,don:207}
+};
+const RATES=[.10,.14,.20,.31,.35,.47];
+function bracketTax(y,inc){
+  const b=RULES[y].b;let t=0,prev=0;
+  for(let i=0;i<RATES.length;i++){const top=i<b.length?b[i]:Infinity;if(inc>prev){t+=(Math.min(inc,top)-prev)*RATES[i]}prev=top}
+  if(inc>RULES[y].sur)t+=(inc-RULES[y].sur)*.03;
+  return t;
+}
+/* child credit points by year & age. recv = the parent who gets the child allowance */
+function kidPts(y,age,recv){
+  if(age<0||age>18)return 0;
+  if(age===18)return recv?.5:0;
+  if(y>=2024){
+    if(age===0)return 2.5; if(age<=2)return 4.5; if(age===3)return 3.5; if(age<=5)return 2.5;
+  }else{
+    if(age===0)return 1.5; if(age<=5)return 2.5;
+  }
+  if(age<=12)return recv?(y>=2022?2:1):(y>=2022?1:0);
+  return recv?1:0;
+}
+function armyPts(y,p){
+  if(!p.army)return 0;const [ay,am]=p.army.split('-').map(Number);
+  const start=ay*12+am; /* first month after discharge = start (am is 1-based -> next month index) */
+  let m=0;for(let k=1;k<=12;k++){const idx=y*12+k-1;if(idx>=start&&idx<start+36)m++}
+  return (p.armyFull?2:1)*m/12;
+}
+function calcYear(p,y){
+  const rows=p.rows.filter(r=>r.y===y);
+  const inc=rows.reduce((s,r)=>s+(+r.inc||0),0), paid=rows.reduce((s,r)=>s+(+r.tax||0),0), pen=rows.reduce((s,r)=>s+(+r.pen||0),0);
+  if(!rows.length)return null;
+  const R=RULES[y];const why=[];
+  let pts=2.25;if(p.g==='f')pts+=.5;
+  let kp=0;p.kids.forEach(by=>kp+=kidPts(y,y-by,p.recv));
+  if(kp)why.push(`ילדים ${fmtPts(kp)}`);pts+=kp;
+  if(p.single&&p.kids.some(by=>y-by>=0&&y-by<=18)){pts+=1;why.push('הורה יחיד 1')}
+  if(p.deg&&+p.degY===y-1){const d=p.deg==='ba'?1:.5;pts+=d;why.push(`תואר ${fmtPts(d)}`)}
+  const ap=armyPts(y,p);if(ap){pts+=ap;why.push(`שחרור ${fmtPts(ap)}`)}
+  const gross=bracketTax(y,inc);
+  const ptsCredit=pts*R.pt;
+  const penCredit=.35*Math.min(pen,.07*Math.min(inc,R.cap*12));
+  let don=+p.don[y]||0;const donCredit=don>=R.don?.35*Math.min(don,.3*inc):0;
+  if(donCredit)why.push('תרומות');
+  const life=+p.life[y]||0;const lifeCredit=.25*life; if(lifeCredit)why.push('ביטוח חיים');
+  const due=Math.max(0,gross-ptsCredit-penCredit-donCredit-lifeCredit);
+  return {y,inc,paid,due,ref:paid-due,pts,why,n:rows.length};
+}
+/* ---------- state ---------- */
+let uid=1;
+function newPerson(name){return {id:uid++,name,g:'f',recv:true,single:false,kids:[],deg:'',degY:'',army:'',armyFull:true,don:{},life:{},other:[],rows:[]}}
+const S={people:[newPerson('אני')],cur:0,tab:'in'};
+const P=()=>S.people[S.cur];
+const OTHER=['עולה חדש/ה או תושב/ת חוזר/ת','גרתי ביישוב שמקבל הנחה במס (למשל בצפון / בדרום / עוטף עזה)','משכתי כסף מפיצויים או מקופת גמל','הפסד או רווח בבורסה','נכות או ילד עם נכות','משלם/ת מזונות','בן/בת זוג לא עבד/ה בשנה מסוימת'];
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const nf=new Intl.NumberFormat('he-IL',{maximumFractionDigits:0});
+const fmt=n=>nf.format(Math.round(n));
+const fmtPts=n=>(Math.round(n*100)/100).toString();
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num=v=>{const n=parseFloat(String(v).replace(/[^\d.\-]/g,''));return isFinite(n)?n:0};
+
+/* ---------- deadline ---------- */
+(function(){
+  const today=new Date();const end=new Date(2026,11,31,23,59);
+  const days=Math.ceil((end-today)/864e5);
+  if(today.getFullYear()===2026&&days>0)
+    $('#deadline').innerHTML=`⏳ <span>שנת <b>2020</b> נסגרת ב-31.12.2026 — נשארו <b>${days}</b> ימים. אחרי זה ההחזר על 2020 הולך לאיבוד.</span>`;
+  else $('#deadline').classList.add('hide');
+})();
+
+/* ---------- people ---------- */
+function renderPeople(){
+  $('#people').innerHTML=S.people.map((p,i)=>`<button class="ptab ${i===S.cur?'on':''}" data-i="${i}">${esc(p.name)}</button>`).join('')+
+    `<button class="ptab add" id="addP">＋ בן משפחה</button>`+(S.people.length>1?`<button class="ptab" id="delP" title="להסיר את ${esc(P().name)}">🗑</button>`:'');
+  $$('#people .ptab[data-i]').forEach(b=>b.onclick=()=>{S.cur=+b.dataset.i;renderAll()});
+  $('#addP').onclick=()=>{S.people.push(newPerson('בן משפחה '+S.people.length));S.cur=S.people.length-1;go('q')};
+  const d=$('#delP');if(d)d.onclick=()=>{if(confirm('להסיר את '+P().name+'?')){S.people.splice(S.cur,1);S.cur=0;renderAll()}};
+  $$('.pname').forEach(e=>e.textContent=P().name);
+}
+
+/* ---------- step nav ---------- */
+function go(t){S.tab=t;renderAll();window.scrollTo({top:$('#steps').offsetTop-10,behavior:'smooth'});if(t==='res')setTimeout(animate,250)}
+$$('#steps .step').forEach(b=>b.onclick=()=>go(b.dataset.s));
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g)go(g.dataset.go)});
+function renderSteps(){
+  const order=['in','q','res','how'];
+  $$('#steps .step').forEach(b=>{const i=order.indexOf(b.dataset.s);b.classList.toggle('on',b.dataset.s===S.tab);b.classList.toggle('done',i<order.indexOf(S.tab))});
+  $('#tabIn').classList.toggle('hide',S.tab!=='in');$('#tabQ').classList.toggle('hide',S.tab!=='q');
+  $('#tabRes').classList.toggle('hide',S.tab!=='res');$('#tabHow').classList.toggle('hide',S.tab!=='how');
+}
+
+/* ---------- step 1: rows ---------- */
+function renderRows(){
+  const p=P();const tb=$('#rowsT tbody');
+  if(!p.rows.length){tb.innerHTML=`<tr><td colspan="6" class="small" style="text-align:center;padding:18px">עוד אין טפסים. העלי קובץ או הוסיפי ידנית.</td></tr>`;renderFan();return}
+  p.rows.sort((a,b)=>a.y-b.y);
+  tb.innerHTML=p.rows.map((r,i)=>`<tr>
+    <td><select data-i="${i}" data-k="y">${YEARS.map(y=>`<option ${y===r.y?'selected':''}>${y}</option>`).join('')}</select></td>
+    <td><input data-i="${i}" data-k="src" value="${esc(r.src)}" style="direction:rtl;min-width:110px"></td>
+    <td><input data-i="${i}" data-k="inc" inputmode="decimal" value="${r.inc?fmt(r.inc):''}"></td>
+    <td><input data-i="${i}" data-k="tax" inputmode="decimal" value="${r.tax?fmt(r.tax):''}"></td>
+    <td><input data-i="${i}" data-k="pen" inputmode="decimal" value="${r.pen?fmt(r.pen):''}"></td>
+    <td><button class="x" data-del="${i}" title="למחוק">×</button></td></tr>
+    ${r.warn?`<tr><td></td><td colspan="5" class="warn">⚠ ${esc(r.warn)}</td></tr>`:''}`).join('');
+  tb.querySelectorAll('[data-k]').forEach(el=>el.onchange=()=>{const r=p.rows[+el.dataset.i];const k=el.dataset.k;
+    r[k]=k==='y'?+el.value:k==='src'?el.value:num(el.value);r.warn='';renderRows()});
+  tb.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{p.rows.splice(+b.dataset.del,1);renderRows()});
+  renderFan();
+}
+$('#addRow').onclick=()=>{const used=P().rows.map(r=>r.y);const y=YEARS.find(y=>!used.includes(y))||2025;P().rows.push({y,src:'ידני',inc:0,tax:0,pen:0});renderRows()};
+function renderFan(){
+  const rows=P().rows;
+  $('#fan').innerHTML=rows.map((r,i)=>`<div class="f106" style="animation-delay:${i*90}ms;transform:rotate(${(i-(rows.length-1)/2)*4}deg) translateY(${Math.abs(i-(rows.length-1)/2)*6}px)">
+    <div class="hd ${i%3===2?'t':''}"><span>${r.y}</span><span>106</span></div>
+    <div class="bd"><span>158</span> ${fmt(r.inc)}<br><span>042</span> ${fmt(r.tax)}</div></div>`).join('');
+}
+
+/* ---------- PDF reading (pdf.js, runs only in the browser) ---------- */
+let pdfjsReady=null;
+function loadPdfJs(){
+  if(pdfjsReady)return pdfjsReady;
+  pdfjsReady=new Promise((ok,bad)=>{const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload=()=>{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';ok()};
+    s.onerror=()=>{pdfjsReady=null;bad(new Error('load'))};document.head.appendChild(s)});
+  return pdfjsReady;
+}
+async function pdfLines(buf){
+  const doc=await pdfjsLib.getDocument({data:buf}).promise;const pages=[];
+  for(let n=1;n<=doc.numPages;n++){
+    const pg=await doc.getPage(n);const tc=await pg.getTextContent();
+    const items=tc.items.filter(it=>it.str&&it.str.trim()).map(it=>({s:it.str.trim(),x:it.transform[4],y:it.transform[5]}));
+    items.sort((a,b)=>b.y-a.y);
+    const lines=[];for(const it of items){let L=lines.find(l=>Math.abs(l.y-it.y)<4);if(!L){L={y:it.y,items:[]};lines.push(L)}L.items.push(it)}
+    lines.forEach(l=>l.items.sort((a,b)=>b.x-a.x));
+    pages.push(lines);
+  }
+  return pages;
+}
+const MONEY=/^-?\d{1,3}(,\d{3})+(\.\d{1,2})?$|^-?\d+(\.\d{1,2})?$/;
+function amountsOn(line,codes){
+  const toks=[];line.items.forEach(it=>it.s.split(/\s+/).forEach(t=>toks.push(t.replace(/[₪]/g,''))));
+  return toks.filter(t=>MONEY.test(t)&&!codes.includes(t.replace(/^0+/,''))&&!codes.includes(t)).map(num).filter(v=>!(v>=2015&&v<=2030&&Number.isInteger(v)));
+}
+function findField(pages,codes){
+  /* returns largest amount on a line containing one of the codes as a standalone token */
+  let best=null;
+  const re=new RegExp('(^|[^\\d,.])('+codes.join('|')+')(?![\\d,.])');
+  for(const lines of pages)for(const l of lines){
+    const txt=l.items.map(i=>i.s).join(' ');
+    if(!re.test(txt))continue;
+    const am=amountsOn(l,codes.concat(codes.map(c=>c.replace(/^0+/,''))));
+    const v=am.length?Math.max(...am):null;
+    if(v!=null&&(best==null||v>best))best=v;
+  }
+  return best;
+}
+function findYear(pages){
+  const cnt={};
+  for(const lines of pages)for(const l of lines){const t=l.items.map(i=>i.s).join(' ');
+    const m=t.match(/(?:שנת\s*(?:ה)?מס|לשנת|שנת)\D{0,12}(20[12]\d)/);if(m)cnt[m[1]]=(cnt[m[1]]||0)+5;
+    (t.match(/\b20[12]\d\b/g)||[]).forEach(y=>cnt[y]=(cnt[y]||0)+1)}
+  const ys=Object.entries(cnt).filter(([y])=>YEARS.includes(+y)).sort((a,b)=>b[1]-a[1]);
+  return ys.length?+ys[0][0]:null;
+}
+async function readFiles(files){
+  const msg=$('#readMsg');msg.textContent='קוראת את הקבצים…';
+  try{await loadPdfJs()}catch(e){msg.innerHTML='<span class="warn">לא הצלחתי לטעון את קורא הקבצים (אין אינטרנט?). אפשר להכניס את המספרים ידנית.</span>';return}
+  let ok=0,bad=[];
+  for(const f of files){
+    try{
+      const pages=await pdfLines(await f.arrayBuffer());
+      const hasText=pages.some(ls=>ls.length>3);
+      if(!hasText){bad.push(f.name+' (סריקה/תמונה — צריך להקליד ידנית)');P().rows.push({y:2025,src:f.name,inc:0,tax:0,pen:0,warn:'זה קובץ סרוק, אז לא יכולתי לקרוא אותו. הקלידי את המספרים מהטופס.'});continue}
+      const y=findYear(pages);const inc=findField(pages,['158','172']);const tax=findField(pages,['042']);const pen=findField(pages,['045','086']);
+      const w=[];if(!y)w.push('לא מצאתי את השנה');if(inc==null)w.push('לא מצאתי הכנסה (158/172)');if(tax==null)w.push('לא מצאתי מס (042)');
+      P().rows.push({y:y||2025,src:f.name,inc:inc||0,tax:tax||0,pen:pen||0,warn:w.length?w.join(' · ')+' — השלימי ידנית':'נקרא אוטומטית — בדקי מול הטופס'});
+      ok++;
+    }catch(e){bad.push(f.name)}
+  }
+  msg.innerHTML=`נקראו ${ok} קבצים.`+(bad.length?` <span class="warn">בעיה בקבצים: ${bad.map(esc).join(', ')}</span>`:'');
+  renderRows();
+}
+const drop=$('#drop'),fileIn=$('#file');
+fileIn.onchange=()=>{readFiles([...fileIn.files]);fileIn.value=''};
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>{const fs=[...e.dataTransfer.files].filter(f=>/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name));if(fs.length)readFiles(fs)});
+
+/* ---------- step 2: questionnaire ---------- */
+function seg(id,val,on){const el=$(id);el.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.v===String(val));b.onclick=()=>{on(b.dataset.v);renderQ()}})}
+function renderQ(){
+  const p=P();
+  $('#qName').value=p.name;$('#qName').oninput=e=>{p.name=e.target.value||'בלי שם';renderPeople()};
+  seg('#qGender',p.g,v=>{p.g=v;p.recv=v==='f'});
+  seg('#qAllow',p.recv?1:0,v=>p.recv=v==='1');
+  seg('#qSingle',p.single?1:0,v=>p.single=v==='1');
+  $('#qAllowWrap').classList.toggle('hide',!p.kids.length);
+  $('#qKids').innerHTML=p.kids.map((y,i)=>`<span class="chip">ילד/ה ${y}<button data-k="${i}" title="להסיר">×</button></span>`).join('')||'<span class="small">אין ילדים ברשימה</span>';
+  $$('#qKids [data-k]').forEach(b=>b.onclick=()=>{p.kids.splice(+b.dataset.k,1);renderQ()});
+  $('#qKidAdd').onclick=()=>{const y=+$('#qKidY').value;if(y>=1995&&y<=2025){p.kids.push(y);p.kids.sort();$('#qKidY').value='';renderQ()}else $('#qKidY').focus()};
+  $('#qKidY').onkeydown=e=>{if(e.key==='Enter')$('#qKidAdd').click()};
+  $('#qDeg').value=p.deg;$('#qDeg').onchange=e=>p.deg=e.target.value;
+  $('#qDegY').value=p.degY;$('#qDegY').onchange=e=>p.degY=e.target.value;
+  $('#qArmy').value=p.army;$('#qArmy').onchange=e=>p.army=e.target.value;
+  $('#qArmyFull').value=p.armyFull?'1':'0';$('#qArmyFull').onchange=e=>p.armyFull=e.target.value==='1';
+  const yg=(id,obj)=>{$(id).innerHTML=YEARS.map(y=>`<div><label>${y}</label><input inputmode="decimal" data-y="${y}" value="${obj[y]?fmt(obj[y]):''}" placeholder="0"></div>`).join('');
+    $(id).querySelectorAll('input').forEach(i=>i.onchange=()=>{obj[i.dataset.y]=num(i.value)})};
+  yg('#qDon',p.don);yg('#qLife',p.life);
+  $('#qOther').innerHTML=OTHER.map((o,i)=>`<button class="ptab ${p.other.includes(i)?'on':''}" data-o="${i}" style="font-size:14px;padding:6px 12px">${o}</button>`).join('');
+  $$('#qOther [data-o]').forEach(b=>b.onclick=()=>{const i=+b.dataset.o;p.other=p.other.includes(i)?p.other.filter(x=>x!==i):p.other.concat(i);renderQ()});
+}
+
+/* ---------- step 3: results ---------- */
+function results(p){return YEARS.map(y=>calcYear(p,y)||{y,empty:true})}
+function renderRes(){
+  const p=P();const res=results(p);
+  const pos=res.filter(r=>!r.empty&&r.ref>50);
+  const total=pos.reduce((s,r)=>s+r.ref,0);
+  $('#total').dataset.v=Math.round(total);
+  const hasRows=res.some(r=>!r.empty);
+  $('#resLbl').textContent=hasRows?`ההערכה ל${p.name} · ${pos.length===1?'שנה אחת':pos.length+' שנים'} עם החזר`:'';
+  $('#resNote').innerHTML=!hasRows?'עוד לא הוכנסו טופסי 106. <a href="#" data-go="in">חזרה לשלב 1</a>':
+    total>0?(p.other.length?'וזה בלי הדברים שסימנת בשאלות, שעשויים להגדיל עוד':'הסכום מגיע לחשבון הבנק תוך כ-3 חודשים מההגשה'):'לפי המספרים שהוכנסו, לא שילמת מס מיותר.';
+  const max=Math.max(1,...res.filter(r=>!r.empty).map(r=>Math.max(r.paid,r.due)));
+  const showClose=new Date()<new Date(2027,0,1);
+  $('#chart').innerHTML=res.map(r=>{
+    if(r.empty)return `<div class="col"><div class="bar none" data-h="0"></div><div class="yr dim">${r.y}</div><div class="small">אין 106</div></div>`;
+    const has=r.ref>50;
+    const top=Math.max(r.paid,r.due)/max, okH=has?r.due/Math.max(r.paid,1):1;
+    return `<div class="col">${r.y===2020&&showClose&&has?'<span class="pill red closing">נסגר 31.12</span>':''}
+      <div class="bar ${has?'':'none'}" data-h="${(top*100).toFixed(1)}" data-gold="${has?((1-okH)*100).toFixed(1):0}" data-ref="${Math.round(r.ref)}">
+        ${has?`<div class="amt">+${fmt(r.ref)}</div><div class="gold"></div>`:`<div class="okl ${r.ref<-50?'neg':''}">${r.ref<-50?'אל תגישי':'תקין'}</div>`}
+        <div class="ok" style="${has?`height:${(okH*100).toFixed(1)}%`:''}"></div>
+        ${has?`<div class="tline" style="bottom:${(okH*100).toFixed(1)}%"></div>`:''}
+      </div><div class="yr ${has?'':'dim'}">${r.y}</div></div>`}).join('');
+  /* detail table */
+  $('#detT').innerHTML=`<tr><th>שנה</th><th>הכנסה</th><th>מס ששולם</th><th>המס הנכון</th><th>ההפרש</th></tr>`+
+    res.map(r=>r.empty?`<tr><td>${r.y}</td><td colspan="4" class="small">לא הוכנס 106</td></tr>`:
+    `<tr><td><b>${r.y}</b>${r.n>1?`<div class="why">${r.n} מעסיקים</div>`:''}</td><td class="num">${fmt(r.inc)}</td><td class="num">${fmt(r.paid)}</td>
+     <td class="num">${fmt(r.due)}<div class="why" style="direction:rtl">${fmtPts(r.pts)} נקודות${r.why.length?' · '+r.why.join(' · '):''}</div></td>
+     <td class="num" style="color:${r.ref>50?'var(--green)':r.ref<-50?'var(--red)':'inherit'};font-weight:700">${r.ref>50?'+'+fmt(r.ref):r.ref<-50?fmt(r.ref):'—'}</td></tr>`).join('');
+  /* family */
+  const fam=S.people.map(q=>({n:q.name,t:results(q).filter(r=>!r.empty&&r.ref>50).reduce((s,r)=>s+r.ref,0)}));
+  $('#famCard').classList.toggle('hide',S.people.length<2);
+  $('#fam').innerHTML=fam.map(f=>`<div>${esc(f.n)}<b>${fmt(f.t)} ₪</b></div>`).join('')+`<div style="background:#fff3cf">סה״כ למשפחה<b>${fmt(fam.reduce((s,f)=>s+f.t,0))} ₪</b></div>`;
+}
+let animT=[];
+function animate(){
+  animT.forEach(clearTimeout);animT=[];$$('.coin').forEach(c=>c.remove());
+  const bars=$$('#chart .bar');const tot=$('#total');const target=+tot.dataset.v||0;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  bars.forEach(b=>{b.style.height='0';b.classList.remove('show','lined','glow');const g=b.querySelector('.gold');if(g)g.style.height='0'});
+  setCount(0);
+  const later=(f,ms)=>animT.push(setTimeout(f,reduce?0:ms));
+  bars.forEach((b,i)=>later(()=>{b.style.height=b.dataset.h+'%'},120+i*110));
+  bars.forEach(b=>later(()=>b.classList.add('lined'),1100));
+  const golden=bars.filter(b=>+b.dataset.gold>0);
+  let run=0;
+  golden.forEach((b,i)=>{
+    const t=1500+i*650;
+    later(()=>{if(!reduce)rainCoins(b,Math.min(14,4+Math.round(+b.dataset.ref/400)))},t);
+    later(()=>{b.querySelector('.gold').style.height=b.dataset.gold+'%';b.classList.add('glow')},t+450);
+    later(()=>{b.classList.add('show');run+=+b.dataset.ref;countTo(run)},t+700);
+    later(()=>b.classList.remove('glow'),t+1600);
+  });
+  if(!golden.length)later(()=>countTo(target),1200);
+  else later(()=>countTo(target),1500+golden.length*650+900);
+}
+let cur=0,raf=0;
+function setCount(v){cur=v;$('#total').innerHTML=`${fmt(v)} <small>₪</small>`}
+function countTo(t){cancelAnimationFrame(raf);const from=cur,st=performance.now(),d=600;
+  const step=now=>{const k=Math.min(1,(now-st)/d),e=1-Math.pow(1-k,3);setCount(from+(t-from)*e);if(k<1)raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step)}
+function rainCoins(bar,n){
+  const r=bar.getBoundingClientRect();const src=$('#total').getBoundingClientRect();
+  for(let i=0;i<n;i++){
+    const c=document.createElement('div');c.className='coin';c.textContent='₪';document.body.appendChild(c);
+    const sx=src.left+src.width/2+(Math.random()-.5)*src.width*.6, sy=src.top+src.height*.6;
+    const ex=r.left+r.width/2-13+(Math.random()-.5)*r.width*.5, ey=r.bottom-r.height+10;
+    const mx=(sx+ex)/2+(Math.random()-.5)*120, my=Math.min(sy,ey)-80-Math.random()*80;
+    c.style.left='0';c.style.top='0';c.style.opacity='0';
+    c.animate([
+      {transform:`translate(${sx}px,${sy}px) scale(.4) rotate(0)`,opacity:0},
+      {transform:`translate(${mx}px,${my}px) scale(1) rotate(${180+Math.random()*180}deg)`,opacity:1,offset:.45},
+      {transform:`translate(${ex}px,${ey}px) scale(.8) rotateY(540deg)`,opacity:1,offset:.92},
+      {transform:`translate(${ex}px,${ey+8}px) scale(.3)`,opacity:0}
+    ],{duration:900+Math.random()*350,delay:i*55,easing:'cubic-bezier(.3,.1,.5,1)',fill:'both'}).onfinish=()=>c.remove();
+  }
+}
+$('#replay').onclick=()=>{window.scrollTo({top:$('#tabRes').offsetTop-10,behavior:'smooth'});setTimeout(animate,300)};
+
+/* ---------- step 4 ---------- */
+function renderHow(){
+  const p=P();const res=results(p).filter(r=>!r.empty);
+  const posY=res.filter(r=>r.ref>50).map(r=>r.y), negY=res.filter(r=>r.ref<-50).map(r=>r.y);
+  $('#howFirst').textContent=posY[0]||2020;
+  const w=$('#howWarn');
+  w.className='notice'+(negY.length?' bad':'');
+  w.innerHTML=negY.length?`<b>לשנים ${negY.join(', ')} לא להגיש.</b> לפי החישוב בשנים האלה שולם <u>פחות</u> מס ממה שצריך (בדרך כלל כשעובדים אצל שני מעסיקים בלי תיאום מס). בקשת החזר לשנה כזו יכולה להסתיים בחוב למס הכנסה. זה לא משפיע על השנים האחרות — כל שנה עומדת לבד.`
+    :'כל שנה עומדת בפני עצמה. אפשר להגיש רק את השנים שיש בהן החזר.';
+  const need=[];
+  if(p.deg)need.push('אישור זכאות לתואר');
+  if(p.army)need.push('תעודת שחרור');
+  if(Object.values(p.don).some(v=>v>0))need.push('קבלות על תרומות (סעיף 46)');
+  if(Object.values(p.life).some(v=>v>0))need.push('אישור שנתי מחברת ביטוח החיים');
+  $('#howList').innerHTML=(posY.length?posY.map(y=>`<div class="q"><label class="t">${y}</label><div>טופסי 106 של ${y} מכל המעסיקים${need.length?', '+need.join(', '):''}.</div></div>`).join(''):'<p class="small">עדיין אין שנים עם החזר.</p>')+
+    (p.other.length?`<div class="notice" style="margin-top:10px">סימנת: ${p.other.map(i=>OTHER[i]).join(' · ')}. את אלה המחשבון לא חישב — כדאי לציין אותם בבקשה. אם יש ספק, רואה חשבון יבדוק את זה בשעה אחת.</div>`:'');
+}
+
+function renderAll(){renderPeople();renderSteps();renderRows();renderQ();renderRes();renderHow()}
+renderAll();
+</script>
+</body>
+</html>
