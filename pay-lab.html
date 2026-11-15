@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-mode="quiet">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>בקרת שכר — ניסוי אנימציות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* צבעי «קריסטל לילה» — אותם משתנים כמו pay/theme-crystal.css */
+:root{
+  --ground:#17122b; --ink:#ece8ff; --muted:#b9b2dc; --faint:#8f88b5; --border:rgba(255,255,255,.16);
+  --accent:#a78bfa; --accent-ink:#d8ccff; --good:#34d399; --good-bg:rgba(52,211,153,.14);
+  --warn:#fbbf24; --warn-bg:rgba(251,191,36,.14); --crit:#fb7185; --crit-bg:rgba(251,113,133,.15);
+  --glass:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.04));
+  --shadow:10px 12px 26px rgba(0,0,0,.35),inset 1px 1px 2px rgba(255,255,255,.22),inset -4px -6px 12px rgba(0,0,0,.22);
+  --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.2,1.3,.35,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:Rubik,system-ui,sans-serif;color:var(--ink);min-height:100vh;line-height:1.45;
+  background:radial-gradient(1200px 700px at 85% -10%,#3b2a6b 0%,transparent 60%),radial-gradient(900px 600px at 0% 100%,#2a1f55 0%,transparent 60%),#17122b fixed}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 80px}
+.lab{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);color:#fde68a;border-radius:14px;padding:10px 14px;font-size:14px}
+.lab b{color:#fff}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0 6px}
+h1{margin:0;font-size:26px;font-weight:800}
+h1 span{color:var(--muted);font-weight:500;font-size:18px}
+.seg{display:inline-flex;gap:4px;padding:4px;border-radius:14px;background:rgba(255,255,255,.07);border:1px solid var(--border)}
+.seg button{border:none;background:transparent;padding:8px 14px;border-radius:10px;font-weight:500;color:var(--muted);transition:.25s var(--ease)}
+.seg button.on{background:linear-gradient(145deg,#8b5cf6,#6d28d9);color:#fff;box-shadow:0 6px 18px -6px rgba(139,92,246,.7)}
+.modeSeg button.on[data-m="bold"]{background:linear-gradient(145deg,#f472b6,#8b5cf6)}
+.sp{margin-inline-start:auto}
+.btn{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);border-radius:12px;padding:8px 14px;font-weight:500;
+  box-shadow:inset 1px 1px 2px rgba(255,255,255,.2),4px 6px 14px rgba(0,0,0,.25);transition:transform .15s var(--ease),background .2s}
+.btn:hover{background:rgba(255,255,255,.14)}
+.btn:active{transform:scale(.96)}
+.glass{background:var(--glass);border:1px solid rgba(255,255,255,.17);border-radius:20px;box-shadow:var(--shadow)}
+.explain{font-size:13px;color:var(--faint);margin:4px 0 0}
+/* KPI tiles */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.tile{padding:16px 18px;position:relative;overflow:hidden}
+.tile .l{color:var(--muted);font-size:14px}
+.tile .v{font-size:34px;font-weight:800;letter-spacing:-.5px;margin-top:2px;font-variant-numeric:tabular-nums;direction:ltr;text-align:right;display:flex;justify-content:flex-end;align-items:baseline;gap:4px;height:44px;overflow:hidden}
+.tile .v small{font-size:18px;color:var(--muted);font-weight:500}
+.tile .d{font-size:13px;margin-top:2px;min-height:18px}
+.tile .d.up{color:var(--crit)} .tile .d.dn{color:var(--good)}
+.tile.todo{border-color:rgba(251,113,133,.45)}
+.tile.todo .v{color:#fda4af}
+.tile.todo.clean{border-color:rgba(52,211,153,.5)}
+.tile.todo.clean .v{color:#6ee7b7}
+/* rolling digits (bold) */
+.roll{display:inline-flex;direction:ltr}
+.dg{display:inline-block;height:44px;overflow:hidden;position:relative;width:.62em}
+.dg i{display:flex;flex-direction:column;font-style:normal;transition:transform .9s var(--spring)}
+.dg i b{height:44px;line-height:44px;font-weight:800;text-align:center}
+.sep{width:.3em;text-align:center}
+/* grid */
+.mid{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;margin-top:14px}
+.panel{padding:16px 18px}
+.panel h2{margin:0 0 4px;font-size:17px;font-weight:700}
+.trend svg{width:100%;height:190px;display:block;overflow:visible}
+.trend .ax{fill:var(--faint);font-size:11px}
+.dept .r{display:grid;grid-template-columns:76px 1fr 86px;gap:10px;align-items:center;margin:9px 0;font-size:14px}
+.dept .track{height:14px;border-radius:8px;background:rgba(255,255,255,.07);overflow:hidden;position:relative}
+.dept .fill{height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,#6d28d9,#a78bfa);position:relative;overflow:hidden}
+.dept .n{direction:ltr;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.dept .fill::after{content:"";position:absolute;inset:0;transform:translateX(-120%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent)}
+html[data-mode="bold"] .dept .fill.shine::after{animation:shine 1.1s .2s var(--ease)}
+@keyframes shine{to{transform:translateX(120%)}}
+/* to-do list */
+.lists{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;margin-top:14px}
+.todoList{position:relative}
+.item{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;margin:8px 0;background:var(--crit-bg);border:1px solid rgba(251,113,133,.35);
+  overflow:hidden;cursor:pointer;transform-origin:center}
+.item.wait{background:var(--warn-bg);border-color:rgba(251,191,36,.35)}
+.item .ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(251,113,133,.25);flex:none;font-weight:800}
+.item.wait .ic{background:rgba(251,191,36,.25)}
+.item .tx{flex:1;min-width:0}
+.item .nm{font-weight:700}
+.item .wh{font-size:14px;color:#fecdd3}
+.item.wait .wh{color:#fde68a}
+.item .am{direction:ltr;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.item .ok{border:1px solid rgba(52,211,153,.6);background:rgba(52,211,153,.12);color:#6ee7b7;border-radius:10px;padding:6px 12px;font-weight:700;white-space:nowrap}
+.item .ok:hover{background:rgba(52,211,153,.25)}
+.item.done{background:var(--good-bg)!important;border-color:rgba(52,211,153,.5)!important}
+.item.done .ic{background:rgba(52,211,153,.3)}
+.empty{text-align:center;padding:26px 10px;color:var(--muted)}
+.row{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;margin:6px 0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:background .2s}
+.row:hover{background:rgba(255,255,255,.1)}
+.row .nm{flex:1}
+.row .am{direction:ltr;color:var(--muted);font-variant-numeric:tabular-nums}
+.chk{color:var(--good);font-weight:800}
+/* employee card */
+.scrim{position:fixed;inset:0;background:rgba(10,6,24,.55);opacity:0;pointer-events:none;transition:opacity .3s;z-index:20}
+html[data-mode="bold"] .scrim{backdrop-filter:blur(6px)}
+.scrim.on{opacity:1;pointer-events:auto}
+.card{position:fixed;z-index:21;width:min(520px,92vw);left:50%;top:50%;transform:translate(-50%,-50%);padding:20px 22px;
+  background:linear-gradient(145deg,rgba(46,36,86,.98),rgba(30,23,58,.98));border:1px solid rgba(255,255,255,.2);border-radius:22px;box-shadow:0 30px 80px rgba(0,0,0,.6);display:none}
+.card h3{margin:0;font-size:22px}
+.card .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.card .grid div{background:rgba(255,255,255,.06);border-radius:12px;padding:10px}
+.card .grid span{display:block;font-size:12px;color:var(--muted)}
+.card .grid b{font-size:19px;direction:ltr;display:block;text-align:right}
+.hist{display:flex;align-items:flex-end;gap:8px;height:110px;padding-top:10px}
+.hist div{flex:1;text-align:center;font-size:11px;color:var(--faint);display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.hist i{display:block;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,#a78bfa,#6d28d9);height:0;transition:height .6s var(--spring)}
+.hist div.cur i{background:linear-gradient(180deg,#fda4af,#e11d48)}
+.card .x{position:absolute;top:12px;left:14px;border:none;background:rgba(255,255,255,.1);width:32px;height:32px;border-radius:50%}
+/* celebration */
+.celebrate{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:30}
+.celebrate .box{text-align:center;opacity:0;padding:40px 60px;border-radius:40px;background:radial-gradient(closest-side,rgba(23,18,43,.92),rgba(23,18,43,.6) 70%,transparent)}
+.celebrate svg{width:130px;height:130px}
+.celebrate .t{font-size:30px;font-weight:800;margin-top:6px;text-shadow:0 4px 30px rgba(52,211,153,.5)}
+.celebrate .s{color:var(--muted)}
+canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:29}
+.fly{position:fixed;z-index:25;pointer-events:none;font-weight:800;color:#6ee7b7;font-size:22px}
+@media (max-width:860px){.kpis{grid-template-columns:1fr 1fr}.mid,.lists{grid-template-columns:1fr}.tile .v{font-size:28px}}
+@media (max-width:520px){.tile{padding:12px}.tile .v{font-size:22px}.tile .v small{font-size:14px}.item{flex-wrap:wrap}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="lab">🧪 <b>דף ניסוי.</b> הנתונים כאן מומצאים. הדף לא מחובר לבקרת השכר האמיתית ולא משנה בה כלום. כאן רק בוחרים איזו תנועה נכנסת למערכת האמיתית.</div>
+
+  <div class="top">
+    <h1>בקרת שכר <span>· מסעדת דוגמה</span></h1>
+    <div class="seg" id="monthSeg"><button data-k="2026-09">ספטמבר</button><button data-k="2026-10" class="on">אוקטובר</button></div>
+    <div class="sp"></div>
+    <div class="seg modeSeg" id="modeSeg"><button data-m="quiet" class="on">🌙 מהודר ושקט</button><button data-m="bold">⚡ נועז</button></div>
+    <button class="btn" id="replay">▶ שוב מההתחלה</button>
+  </div>
+  <p class="explain" id="hint">נסי: להחליף חודש · ללחוץ «✓ טופל» · ללחוץ על עובד · לטפל בכל החריגות. ואז להחליף ל«נועז» ולעשות שוב.</p>
+
+  <div class="kpis">
+    <div class="tile glass"><div class="l">עלות שכר החודש</div><div class="v" id="kCost"></div><div class="d" id="kCostD"></div></div>
+    <div class="tile glass"><div class="l">עובדים</div><div class="v" id="kEmp"></div><div class="d" id="kEmpD"></div></div>
+    <div class="tile glass"><div class="l">שכר מתוך המכירות</div><div class="v" id="kPct"></div><div class="d" id="kPctD"></div></div>
+    <div class="tile glass todo" id="kTodoT"><div class="l">דורש טיפול</div><div class="v" id="kTodo"></div><div class="d" id="kTodoD"></div></div>
+  </div>
+
+  <div class="mid">
+    <div class="panel glass trend"><h2>עלות שכר — 12 חודשים</h2><svg id="trend" viewBox="0 0 600 190" preserveAspectRatio="none"></svg></div>
+    <div class="panel glass dept"><h2>לפי מחלקה</h2><div id="dept"></div></div>
+  </div>
+
+  <div class="lists">
+    <div class="panel glass todoList"><h2>מה צריך ממך</h2><div id="todo"></div></div>
+    <div class="panel glass"><h2>תקין <span style="color:var(--faint);font-weight:400;font-size:13px">(לחצי על עובד)</span></h2><div id="okList"></div></div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="card" id="card"><button class="x" id="cardX">×</button><div id="cardBody"></div></div>
+<canvas id="fx"></canvas>
+<div class="celebrate"><div class="box" id="cele">
+  <svg viewBox="0 0 130 130"><circle cx="65" cy="65" r="56" fill="rgba(52,211,153,.12)" stroke="#34d399" stroke-width="6" stroke-linecap="round" id="ceC"/>
+  <path d="M40 67 l17 17 l34 -36" fill="none" stroke="#6ee7b7" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" id="ceP"/></svg>
+  <div class="t">החודש נקי</div><div class="s">כל החריגות טופלו</div></div></div>
+
+<script>
+'use strict';
+/* ---------- נתוני דמה (מומצאים) ---------- */
+const NAMES=['עובד א׳','עובדת ב׳','עובד ג׳','עובדת ד׳','עובד ה׳','עובדת ו׳','עובד ז׳','עובדת ח׳','עובד ט׳','עובדת י׳','עובד כ׳','עובדת ל׳'];
+const DATA={
+ '2026-09':{label:'ספטמבר',cost:398400,emp:44,pct:30.1,trend:[352,361,349,370,384,402,415,409,390,376,371,398],
+  depts:[['מטבח',151200],['מלצרים',118300],['בר',46900],['אירוח',30800],['שטיפה',27400],['ניהול',23800]],
+  todo:[{n:0,w:'שעות נוספות בשיפט, לא בתלוש (5 ש׳)',a:380,l:'bad'},{n:3,w:'נסיעות שולמו פעמיים',a:-310,l:'bad'},{n:6,w:'חסר טופס 101',a:0,l:'wait'}]},
+ '2026-10':{label:'אוקטובר',cost:421750,emp:47,pct:31.4,trend:[361,349,370,384,402,415,409,390,376,371,398,421.75],
+  depts:[['מטבח',160900],['מלצרים',126200],['בר',49100],['אירוח',33300],['שטיפה',27850],['ניהול',24400]],
+  todo:[{n:1,w:'תעריף ירד מ-48 ל-45 ₪ בלי הערה',a:-504,l:'bad'},{n:4,w:'שעות נוספות בשיפט, לא בתלוש (6 ש׳)',a:456,l:'bad'},{n:7,w:'פנסיה לא נוכתה — חודש שלישי',a:-612,l:'bad'},{n:9,w:'מחלה 3 ימים — אין אישור',a:0,l:'wait'},{n:10,w:'רועי שאל על בונוס — מחכה לתשובה',a:0,l:'wait'}]}
+};
+const MONTHS_HE=['נוב','דצמ','ינו','פבר','מרץ','אפר','מאי','יוני','יולי','אוג','ספט','אוק'];
+let month='2026-10', mode='quiet', todo=[], handled=0, prev=null;
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const nf=new Intl.NumberFormat('he-IL',{maximumFractionDigits:0});
+const fmt=n=>nf.format(Math.round(n));
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const bold=()=>mode==='bold';
+const wait=ms=>new Promise(r=>setTimeout(r,reduce?0:ms));
+
+/* ---------- מספרים חיים ---------- */
+const numState=new WeakMap();
+function setNum(el,val,{dec=0,suf='',dur,plain=false}={}){
+  const old=numState.get(el)??0;numState.set(el,val);
+  const str=v=>dec?v.toFixed(dec):fmt(v);
+  if(bold()&&!reduce&&!plain){ /* גלגלת ספרות */
+    const s=str(val);let roll=el.querySelector('.roll');
+    if(!roll||roll.dataset.len!=s.length){el.innerHTML=`<span class="roll" data-len="${s.length}">${[...s].map(ch=>/\d/.test(ch)?`<span class="dg"><i>${'0123456789'.split('').map(d=>`<b>${d}</b>`).join('')}</i></span>`:`<span class="sep">${ch}</span>`).join('')}</span>${suf?`<small>${suf}</small>`:''}`;roll=el.querySelector('.roll');roll.offsetWidth}
+    const dgs=[...roll.querySelectorAll('.dg i')];let k=0;
+    [...s].forEach(ch=>{if(/\d/.test(ch)){const i=dgs[k++];i.style.transitionDelay=(k*45)+'ms';i.style.transform=`translateY(-${+ch*44}px)`}});
+    return;
+  }
+  const t0=performance.now(),D=reduce?0:(dur??900);
+  const step=now=>{const k=D?Math.min(1,(now-t0)/D):1,e=1-Math.pow(1-k,4);el.innerHTML=`${str(old+(val-old)*e)}${suf?`<small>${suf}</small>`:''}`;if(k<1)requestAnimationFrame(step)};
+  requestAnimationFrame(step);
+}
+function delta(el,cur,prv,{pct=false}={}){
+  if(prv==null){el.textContent='';el.className='d';return}
+  const d=cur-prv;if(Math.abs(d)<.05){el.textContent='כמו בחודש הקודם';el.className='d';return}
+  el.className='d '+(d>0?'up':'dn');el.textContent=`${d>0?'▲':'▼'} ${pct?Math.abs(d).toFixed(1)+'%':fmt(Math.abs(d))} מהחודש הקודם`;
+  if(!reduce)el.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'none'}],{duration:400,delay:500,fill:'backwards',easing:'ease-out'});
+}
+
+/* ---------- גרף 12 חודשים ---------- */
+let trendPts=null;
+function drawTrend(vals,animateIn){
+  const svg=$('#trend'),W=600,H=170,min=Math.min(...vals)*.92,max=Math.max(...vals)*1.03;
+  const pts=vals.map((v,i)=>[20+i*(W-40)/11,H-(v-min)/(max-min)*(H-20)]);
+  const from=trendPts&&!animateIn?trendPts:pts.map(([x])=>[x,H]);
+  trendPts=pts;
+  svg.innerHTML=`<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a78bfa" stop-opacity=".45"/><stop offset="1" stop-color="#a78bfa" stop-opacity="0"/></linearGradient>
+    <filter id="gl"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <path id="tA" fill="url(#ga)"/><path id="tL" fill="none" stroke="#c4b5fd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" ${bold()?'filter="url(#gl)"':''}/>
+    <circle id="tD" r="6" fill="#fda4af" stroke="#fff" stroke-width="2"/>
+    ${MONTHS_HE.map((m,i)=>`<text class="ax" x="${pts[i][0]}" y="188" text-anchor="middle">${m}</text>`).join('')}`;
+  const L=$('#tL'),A=$('#tA'),Dt=$('#tD');
+  const path=p=>p.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' ');
+  const apply=p=>{L.setAttribute('d',path(p));A.setAttribute('d',path(p)+` L${p[11][0]} ${H} L${p[0][0]} ${H} Z`);Dt.setAttribute('cx',p[11][0]);Dt.setAttribute('cy',p[11][1])};
+  if(animateIn&&!reduce){ /* הקו מצטייר משמאל לימין */
+    apply(pts);const len=L.getTotalLength();L.style.strokeDasharray=len;L.style.strokeDashoffset=len;
+    A.style.opacity=0;Dt.style.opacity=0;
+    L.animate([{strokeDashoffset:len},{strokeDashoffset:0}],{duration:bold()?1600:1100,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'});
+    A.animate([{opacity:0},{opacity:1}],{duration:600,delay:bold()?1200:800,fill:'forwards'});
+    if(bold()){ /* נקודה זוהרת שרצה על הקו */
+      const t0=performance.now();const run=now=>{const k=Math.min(1,(now-t0)/1600),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;const P=L.getPointAtLength(len*e);Dt.setAttribute('cx',P.x);Dt.setAttribute('cy',P.y);Dt.style.opacity=1;if(k<1)requestAnimationFrame(run)};requestAnimationFrame(run);
+    }else Dt.animate([{opacity:0,transform:'scale(0)'},{opacity:1,transform:'scale(1)'}],{duration:400,delay:1000,fill:'forwards',easing:'cubic-bezier(.2,1.4,.4,1)'}),Dt.style.transformOrigin=`${pts[11][0]}px ${pts[11][1]}px`;
+    return;
+  }
+  /* החלפת חודש — הקו זורם לצורה החדשה */
+  const t0=performance.now(),D=reduce?0:(bold()?900:600);
+  const step=now=>{const k=D?Math.min(1,(now-t0)/D):1,e=bold()?1-Math.pow(1-k,3)*(1-k*1.6*(1-k)):1-Math.pow(1-k,3);
+    apply(from.map((q,i)=>[q[0],q[1]+(pts[i][1]-q[1])*e]));if(k<1)requestAnimationFrame(step)};
+  requestAnimationFrame(step);
+}
+
+/* ---------- מחלקות ---------- */
+function drawDepts(depts,first){
+  const max=Math.max(...depts.map(d=>d[1]));const box=$('#dept');
+  if(first||!box.children.length)box.innerHTML=depts.map(d=>`<div class="r"><span>${d[0]}</span><div class="track"><div class="fill"></div></div><span class="n"></span></div>`).join('');
+  [...box.children].forEach((r,i)=>{
+    const f=r.querySelector('.fill'),n=r.querySelector('.n'),w=depts[i][1]/max*100;
+    f.style.transition=`width ${bold()?900:700}ms ${bold()?'var(--spring)':'var(--ease)'} ${first?i*(bold()?90:60):0}ms`;
+    requestAnimationFrame(()=>{f.style.width=w+'%'});
+    if(bold()){f.classList.remove('shine');void f.offsetWidth;f.classList.add('shine')}
+    setNum(n,depts[i][1],{dur:700,plain:true});
+  });
+}
+
+/* ---------- רשימת «מה צריך ממך» ---------- */
+function itemHtml(t,i){return `<div class="item ${t.l}" data-i="${i}" data-n="${t.n}">
+  <div class="ic">${t.l==='bad'?'!':'?'}</div><div class="tx"><div class="nm">${NAMES[t.n]}</div><div class="wh">${t.w}</div></div>
+  ${t.a?`<div class="am">${t.a>0?'+':'−'}${fmt(Math.abs(t.a))} ₪</div>`:''}<button class="ok">✓ טופל</button></div>`}
+async function renderTodo(first){
+  const box=$('#todo');
+  const old=[...box.querySelectorAll('.item')];
+  if(old.length&&!reduce){ /* היציאה של החודש הקודם */
+    await Promise.all(old.map((el,i)=>el.animate([{opacity:1,transform:'none'},{opacity:0,transform:bold()?'translateX(-40px) scale(.96)':'translateY(-6px)'}],{duration:220,delay:i*30,easing:'ease-in',fill:'forwards'}).finished));
+  }
+  box.innerHTML=todo.length?todo.map(itemHtml).join(''):`<div class="empty">אין מה לטפל ✓</div>`;
+  const items=[...box.querySelectorAll('.item')];
+  items.forEach((el,i)=>{
+    if(reduce)return;
+    if(bold()){
+      el.animate([{opacity:0,transform:'translateX(-60px) scale(.9)'},{opacity:1,transform:'translateX(6px) scale(1.01)',offset:.7},{opacity:1,transform:'none'}],{duration:620,delay:(first?900:150)+i*90,easing:'cubic-bezier(.2,.9,.3,1)',fill:'backwards'});
+      if(el.classList.contains('bad'))el.animate([{boxShadow:'0 0 0 0 rgba(251,113,133,0)'},{boxShadow:'0 0 0 6px rgba(251,113,133,.35)'},{boxShadow:'0 0 0 0 rgba(251,113,133,0)'}],{duration:900,delay:(first?1500:700)+i*90,iterations:2});
+    }else{
+      el.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:420,delay:(first?700:100)+i*55,easing:'cubic-bezier(.2,.8,.2,1)',fill:'backwards'});
+    }
+  });
+  items.forEach(el=>{
+    el.querySelector('.ok').onclick=e=>{e.stopPropagation();resolve(el)};
+    el.onclick=()=>openCard(el,+el.dataset.n,true);
+  });
+}
+async function resolve(el){
+  if(el.classList.contains('done'))return;
+  el.classList.add('done');el.querySelector('.ic').textContent='✓';el.querySelector('.ok').textContent='טופל';
+  const remaining=$$('#todo .item:not(.done)').length;
+  if(bold()&&!reduce){
+    /* «✓» עף אל מונה «דורש טיפול» */
+    const r=el.querySelector('.ic').getBoundingClientRect(),tgt=$('#kTodo').getBoundingClientRect();
+    const f=document.createElement('div');f.className='fly';f.textContent='✓';document.body.appendChild(f);
+    f.animate([{transform:`translate(${r.left}px,${r.top}px) scale(1)`},{transform:`translate(${(r.left+tgt.left)/2}px,${Math.min(r.top,tgt.top)-60}px) scale(1.8)`,offset:.5},{transform:`translate(${tgt.left+20}px,${tgt.top}px) scale(.6)`,opacity:.2}],{duration:700,easing:'cubic-bezier(.5,0,.3,1)'}).onfinish=()=>{f.remove();burst(tgt.left+30,tgt.top+20,18,['#6ee7b7','#a78bfa','#fde68a']);bump($('#kTodoT'))};
+    await wait(250);
+    await el.animate([{transform:'none',opacity:1},{transform:'translateX(-30px) scale(.97)',opacity:0}],{duration:320,easing:'ease-in',fill:'forwards'}).finished;
+  }else{
+    await wait(450);
+    if(!reduce)await el.animate([{opacity:1},{opacity:0}],{duration:200,fill:'forwards'}).finished;
+  }
+  /* השורה מתקפלת והשאר עולות למעלה בעדינות */
+  const h=el.offsetHeight;
+  if(!reduce)await el.animate([{height:h+'px',marginTop:'8px',marginBottom:'8px',paddingTop:'10px',paddingBottom:'10px'},{height:'0px',marginTop:'0px',marginBottom:'0px',paddingTop:'0px',paddingBottom:'0px'}],{duration:bold()?280:320,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'}).finished;
+  el.remove();
+  setTodoCount(remaining,true);
+  if(!remaining){await wait(300);celebrate()}
+}
+function setTodoCount(n,anim){
+  setNum($('#kTodo'),n,{dur:500});
+  $('#kTodoT').classList.toggle('clean',n===0);
+  $('#kTodoD').textContent=n?`${todo.filter(t=>t.l==='bad').length?'יש חריגות בתלושים':'רק לבדוק'}`:'הכול טופל ✓';
+  if(anim&&!bold()&&!reduce)$('#kTodoT').animate([{transform:'scale(1)'},{transform:'scale(1.03)'},{transform:'scale(1)'}],{duration:350,easing:'ease-out'});
+  if(!n&&!$('#todo .item'))$('#todo').innerHTML=`<div class="empty">אין מה לטפל ✓</div>`;
+}
+function bump(el){el.animate([{transform:'scale(1)'},{transform:'scale(1.08)'},{transform:'scale(.98)'},{transform:'scale(1)'}],{duration:500,easing:'ease-out'})}
+
+/* ---------- עובדים תקינים + כרטיס עובד ---------- */
+function renderOk(){
+  const used=new Set(todo.map(t=>t.n));const list=NAMES.map((n,i)=>i).filter(i=>!used.has(i)).slice(0,6);
+  $('#okList').innerHTML=list.map(i=>`<div class="row" data-n="${i}"><span class="chk">✓</span><span class="nm">${NAMES[i]}</span><span class="am">${fmt(7400+i*913%5200)} ₪</span></div>`).join('');
+  $$('#okList .row').forEach((r,i)=>{r.onclick=()=>openCard(r,+r.dataset.n,false);
+    if(!reduce)r.animate([{opacity:0},{opacity:1}],{duration:400,delay:200+i*40,fill:'backwards'})});
+}
+let cardFrom=null;
+function openCard(from,n,isTodo){
+  const t=todo.find(x=>x.n===n);
+  const base=7400+n*913%5200;const hist=[.92,.97,1.01,.95,1.03,isTodo?.86:1].map(k=>Math.round(base*k));
+  $('#cardBody').innerHTML=`<h3>${NAMES[n]}</h3><div style="color:var(--muted);font-size:14px">${t?`<span style="color:#fda4af">${t.w}</span>`:'תקין החודש'}</div>
+   <div class="grid"><div><span>תעריף לשעה</span><b>${45+n%6} ₪</b></div><div><span>שעות החודש</span><b>${150+n*7%40}</b></div><div><span>ברוטו</span><b>${fmt(hist[5])} ₪</b></div></div>
+   <div style="font-size:13px;color:var(--muted)">ברוטו ב-6 החודשים האחרונים</div>
+   <div class="hist">${hist.map((v,i)=>`<div class="${i===5&&isTodo?'cur':''}"><i data-h="${(v-Math.min(...hist)*.8)/(Math.max(...hist)-Math.min(...hist)*.8)*100}"></i>${['מאי','יוני','יולי','אוג','ספט','אוק'][i]}</div>`).join('')}</div>`;
+  const card=$('#card');card.style.display='block';$('#scrim').classList.add('on');cardFrom=from;
+  const fr=from.getBoundingClientRect(),cr=card.getBoundingClientRect();
+  const dx=fr.left+fr.width/2-(cr.left+cr.width/2),dy=fr.top+fr.height/2-(cr.top+cr.height/2);
+  const sx=fr.width/cr.width,sy=fr.height/cr.height;
+  if(!reduce){
+    if(bold())card.animate([{transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(${sx},${sy}) rotateX(40deg)`,opacity:.3},{transform:'translate(-50%,-50%) scale(1.03) rotateX(-4deg)',opacity:1,offset:.7},{transform:'translate(-50%,-50%)',opacity:1}],{duration:560,easing:'cubic-bezier(.2,.9,.3,1)'});
+    else card.animate([{transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(${sx},${sy})`,opacity:.4,borderRadius:'14px'},{transform:'translate(-50%,-50%)',opacity:1}],{duration:340,easing:'cubic-bezier(.2,.8,.2,1)'});
+  }
+  setTimeout(()=>$$('#card .hist i').forEach((b,i)=>{b.style.transitionDelay=(i*60)+'ms';b.style.height=b.dataset.h+'%'}),reduce?0:250);
+}
+async function closeCard(){
+  const card=$('#card');if(card.style.display!=='block')return;$('#scrim').classList.remove('on');
+  if(!reduce&&cardFrom){const fr=cardFrom.getBoundingClientRect(),cr=card.getBoundingClientRect();
+    const dx=fr.left+fr.width/2-(cr.left+cr.width/2),dy=fr.top+fr.height/2-(cr.top+cr.height/2);
+    await card.animate([{transform:'translate(-50%,-50%)',opacity:1},{transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(${fr.width/cr.width},${fr.height/cr.height})`,opacity:0}],{duration:bold()?320:260,easing:'cubic-bezier(.4,0,.6,1)'}).finished}
+  card.style.display='none';
+}
+$('#scrim').onclick=closeCard;$('#cardX').onclick=closeCard;document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCard()});
+
+/* ---------- רגע «וואו»: החודש נקי ---------- */
+const fx=$('#fx'),ctx=fx.getContext('2d');let parts=[],fxOn=false;
+function sizeFx(){fx.width=innerWidth*devicePixelRatio;fx.height=innerHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+addEventListener('resize',sizeFx);sizeFx();
+function burst(x,y,n,colors,{spread=1,up=1,conf=false}={}){
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=(2+Math.random()*5)*spread;
+    parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-3*up,g:.18,life:conf?140+Math.random()*60:50+Math.random()*20,age:0,c:colors[i%colors.length],w:conf?6+Math.random()*6:4,h:conf?10+Math.random()*8:4,r:Math.random()*6,vr:(Math.random()-.5)*.3,conf})}
+  if(!fxOn){fxOn=true;requestAnimationFrame(tick)}
+}
+function tick(){
+  ctx.clearRect(0,0,innerWidth,innerHeight);
+  parts=parts.filter(p=>p.age<p.life);
+  for(const p of parts){p.age++;p.vy+=p.g;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;
+    ctx.globalAlpha=Math.max(0,1-p.age/p.life);ctx.fillStyle=p.c;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);
+    if(p.conf)ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(p.age/8)));else{ctx.beginPath();ctx.arc(0,0,p.w,0,7);ctx.fill()}ctx.restore()}
+  ctx.globalAlpha=1;
+  if(parts.length)requestAnimationFrame(tick);else fxOn=false;
+}
+async function celebrate(){
+  if(reduce){return}
+  const box=$('#cele'),C=$('#ceC'),P=$('#ceP');const cl=C.getTotalLength(),pl=P.getTotalLength();
+  C.style.strokeDasharray=cl;P.style.strokeDasharray=pl;
+  if(bold()){
+    const cols=['#a78bfa','#f472b6','#34d399','#fde68a','#60a5fa','#fff'];
+    burst(innerWidth*.2,innerHeight*.7,90,cols,{spread:2.2,up:3,conf:true});
+    burst(innerWidth*.8,innerHeight*.7,90,cols,{spread:2.2,up:3,conf:true});
+    setTimeout(()=>burst(innerWidth/2,innerHeight*.35,70,cols,{spread:2,up:1,conf:true}),350);
+    box.animate([{opacity:0,transform:'scale(.4)'},{opacity:1,transform:'scale(1.12)',offset:.6},{opacity:1,transform:'scale(1)',offset:.75},{opacity:1,offset:.9},{opacity:0,transform:'scale(1.05)'}],{duration:2600,easing:'cubic-bezier(.2,.9,.3,1)'});
+    bump($('#kTodoT'));
+  }else{
+    box.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none',offset:.15},{opacity:1,offset:.85},{opacity:0}],{duration:2400,easing:'ease-out'});
+    $('#kTodoT').animate([{boxShadow:'var(--shadow)'},{boxShadow:'0 0 0 2px rgba(52,211,153,.6),0 0 40px rgba(52,211,153,.35)'},{boxShadow:'var(--shadow)'}],{duration:1800});
+  }
+  C.animate([{strokeDashoffset:cl},{strokeDashoffset:0}],{duration:600,delay:150,fill:'both',easing:'ease-out'});
+  P.animate([{strokeDashoffset:pl},{strokeDashoffset:0}],{duration:450,delay:650,fill:'both',easing:'ease-out'});
+}
+
+/* ---------- טעינה / החלפת חודש / החלפת רמה ---------- */
+function load(first){
+  const d=DATA[month],p=prev&&prev!==d?prev:null;
+  todo=d.todo.map(x=>({...x}));
+  setNum($('#kCost'),d.cost,{suf:'₪'});delta($('#kCostD'),d.cost,p&&p.cost);
+  setNum($('#kEmp'),d.emp);delta($('#kEmpD'),d.emp,p&&p.emp);
+  setNum($('#kPct'),d.pct,{dec:1,suf:'%'});delta($('#kPctD'),d.pct,p&&p.pct,{pct:true});
+  setTodoCount(todo.length,false);
+  drawTrend(d.trend,first);drawDepts(d.depts,first);renderTodo(first);renderOk();
+  if(first&&!reduce){ /* המשטחים נכנסים */
+    $$('.tile').forEach((t,i)=>t.animate(bold()?[{opacity:0,transform:'translateY(24px) scale(.94)'},{opacity:1,transform:'translateY(-3px) scale(1.01)',offset:.7},{opacity:1,transform:'none'}]:[{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],{duration:bold()?650:450,delay:i*70,easing:'cubic-bezier(.2,.8,.2,1)',fill:'backwards'}));
+    $$('.panel').forEach((t,i)=>t.animate([{opacity:0},{opacity:1}],{duration:500,delay:250+i*80,fill:'backwards'}));
+  }
+  prev=d;
+}
+function restart(){
+  closeCard();prev=month==='2026-10'?DATA['2026-09']:null;
+  $$('.tile .v,#dept .n').forEach(el=>{numState.set(el,0);el.innerHTML=''});$('#dept').innerHTML='';$('#todo').innerHTML='';trendPts=null;
+  load(true);
+}
+$$('#monthSeg button').forEach(b=>b.onclick=()=>{if(b.dataset.k===month)return;$$('#monthSeg button').forEach(x=>x.classList.toggle('on',x===b));month=b.dataset.k;load(false)});
+$$('#modeSeg button').forEach(b=>b.onclick=()=>{if(b.dataset.m===mode)return;$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));mode=b.dataset.m;document.documentElement.dataset.mode=mode;restart()});
+$('#replay').onclick=restart;
+prev=DATA['2026-09'];load(true);
+</script>
+</body>
+</html>
