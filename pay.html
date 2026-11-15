@@ -35,7 +35,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 </style>
 </head>
 <body>
-<div class="bar hid" id="bar"><b id="btitle">בקרת שכר</b><select id="ssel" aria-label="מסעדה"></select><select id="msel" aria-label="חודש"></select><span class="st" id="st">טוען…</span><button id="wa" class="look hid" title="הודעות שכר מהוואטסאפ שמחכות שתבחרי מה לעשות">💬</button><button id="look" class="look" title="מעבר בין מצב כהה למצב בהיר">☀️ מצב בהיר</button><a href="mission.html">מרכז הבקרה ←</a></div>
+<div class="bar hid" id="bar"><b id="btitle">בקרת שכר</b><select id="ssel" aria-label="מסעדה"></select><select id="msel" aria-label="חודש"></select><span class="st" id="st">טוען…</span><button id="wa" class="look hid" title="הודעות שכר מהוואטסאפ שמחכות שתבחרי מה לעשות">💬</button><button id="look" class="look" title="מעבר בין המראה החדש למראה הקודם">↺ מראה קודם</button><a href="mission.html">מרכז הבקרה ←</a></div>
 <div id="view"></div>
 <script>
 (function(){
@@ -139,7 +139,8 @@ function inject(html){
 function unhide(fr){ try{ var d=fr.contentDocument, h=d&&d.getElementById('payHide'); if(h) h.remove(); }catch(_){} }
 /* מראה «קריסטל לילה» (בחירת איילת 03.11.2026) — רק מראה, מוזרק בסוף החודש; «🎨» בסרגל מחזיר למראה הרגיל */
 var THEME='';
-function useTheme(){ try{ return localStorage.getItem('pay-look')!=='plain'; }catch(_){ return true; } }
+/* 15.11.2026: מפתח חדש — בחירה ישנה של «מצב בהיר» (pay-look=plain, מימי «קריסטל לילה») כבר לא מסתירה את המראה החדש «שזיף יוקרתי» */
+function useTheme(){ try{ return localStorage.getItem('pay-look2')!=='plain'; }catch(_){ return true; } }
 function themed(){ return SYS==='hz'?(useTheme()&&!!THEME3):(useTheme()&&!!THEME); }   /* 6.11.2026: גם התקזזויות — במראה החדש (pay-theme-hz.css) */
 /* 5.11.2026: באסא ובצ'אקולי — המראה החדש כמו רווח והפסד (pay-theme-pnl.css, איילת בחרה); פאסטל ואריאלה/טופול — «קריסטל לילה» עד שיותאמו */
 var THEME2='', THEME3='';
@@ -187,7 +188,7 @@ function open(){
   $('msel').innerHTML=mine.map(function(f){ return '<option value="'+esc(f.month)+'"'+(f.month===MON?' selected':'')+'>'+esc(monLbl(f.month))+'</option>'; }).join('');
   $('msel').classList.toggle('hid',mine.length===1&&MON==='current');   /* מערכת בלי חודשים */
   $('btitle').textContent=SYS==='hz'?'התקזזויות':'בקרת שכר';
-  $('look').onclick=function(){ try{ localStorage.setItem('pay-look',useTheme()?'plain':'crystal'); }catch(_){} go(SYS,MON); };
+  $('look').onclick=function(){ try{ localStorage.setItem('pay-look2',useTheme()?'plain':'new'); }catch(_){} go(SYS,MON); };
   $('ssel').onchange=function(){ go(this.value,null); };
   $('msel').onchange=function(){ go(SYS,this.value); };
   $('bar').classList.remove('hid'); setSt('טוען '+monLbl(MON)+'…','');
@@ -198,7 +199,7 @@ function open(){
     var fr=document.createElement('iframe'); fr.id='fr'; fr.title=f.title||'בקרת שכר';
     if(themed()) fr.style.background=((themeOf()===THEME2||themeOf()===THEME3)?'#f7f5fd':'#17122b');
     $('look').classList.toggle('hid',SYS==='hz');
-    $('look').textContent=useTheme()?'☀️ מצב בהיר':'🌙 מצב כהה';
+    $('look').textContent=useTheme()?'↺ מראה קודם':'💜 מראה חדש';
     $('view').innerHTML=''; $('view').appendChild(fr); fr.srcdoc=html;
     var guard=setTimeout(function(){ unhide(fr); },8000);   /* ביטחון: לא להשאיר מסך ריק */
     fr.onload=function(){ clearTimeout(guard); unhide(fr); var w=fr.contentWindow; if(w&&w.__PAY_FAIL){ setSt('⚠ לא הצלחתי לחבר את השמירה לענן — לא לעבוד כאן ('+w.__PAY_FAIL+')','bad'); }
