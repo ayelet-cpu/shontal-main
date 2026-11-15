@@ -1,0 +1,64 @@
+/* מראה «לבנדר» + תנועה עדינה לבקרת השכר (איילת 15.11.2026: «אהבתי את הלבנדר… בדיוק כמו היום רק עם שידרוגי נראות»).
+   שכבה מעל pay-theme-pnl.css: אותה פריסה, אותם כפתורים, אותם טקסטים — רק גוונים, צללים ותנועה.
+   חל רק כשהמראה החדש פעיל (#payTheme). לא נוגע בחישובים ובנתונים. בהדפסה/PDF — כרגיל. */
+@media screen{
+html:has(#payTheme){background:#f7f5fd}
+html:has(#payTheme) body{background:radial-gradient(1400px 520px at 50% -180px,#ebe3ff 0,rgba(235,227,255,0) 70%),#f7f5fd!important;background-attachment:fixed!important}
+
+/* כרטיסים, כפתורים — מעברים רכים ותגובה ללחיצה */
+html:has(#payTheme) :is(.tbtn,.tab,.unitbtn,.fchip,.notebtn,.rvbtn,.wvb,.one-k,.nx-btn,.nx-chip,.nx-tab,.ch,.apr,button){transition:background-color .18s ease,border-color .18s ease,box-shadow .2s ease,transform .12s ease,color .18s ease}
+html:has(#payTheme) :is(.tbtn,.tab,.unitbtn,.fchip,.notebtn,.rvbtn,.wvb,.nx-btn,.ch,.apr):active{transform:scale(.97)}
+
+/* ריבועי הספירה (כל העובדים / תקין / צריך אותך / לשלוח לחשבת) */
+html:has(#payTheme) .one-k{box-shadow:0 1px 2px rgba(27,24,48,.04),0 8px 22px -14px rgba(109,40,217,.35);will-change:transform}
+html:has(#payTheme) .one-k:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(27,24,48,.05),0 14px 28px -14px rgba(109,40,217,.45)}
+html:has(#payTheme) .one-k.on{box-shadow:0 0 0 3px rgba(139,92,246,.18),0 14px 30px -16px rgba(109,40,217,.55)}
+html:has(#payTheme) .one-k b{font-variant-numeric:tabular-nums}
+
+/* שורות העובדים */
+html:has(#payTheme) .wvt tbody tr{transition:background-color .15s ease}
+html:has(#payTheme) .wvt tbody tr:hover{background:#f6f2ff!important}
+html:has(#payTheme) .wvt thead th{background:#f3eefe!important}
+
+/* לשוניות: קו סגול שמחליק מתחת ללשונית הנבחרת */
+html:has(#payTheme) .tabs .tab{position:relative}
+html:has(#payTheme) .tabs .tab.on::after{content:"";position:absolute;inset-inline:12%;bottom:-1px;height:3px;border-radius:3px;background:linear-gradient(90deg,#8b5cf6,#6d28d9);animation:lvTab .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes lvTab{from{transform:scaleX(.2);opacity:0}to{transform:none;opacity:1}}
+
+/* חלונות קופצים */
+html:has(#payTheme) .modal{box-shadow:0 30px 70px -24px rgba(40,20,90,.35)!important;border-radius:18px!important}
+
+/* מסך «הערות שכר» — בהיר בלבנדר (במקום הכהה שנשאר מ«קריסטל לילה») */
+html:has(#payTheme) body #nx{--tq:#6d28d9;--tqd:#5b21b6;--tql:#efe9fd;--bg:#f7f5fd;--card:#fff;--ink:#1b1830;--mut:#6f6886;--line:#e6e0f5;
+  background:radial-gradient(1200px 420px at 50% -160px,#ebe3ff 0,rgba(235,227,255,0) 70%),#f7f5fd;color:var(--ink)}
+html:has(#payTheme) body #nx .nx-head{background:rgba(255,255,255,.94);border-bottom:1px solid var(--line)}
+html:has(#payTheme) body #nx :is(.nx-btn,.nx-sel,.nx-x,.nx-search,.nx-filters select,.nx-chip,.nx-table,.nx-kpi,.nx-bulk,.nx-drawer,.nx-sendbar,.nx-srow,.nx-mlist,.nx-f input,.nx-f select,.nx-f textarea,.nx-bulk select){background:#fff;color:var(--ink);border-color:var(--line)}
+html:has(#payTheme) body #nx :is(.nx-kpi,.nx-table){box-shadow:0 1px 2px rgba(27,24,48,.04),0 8px 22px -16px rgba(109,40,217,.3)}
+html:has(#payTheme) body #nx :is(.nx-th,.nx-grp,.nx-tab){background:#f3eefe;color:#3b3463}
+html:has(#payTheme) body #nx .nx-tab.on{background:#ece4fe;color:#5b21b6;box-shadow:inset 0 -3px 0 #6d28d9}
+html:has(#payTheme) body #nx .nx-row:hover{background:#f8f5ff}
+html:has(#payTheme) body #nx .nx-kt span{color:#5f5b78}
+html:has(#payTheme) body #nx .nx-seg{background:#f1ecfd}
+html:has(#payTheme) body #nx .nx-seg button.on{background:#fff;color:#5b21b6;box-shadow:0 1px 3px rgba(27,24,48,.12)}
+html:has(#payTheme) body #nx .nx-btn.tq{background:#6d28d9;border-color:#6d28d9;color:#fff}
+html:has(#payTheme) body #nx .nx-btn.tq:hover{background:#5b21b6}
+html:has(#payTheme) body #nx .nx-row.nx-froy{background:#fff8f6}
+html:has(#payTheme) body #nx .nx-grp.nx-grp-roy{background:#fdf1ef;color:#b0473b}
+html:has(#payTheme) body #nx .nx-mine{background:#fff;color:var(--ink);border-color:#c9b8f5}
+html:has(#payTheme) body #nx :is(.nx-roytxt){color:#5a2f2a}
+html:has(#payTheme) body #nx :is(.nx-roysrc){color:#9a5a52}
+html:has(#payTheme) body #nx .nx-tabbar span{color:#4a4566}
+html:has(#payTheme) body #nx .nx-roylive{background:#fdf1ef}
+html:has(#payTheme) body #nx .nx-wabox{background:#faf8ff;border-color:#ddd5f3}
+html:has(#payTheme) body #nx .nx-wa{background:#fff;border-color:#e8e3f6}
+html:has(#payTheme) body #nx .nx-wahd{color:#4b3a8f}
+html:has(#payTheme) body #nx .nx-wasrc{color:#5b4bb0}
+
+/* «אין יותר מה לבדוק» — רגע קטן כש«צריך אותך» מגיע ל-0 */
+.lv-done{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:99999}
+.lv-done>div{background:#fff;border:1px solid #cfe9dc;border-radius:26px;padding:26px 46px;text-align:center;box-shadow:0 30px 80px -24px rgba(22,133,90,.35);font-family:Rubik,Assistant,system-ui,sans-serif}
+.lv-done svg{width:86px;height:86px}
+.lv-done b{display:block;font-size:24px;color:#16855a;margin-top:4px}
+.lv-done span{color:#5f5b78;font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){html:has(#payTheme) *{animation:none!important;transition:none!important}}
