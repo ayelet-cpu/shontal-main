@@ -112,6 +112,7 @@ td input:focus,.q input:focus,.q select:focus{outline:2px solid var(--navy2);out
 .yr.dim{color:#9a9cb0}
 .yr::after{content:"";display:block;width:34px;height:3px;background:currentColor;border-radius:3px;margin:3px auto 0;opacity:.8}
 .closing{position:absolute;top:0;left:50%;transform:translateX(-50%);white-space:nowrap}
+.fly106{position:absolute;left:0;top:0;width:128px;font-size:12px;white-space:nowrap;z-index:40;pointer-events:none;margin:0;animation:none}
 .coin{position:fixed;width:26px;height:26px;border-radius:50%;pointer-events:none;z-index:50;
   background:radial-gradient(circle at 35% 30%,#fff6c2 0,#ffd84d 35%,#e7a800 75%,#b37f00 100%);
   box-shadow:0 2px 4px rgba(0,0,0,.25),inset 0 -2px 0 rgba(0,0,0,.15);color:#7a5200;font-weight:800;font-size:14px;display:grid;place-items:center}
@@ -507,7 +508,7 @@ function renderRes(){
     const has=r.ref>50;
     const top=Math.max(r.paid,r.due)/max, okH=has?r.due/Math.max(r.paid,1):1;
     return `<div class="col">${r.y===2020&&showClose&&has?'<span class="pill red closing">נסגר 31.12</span>':''}
-      <div class="bar ${has?'':'none'}" data-h="${(top*100).toFixed(1)}" data-gold="${has?((1-okH)*100).toFixed(1):0}" data-ref="${Math.round(r.ref)}">
+      <div class="bar ${has?'':'none'}" data-y="${r.y}" data-inc="${Math.round(r.inc)}" data-paid="${Math.round(r.paid)}" data-h="${(top*100).toFixed(1)}" data-gold="${has?((1-okH)*100).toFixed(1):0}" data-ref="${Math.round(r.ref)}">
         ${has?`<div class="amt">+${fmt(r.ref)}</div><div class="gold"></div>`:`<div class="okl ${r.ref<-50?'neg':''}">${r.ref<-50?'אל תגישי':'תקין'}</div>`}
         <div class="ok" style="${has?`height:${(okH*100).toFixed(1)}%`:''}"></div>
         ${has?`<div class="tline" style="bottom:${(okH*100).toFixed(1)}%"></div>`:''}
@@ -525,25 +526,46 @@ function renderRes(){
 }
 let animT=[];
 function animate(){
-  animT.forEach(clearTimeout);animT=[];$$('.coin').forEach(c=>c.remove());
+  animT.forEach(clearTimeout);animT=[];$$('.coin,.fly106').forEach(c=>c.remove());
   const bars=$$('#chart .bar');const tot=$('#total');const target=+tot.dataset.v||0;
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   bars.forEach(b=>{b.style.height='0';b.classList.remove('show','lined','glow');const g=b.querySelector('.gold');if(g)g.style.height='0'});
   setCount(0);
   const later=(f,ms)=>animT.push(setTimeout(f,reduce?0:ms));
-  bars.forEach((b,i)=>later(()=>{b.style.height=b.dataset.h+'%'},120+i*110));
-  bars.forEach(b=>later(()=>b.classList.add('lined'),1100));
+  /* phase 1: the 106 forms are dealt in an arc, then each one flies down and becomes its year's bar */
+  const withData=bars.filter(b=>b.dataset.y);
+  const off=(!reduce&&withData.length)?dealCards(withData,later):0;
+  bars.forEach((b,i)=>later(()=>{b.style.height=b.dataset.h+'%'},off+120+i*110));
+  bars.forEach(b=>later(()=>b.classList.add('lined'),off+1100));
   const golden=bars.filter(b=>+b.dataset.gold>0);
   let run=0;
   golden.forEach((b,i)=>{
-    const t=1500+i*650;
+    const t=off+1500+i*650;
     later(()=>{if(!reduce)rainCoins(b,Math.min(14,4+Math.round(+b.dataset.ref/400)))},t);
     later(()=>{b.querySelector('.gold').style.height=b.dataset.gold+'%';b.classList.add('glow')},t+450);
     later(()=>{b.classList.add('show');run+=+b.dataset.ref;countTo(run)},t+700);
     later(()=>b.classList.remove('glow'),t+1600);
   });
-  if(!golden.length)later(()=>countTo(target),1200);
-  else later(()=>countTo(target),1500+golden.length*650+900);
+  if(!golden.length)later(()=>countTo(target),off+1200);
+  else later(()=>countTo(target),off+1500+golden.length*650+900);
+}
+function dealCards(list,later){
+  const ch=$('#chart').getBoundingClientRect();const sx=scrollX,sy=scrollY;
+  const n=list.length,mid=(n-1)/2,gap=n>1?Math.min(96,(ch.width-130)/(n-1)):0;
+  const cx=ch.left+ch.width/2-64,cy=ch.top+ch.height*.22;
+  list.forEach((b,i)=>{
+    const c=document.createElement('div');c.className='f106 fly106';
+    c.innerHTML=`<div class="hd ${i%3===2?'t':''}"><span>${b.dataset.y}</span><span>טופס 106</span></div><div class="bd"><span>158</span> ${fmt(b.dataset.inc)}<br><span>042</span> ${fmt(b.dataset.paid)}</div>`;
+    c.style.opacity='0';document.body.appendChild(c);
+    const k=i-mid,x=cx-k*gap+sx,y=cy+k*k*5+sy,rot=-k*5;
+    const br=b.parentElement.getBoundingClientRect();
+    const ex=br.left+br.width/2-64+sx, ey=ch.bottom-70+sy;
+    later(()=>c.animate([{transform:`translate(${x}px,${y+180}px) rotate(${rot-14}deg) scale(.7)`,opacity:0},{transform:`translate(${x}px,${y}px) rotate(${rot}deg) scale(1)`,opacity:1}],
+      {duration:650,easing:'cubic-bezier(.2,.9,.3,1.25)',fill:'forwards'}),i*90);
+    later(()=>{const a=c.animate([{transform:`translate(${x}px,${y}px) rotate(${rot}deg) scale(1)`,opacity:1},{transform:`translate(${ex}px,${ey}px) rotate(0deg) scale(.55,.3)`,opacity:0}],
+      {duration:520,easing:'cubic-bezier(.6,0,.4,1)',fill:'forwards'});a.onfinish=()=>c.remove()},1250+i*110);
+  });
+  return 1250;
 }
 let cur=0,raf=0;
 function setCount(v){cur=v;$('#total').innerHTML=`${fmt(v)} <small>₪</small>`}
