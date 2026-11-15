@@ -451,7 +451,12 @@ async function readFiles(files){
       const pages=await pdfLines(await f.arrayBuffer());
       const hasText=pages.some(ls=>ls.length>3);
       if(!hasText){bad.push(f.name+' (סריקה/תמונה — צריך להקליד ידנית)');P().rows.push({y:2025,src:f.name,inc:0,tax:0,pen:0,warn:'זה קובץ סרוק, אז לא יכולתי לקרוא אותו. הקלידי את המספרים מהטופס.'});continue}
-      const y=findYear(pages);const inc=findField(pages,['158','172']);const tax=findField(pages,['042']);const pen=findField(pages,['045','086']);
+      const y=findYear(pages);let inc=findField(pages,['158','172']);let tax=findField(pages,['042']);let pen=findField(pages,['045','086']);
+      if(inc==null||tax==null){ /* some payroll programs (e.g. the one Pastel uses) store digits shifted by one character in the PDF text: 143,220 is stored as 032+11/ */
+        const dec=pages.map(ls=>ls.map(l=>({y:l.y,items:l.items.map(i=>({...i,s:i.s.replace(/[\x21-\x5c]/g,c=>String.fromCharCode(c.charCodeAt(0)+1))}))})));
+        const i2=findField(dec,['158','172']),t2=findField(dec,['042']);
+        if(i2!=null&&t2!=null){inc=i2;tax=t2;pen=findField(dec,['045','086'])}
+      }
       const w=[];if(!y)w.push('לא מצאתי את השנה');if(inc==null)w.push('לא מצאתי הכנסה (158/172)');if(tax==null)w.push('לא מצאתי מס (042)');
       P().rows.push({y:y||2025,src:f.name,inc:inc||0,tax:tax||0,pen:pen||0,warn:w.length?w.join(' · ')+' — השלימי ידנית':'נקרא אוטומטית — בדקי מול הטופס'});
       ok++;
