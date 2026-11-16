@@ -279,6 +279,8 @@
         c.onerror=function(){ ok(); }; }catch(_){ ok(); } }); })
       .then(function(){ /* העברה ראשונה: כל מה שגדול → IndexedDB, ואז יוצא מ-localStorage (מפנה מקום לכל הדפים) */ M.forEach(function(v,k){ if(v!=null&&v.length>SMALL) later(k,v); }); if(db) flush(); bump(); })
       ['catch'](function(){});
+    /* בטיחות: אם IndexedDB לא עונה תוך 6 שניות — שונטל נפתחת בכל זאת (הנתונים נטענים מהענן כרגיל) */
+    window.__lsReady=Promise.race([window.__lsReady,new Promise(function(r){ setTimeout(function(){ try{ console.warn('[אחסון] IndexedDB לא ענה — ממשיכים'); }catch(_){} r(); },6000); })]);
     /* document.open() מוחק את המאזינים של החלון — index.html קורא ל-__lsRearm אחרי שפתח את שונטל */
     window.__lsRearm=function(){ try{ var f=function(){ if(tmr){ clearTimeout(tmr); flush(); } }; window.addEventListener('pagehide',f); document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') f(); }); }catch(_){} };
     window.__lsRearm();
@@ -315,7 +317,7 @@
      לא נשמרה, הדף/הדף השני קרא את הישנה (שכבר לא תקפה) והוציא לכניסה. עכשיו ההתחברות נשמרת גם ב-IndexedDB (לא מתמלא), עם חותמת זמן —
      תמיד משתמשים בחדשה ביותר, וישנה לא דורסת חדשה. משותף לשונטל, לתזרים ולדיג'יים. */
   var SDBN='shontal-sess';
-  function sessDB(op,val){ return new Promise(function(ok){ try{ var r=indexedDB.open(SDBN,1); r.onupgradeneeded=function(e){ try{ e.target.result.createObjectStore('s'); }catch(_){} };
+  function sessDB(op,val){ return new Promise(function(ok){ setTimeout(function(){ ok(null); },3000); /* IndexedDB לא עונה — לא תוקעים את הכניסה */ try{ var r=indexedDB.open(SDBN,1); r.onupgradeneeded=function(e){ try{ e.target.result.createObjectStore('s'); }catch(_){} };
       r.onsuccess=function(e){ try{ var db=e.target.result, t=db.transaction('s',op==='get'?'readonly':'readwrite'), st=t.objectStore('s');
         if(op==='get'){ var g=st.get('S'); g.onsuccess=function(){ ok(g.result||null); }; g.onerror=function(){ ok(null); }; }
         else { if(op==='put') st.put(val,'S'); else st['delete']('S'); t.oncomplete=function(){ ok(true); }; t.onerror=function(){ ok(false); }; } }catch(_){ ok(null); } };

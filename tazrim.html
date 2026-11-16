@@ -90,7 +90,7 @@
      לא נשמרה, הדף/הדף השני קרא את הישנה (שכבר לא תקפה) והוציא לכניסה. עכשיו ההתחברות נשמרת גם ב-IndexedDB (לא מתמלא), עם חותמת זמן —
      תמיד משתמשים בחדשה ביותר, וישנה לא דורסת חדשה. משותף לשונטל, לתזרים ולדיג'יים. */
   var SDBN=(GP?'shontal-main-shontal-sess':'shontal-sess');
-  function sessDB(op,val){ return new Promise(function(ok){ try{ var r=indexedDB.open(SDBN,1); r.onupgradeneeded=function(e){ try{ e.target.result.createObjectStore('s'); }catch(_){} };
+  function sessDB(op,val){ return new Promise(function(ok){ setTimeout(function(){ ok(null); },3000); /* IndexedDB לא עונה — לא תוקעים את הכניסה */ try{ var r=indexedDB.open(SDBN,1); r.onupgradeneeded=function(e){ try{ e.target.result.createObjectStore('s'); }catch(_){} };
       r.onsuccess=function(e){ try{ var db=e.target.result, t=db.transaction('s',op==='get'?'readonly':'readwrite'), st=t.objectStore('s');
         if(op==='get'){ var g=st.get('S'); g.onsuccess=function(){ ok(g.result||null); }; g.onerror=function(){ ok(null); }; }
         else { if(op==='put') st.put(val,'S'); else st['delete']('S'); t.oncomplete=function(){ ok(true); }; t.onerror=function(){ ok(false); }; } }catch(_){ ok(null); } };
