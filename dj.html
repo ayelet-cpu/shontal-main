@@ -108,15 +108,29 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
 
   /* ---------- התחברות (כמו בתזרים) ---------- */
   var S=null; try{ S=JSON.parse(LS.getItem(SK)||'null'); }catch(_){}
-  function saveS(o){ S=o; try{ LS.setItem(SK, JSON.stringify(o)); }catch(_){} }
+  function saveS(o){ if(o&&!o.at) o.at=Date.now(); S=o; try{ LS.setItem(SK, JSON.stringify(o)); }catch(_){ try{ LS.removeItem(SK); }catch(__){} } sessDB('put',o); }
+  /* 16.11.2026 איילת («מתנתקת, מבקשת כל הזמן חיבור מחדש», «גם התזרים יצא»): אחסון הדפדפן של כל הדפים ב-github.io מלא — ההתחברות החדשה (אחרי חידוש)
+     לא נשמרה, הדף/הדף השני קרא את הישנה (שכבר לא תקפה) והוציא לכניסה. עכשיו ההתחברות נשמרת גם ב-IndexedDB (לא מתמלא), עם חותמת זמן —
+     תמיד משתמשים בחדשה ביותר, וישנה לא דורסת חדשה. משותף לשונטל, לתזרים ולדיג'יים. */
+  var SDBN=(GP?'shontal-main-shontal-sess':'shontal-sess');
+  function sessDB(op,val){ return new Promise(function(ok){ try{ var r=indexedDB.open(SDBN,1); r.onupgradeneeded=function(e){ try{ e.target.result.createObjectStore('s'); }catch(_){} };
+      r.onsuccess=function(e){ try{ var db=e.target.result, t=db.transaction('s',op==='get'?'readonly':'readwrite'), st=t.objectStore('s');
+        if(op==='get'){ var g=st.get('S'); g.onsuccess=function(){ ok(g.result||null); }; g.onerror=function(){ ok(null); }; }
+        else { if(op==='put') st.put(val,'S'); else st['delete']('S'); t.oncomplete=function(){ ok(true); }; t.onerror=function(){ ok(false); }; } }catch(_){ ok(null); } };
+      r.onerror=function(){ ok(null); }; }catch(_){ ok(null); } }); }
+  function sessNewer(t){ return !!(t&&t.refresh_token&&(!S||!S.refresh_token||(t.refresh_token!==S.refresh_token&&(t.at||0)>(S.at||0)))); }
+  function sessPull(){ return sessDB('get').then(function(t){ if(sessNewer(t)) S=t; return S; }); }
+  try{ setInterval(function(){ sessPull(); }, 15000); }catch(_){}
+
   function auth(path, body){ return fetch(SB+'/auth/v1/'+path,{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){ return r.text().then(function(t){ var j={}; try{ j=JSON.parse(t||'{}'); }catch(_){} if(!r.ok){ var e=new Error(j.msg||j.error_description||j.message||('שגיאה '+r.status)); e.status=r.status; throw e; } return j; }); }); }
   function keep(j){ saveS({access_token:j.access_token, refresh_token:j.refresh_token, expires_at:(j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600)), email:(j.user&&j.user.email)||(S&&S.email)||''}); }
-  function syncS(){ try{ var t=JSON.parse(LS.getItem(SK)||'null'); if(t&&t.refresh_token&&(!S||t.refresh_token!==S.refresh_token)) S=t; }catch(_){} }
+  function syncS(){ try{ var t=JSON.parse(LS.getItem(SK)||'null'); if(t&&t.refresh_token&&(!S||(t.refresh_token!==S.refresh_token&&(t.at||0)>=(S.at||0)))) S=t; }catch(_){} }
   var _rf=null;
-  function refresh(){ syncS(); if(S&&S.refresh_token&&(S.expires_at||0)-Date.now()/1000>=120) return Promise.resolve(S);
+  function refresh(){ return sessPull().then(refresh0); }
+  function refresh0(){ syncS(); if(S&&S.refresh_token&&(S.expires_at||0)-Date.now()/1000>=120) return Promise.resolve(S);
     if(!S||!S.refresh_token) return Promise.reject(new Error('אין חיבור')); if(_rf) return _rf;
-    _rf=auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token}).then(function(j){ keep(j); _rf=null; return S; },function(e){ _rf=null; var was=S&&S.refresh_token; syncS(); if(S&&S.refresh_token&&S.refresh_token!==was) return S; e.auth=true; throw e; });
+    _rf=auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token}).then(function(j){ keep(j); _rf=null; return S; },function(e){ _rf=null; var was=S&&S.refresh_token; syncS(); if(S&&S.refresh_token&&S.refresh_token!==was) return S; return sessPull().then(function(){ if(S&&S.refresh_token&&S.refresh_token!==was) return S; e.auth=true; throw e; }); });
     return _rf; }
   function fresh(){ syncS(); if(!S) return Promise.reject(new Error('אין חיבור')); return ((S.expires_at||0)-Date.now()/1000<120)?refresh():Promise.resolve(S); }
   function hdr(x){ var h={apikey:KEY,Authorization:'Bearer '+(S&&S.access_token||''),'Content-Type':'application/json'}; Object.keys(x||{}).forEach(function(k){ h[k]=x[k]; }); return h; }
@@ -455,7 +469,7 @@ h3{margin:18px 0 8px;color:var(--ink);font-size:15px;font-weight:700}
       $('who').textContent=me.name+' · '+me.email; $('btnOut').classList.remove('hid'); $('btnRe').classList.remove('hid');
       return load().then(function(){ $('app').classList.remove('hid'); render(); }); })
       .catch(function(e){ if(e.auth||e.status===401) showLogin(); else msg(e.message,true); }); }
-  if(S&&S.refresh_token) start(); else showLogin();
+  sessPull().then(function(){ if(S&&S.refresh_token) start(); else showLogin(); });
   setInterval(function(){ if(S&&(S.expires_at||0)-Date.now()/1000<900) refresh().catch(function(){}); }, 60000);
   /* 09.11.2026 איילת: «שהקישור של צחי יתעדכן מעצמו» — הנתונים נטענים מחדש לבד כל 2 דקות (ובחזרה לחלון),
      אבל לא בזמן שמישהו מקליד (כדי לא למחוק לו). אותו קישור תמיד; גרסה חדשה של הדף נטענת בפתיחה הבאה. */

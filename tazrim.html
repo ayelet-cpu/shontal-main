@@ -85,8 +85,21 @@
 
   var RLS=window.localStorage;                /* האחסון האמיתי של הדפדפן */
   var S=null; try{ S=JSON.parse(RLS.getItem(SK)||'null'); }catch(_){ S=null; }
-  function saveS(o){ S=o; try{ RLS.setItem(SK, JSON.stringify(o)); }catch(_){} }
-  function clearS(){ S=null; try{ RLS.removeItem(SK); }catch(_){} }
+  function saveS(o){ if(o&&!o.at) o.at=Date.now(); S=o; try{ RLS.setItem(SK, JSON.stringify(o)); }catch(_){ try{ RLS.removeItem(SK); }catch(__){} } sessDB('put',o); }
+  /* 16.11.2026 איילת («מתנתקת, מבקשת כל הזמן חיבור מחדש», «גם התזרים יצא»): אחסון הדפדפן של כל הדפים ב-github.io מלא — ההתחברות החדשה (אחרי חידוש)
+     לא נשמרה, הדף/הדף השני קרא את הישנה (שכבר לא תקפה) והוציא לכניסה. עכשיו ההתחברות נשמרת גם ב-IndexedDB (לא מתמלא), עם חותמת זמן —
+     תמיד משתמשים בחדשה ביותר, וישנה לא דורסת חדשה. משותף לשונטל, לתזרים ולדיג'יים. */
+  var SDBN=(GP?'shontal-main-shontal-sess':'shontal-sess');
+  function sessDB(op,val){ return new Promise(function(ok){ try{ var r=indexedDB.open(SDBN,1); r.onupgradeneeded=function(e){ try{ e.target.result.createObjectStore('s'); }catch(_){} };
+      r.onsuccess=function(e){ try{ var db=e.target.result, t=db.transaction('s',op==='get'?'readonly':'readwrite'), st=t.objectStore('s');
+        if(op==='get'){ var g=st.get('S'); g.onsuccess=function(){ ok(g.result||null); }; g.onerror=function(){ ok(null); }; }
+        else { if(op==='put') st.put(val,'S'); else st['delete']('S'); t.oncomplete=function(){ ok(true); }; t.onerror=function(){ ok(false); }; } }catch(_){ ok(null); } };
+      r.onerror=function(){ ok(null); }; }catch(_){ ok(null); } }); }
+  function sessNewer(t){ return !!(t&&t.refresh_token&&(!S||!S.refresh_token||(t.refresh_token!==S.refresh_token&&(t.at||0)>(S.at||0)))); }
+  function sessPull(){ return sessDB('get').then(function(t){ if(sessNewer(t)) S=t; return S; }); }
+  try{ setInterval(function(){ sessPull(); }, 15000); }catch(_){}
+
+  function clearS(){ S=null; try{ RLS.removeItem(SK); }catch(_){} sessDB('del'); }
   function auth(path, body){
     return fetch(SB+'/auth/v1/'+path,{method:'POST',headers:{'apikey':KEY,'Content-Type':'application/json'},body:JSON.stringify(body)})
       .then(function(r){ return r.text().then(function(t){ var j={}; try{ j=JSON.parse(t||'{}'); }catch(_){}
@@ -96,11 +109,12 @@
   var _refreshing=null;
   /* 1.11.2026: שונטל ותזרים חולקים את אותה התחברות (אותו מפתח בדפדפן). כשאחד מהם מחדש את ההתחברות, הקוד הישן
      של השני כבר לא תקף («Refresh Token Not Found») — לכן קודם קוראים מהדפדפן את ההתחברות העדכנית. */
-  function syncS(){ try{ var t=JSON.parse(RLS.getItem(SK)||'null'); if(t&&t.refresh_token&&(!S||t.refresh_token!==S.refresh_token)) S=t; }catch(_){} }
-  function refresh(){ syncS(); if(S&&S.refresh_token&&(S.expires_at||0)-Date.now()/1000 >= 120) return Promise.resolve(S);
+  function syncS(){ try{ var t=JSON.parse(RLS.getItem(SK)||'null'); if(t&&t.refresh_token&&(!S||(t.refresh_token!==S.refresh_token&&(t.at||0)>=(S.at||0)))) S=t; }catch(_){} }
+  function refresh(){ return sessPull().then(refresh0); }
+  function refresh0(){ syncS(); if(S&&S.refresh_token&&(S.expires_at||0)-Date.now()/1000 >= 120) return Promise.resolve(S);
     if(!S||!S.refresh_token) return Promise.reject(new Error('אין חיבור'));
     if(_refreshing) return _refreshing;
-    _refreshing=auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token}).then(function(j){ keep(j); _refreshing=null; return S; },function(e){ _refreshing=null; var was=S&&S.refresh_token; syncS(); if(S&&S.refresh_token&&S.refresh_token!==was) return S; e.auth=true; throw e; });
+    _refreshing=auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token}).then(function(j){ keep(j); _refreshing=null; return S; },function(e){ _refreshing=null; var was=S&&S.refresh_token; syncS(); if(S&&S.refresh_token&&S.refresh_token!==was) return S; return sessPull().then(function(){ if(S&&S.refresh_token&&S.refresh_token!==was) return S; e.auth=true; throw e; }); });
     return _refreshing; }
   function fresh(){ syncS(); if(!S) return Promise.reject(new Error('אין חיבור')); if((S.expires_at||0)-Date.now()/1000 < 120) return refresh(); return Promise.resolve(S); }
   function hdr(){ return {'apikey':KEY,'Authorization':'Bearer '+(S&&S.access_token||''),'Content-Type':'application/json'}; }
@@ -414,7 +428,7 @@
       show('stEmail'); msg(e.message||String(e),true); });
   }
 
-  if(S && S.refresh_token){ start(); } else { show('stEmail'); }
+  sessPull().then(function(){ if(S && S.refresh_token){ start(); } else { show('stEmail'); } });
 })();
 </script>
 </body>
