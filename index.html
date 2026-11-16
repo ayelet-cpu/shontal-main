@@ -259,7 +259,40 @@
     var o={ getItem:function(k){ return st.getItem(P+k); }, setItem:function(k,v){ st.setItem(P+k,String(v)); }, removeItem:function(k){ st.removeItem(P+k); },
       clear:function(){ keys().forEach(function(k){ st.removeItem(P+k); }); }, key:function(i){ return keys()[i]||null; } };
     Object.defineProperty(o,'length',{get:function(){ return keys().length; }}); return o; }
-  try{ var L=wrap(window.localStorage); Object.defineProperty(window,'localStorage',{configurable:true,get:function(){ return L; }}); }catch(e){}
+  /* 16.11.2026 איילת («האחסון מלא… אז תתקן»): אחסון הדפדפן (localStorage, ~5MB לכל הדפים ב-github.io — שונטל, תזרים, שכר, רו"ה, מרכז הבקרה)
+     התמלא בעותק של נתוני שונטל (~3.5MB) — וכל שמירה נכשלה בשקט (ניתוקים, תקיעות, קבצים שנקראו שוב ושוב).
+     מעכשיו localStorage של שונטל = זיכרון (M) + IndexedDB «shontal-main-store» (בלי התקרה הזו). רק ערכים קטנים (עד 16K תווים) נשמרים גם ב-localStorage הרגיל.
+     שונטל עצמה לא משתנה: getItem/setItem/removeItem עובדים כמו קודם, ולא נכשלים יותר.
+     בטעינה: קודם IndexedDB, ומעליו מה שב-localStorage (הכתיבה האחרונה). ערך גדול יוצא מ-localStorage רק אחרי שנשמר ב-IndexedDB. index.html מחכה ל-__lsReady לפני שפותח את שונטל. */
+  function wrapBig(st){ var SMALL=16000, M=new Map(), dirty=new Map(), tmr=0, db=null, IO0=indexedDB.open.bind(indexedDB);
+    for(var i=0;i<st.length;i++){ var k=st.key(i); if(k&&k.indexOf(P)===0){ try{ M.set(k.slice(P.length), st.getItem(k)); }catch(_){} } }
+    var inLS={}; M.forEach(function(v,k){ inLS[k]=1; });
+    function bump(){ try{ window._lsGen=(window._lsGen||0)+1; }catch(_){} }
+    function openDb(){ return new Promise(function(ok){ try{ var r=IO0('shontal-main-store',1); r.onupgradeneeded=function(e){ try{ e.target.result.createObjectStore('kv'); }catch(_){} }; r.onsuccess=function(e){ db=e.target.result; ok(db); }; r.onerror=function(){ ok(null); }; }catch(_){ ok(null); } }); }
+    function flush(){ tmr=0; if(!db||!dirty.size) return; var d=dirty; dirty=new Map(); var big=[];
+      try{ var t=db.transaction('kv','readwrite'), os=t.objectStore('kv'); d.forEach(function(v,k){ if(v===null) os['delete'](k); else { os.put(v,k); if(v.length>SMALL) big.push(k); } });
+        t.oncomplete=function(){ big.forEach(function(k){ if(M.get(k)!=null&&M.get(k).length>SMALL){ try{ st.removeItem(P+k); }catch(_){} } }); };
+        t.onerror=function(){ d.forEach(function(v,k){ if(!dirty.has(k)) dirty.set(k,v); }); }; }catch(_){ d.forEach(function(v,k){ if(!dirty.has(k)) dirty.set(k,v); }); } }
+    function later(k,v){ dirty.set(k,v); if(!tmr) tmr=setTimeout(flush,300); }
+    window.__lsReady=openDb().then(function(D){ if(!D) return; return new Promise(function(ok){ try{ var t=D.transaction('kv','readonly'), os=t.objectStore('kv'), c=os.openCursor();
+        c.onsuccess=function(e){ var cur=e.target.result; if(!cur){ ok(); return; } var k=String(cur.key); if(!inLS[k]&&!M.has(k)) M.set(k,String(cur.value)); cur['continue'](); };
+        c.onerror=function(){ ok(); }; }catch(_){ ok(); } }); })
+      .then(function(){ /* העברה ראשונה: כל מה שגדול → IndexedDB, ואז יוצא מ-localStorage (מפנה מקום לכל הדפים) */ M.forEach(function(v,k){ if(v!=null&&v.length>SMALL) later(k,v); }); if(db) flush(); bump(); })
+      ['catch'](function(){});
+    /* document.open() מוחק את המאזינים של החלון — index.html קורא ל-__lsRearm אחרי שפתח את שונטל */
+    window.__lsRearm=function(){ try{ var f=function(){ if(tmr){ clearTimeout(tmr); flush(); } }; window.addEventListener('pagehide',f); document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') f(); }); }catch(_){} };
+    window.__lsRearm();
+    var o={ getItem:function(k){ k=String(k); return M.has(k)?M.get(k):null; },
+      setItem:function(k,v){ k=String(k); v=String(v); if(M.get(k)===v) return; M.set(k,v); bump();
+        if(v.length<=SMALL){ try{ st.setItem(P+k,v); }catch(_){} }
+        else if(db){ try{ st.removeItem(P+k); }catch(_){} } /* עותק ישן ב-localStorage לא יגבר בטעינה הבאה על החדש שב-IndexedDB */
+        else { try{ st.setItem(P+k,v); }catch(_){} } /* אין IndexedDB — כמו קודם */
+        later(k,v); },
+      removeItem:function(k){ k=String(k); if(!M.has(k)) return; M['delete'](k); bump(); try{ st.removeItem(P+k); }catch(_){} later(k,null); },
+      clear:function(){ Array.from(M.keys()).forEach(function(k){ o.removeItem(k); }); },
+      key:function(i){ return Array.from(M.keys())[i]||null; } };
+    Object.defineProperty(o,'length',{get:function(){ return M.size; }}); return o; }
+  try{ var L=(window.indexedDB?wrapBig:wrap)(window.localStorage); Object.defineProperty(window,'localStorage',{configurable:true,get:function(){ return L; }}); }catch(e){ try{ var L0=wrap(window.localStorage); Object.defineProperty(window,'localStorage',{configurable:true,get:function(){ return L0; }}); }catch(_){} }
   try{ var S2=wrap(window.sessionStorage); Object.defineProperty(window,'sessionStorage',{configurable:true,get:function(){ return S2; }}); }catch(e){}
   try{ var IO=indexedDB.open.bind(indexedDB); indexedDB.open=function(n,v){ return v===undefined?IO('shontal-main-'+n):IO('shontal-main-'+n,v); };
        var ID=indexedDB.deleteDatabase&&indexedDB.deleteDatabase.bind(indexedDB); if(ID) indexedDB.deleteDatabase=function(n){ return ID('shontal-main-'+n); }; }catch(e){}
@@ -527,8 +560,9 @@
       installShim();
       window.__SHONTAL_CLOUD={email:(S&&S.email)||'', updated:a.updated, readonly:RO, cached:a.cached, shell:2,
         api:{SB:SB, KEY:KEY, CB:CB, hdr:hdr, fresh:fresh}};
-      return new Promise(function(r){ setTimeout(r,Math.max(0,1200-(Date.now()-T0))); }).then(function(){
+      return new Promise(function(r){ setTimeout(r,Math.max(0,1200-(Date.now()-T0))); }).then(function(){ return window.__lsReady; }).then(function(){
       _loadedAt=Date.now(); document.open(); document.write(html); document.close();
+      try{ if(window.__lsRearm) window.__lsRearm(); }catch(_){}
       installDocs();
       try{ rest('app_files?name=eq.shell_patch.js&select=content').then(function(r){ var c=r&&r[0]&&r[0].content; if(c){ try{ (new Function('ctx',c))({SB:SB,KEY:KEY,CB:CB,hdr:hdr,fresh:fresh,refresh:refresh,route:route}); }catch(e){} } }).catch(function(){}); }catch(_){}
       if(!window.__cloudPortalReady) try{ window.inGlam=function(){ var i=document.getElementById('inGlamInfo'); var n=window.__inboxN||0; window.__inboxN=0;
