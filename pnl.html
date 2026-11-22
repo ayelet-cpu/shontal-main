@@ -451,15 +451,50 @@ function fBreak(path, m) {
   }
 
   /* ---------- תצוגה ---------- */
+  /* ---------- חודשים בעמודות ---------- */
+  const ST0 = () => Math.max((D.settings && D.settings.startMonth) || 0, 0);
+  function monthsShown() {
+    const v = ui.au2V || 'ytd', st0 = ST0();
+    const from = v === '6' ? Math.max(st0, curM - 5) : v === '3' ? Math.max(st0, curM - 2) : v === 'cur' ? curM : st0;
+    const L = []; for (let mm = from; mm <= curM; mm++) L.push(mm); return L;
+  }
+  let MC = {};
+  function mctx(mm) { if (MC[mm]) return MC[mm]; const byP = {}; ukAI(mm).forEach(x => { byP[x.path] = x; }); return (MC[mm] = { byP, kag: CC ? ccAgg(mm) : null }); }
+  /* תא אחד (שורה × חודש): הסכום, ומה המקורות אומרים באותו חודש — אותה השוואה כמו בטבלת החודשים בחלון הגדול */
+  function cellInfo(it, mm) {
+    if (it.uk) { const o = it.uk; let v = 0; ['c', 's', 'k'].forEach(k => { if (!v && o.src[k].length) v = ukAmtK(o, mm, k); }); return { v, st: Math.abs(v) >= 0.5 ? 'uk' : 'none' }; }
+    const C = mctx(mm), x = C.byP[it.path]; if (!x) return { v: 0, st: 'none' };
+    const cur = mm === curM;
+    const sC = cur ? it.s : (EXT.shontal ? extCmp('shontal', x, C.byP, mm) : null);
+    const cC = cur ? it.c : (EXT.comforty ? extCmp('comforty', x, C.byP, mm) : null);
+    const kC = cur ? it.k : (CC ? ccCmp(x, C.kag) : null);
+    let w = null; try { w = typeof salOf === 'function' ? salOf(it.path, mm) : null; } catch (e) { }
+    const ds = [], ok = [], tip = [];
+    [[sC, 'שונטל'], [cC, 'קונפורטי'], [kC, 'אשראי']].forEach(([c, l]) => { if (!has(c)) return; if (c.st === 'diff') { ds.push(Math.abs(c.diff || 0)); tip.push(`${l} ${nf2.format(c.raw)} — הפרש ${nf2.format(c.diff)}`); } else { ok.push(l); tip.push(`${l} ${nf2.format(c.raw)} ✓`); } });
+    if (w) { if (Math.abs(w.amt - x.val) > 1) { ds.push(Math.abs(w.amt - x.val)); tip.push(`${w.lbl} ${nf2.format(w.amt)} — הפרש ${nf2.format(x.val - w.amt)}`); } else { ok.push(w.lbl); tip.push(`${w.lbl} ✓`); } }
+    const a = audGet(mm, it.path), marked = !!(a && a.ok && Math.abs((a.val || 0) - x.val) <= 0.5);
+    const miss = cur && it.miss;
+    return { v: x.val, st: miss ? 'miss' : ds.length ? 'diff' : ok.length ? 'ok' : 'none', d: ds.length ? Math.max(...ds) : 0, marked, tip: tip.join('\n'), s: sC, c: cC, k: kC, w, x };
+  }
+  function cumOf(it) { let t = 0; for (let mm = ST0(); mm <= curM; mm++) t += cellInfo(it, mm).v || 0; return t; }
   const CHIP = { r: ['דורש טיפול', 'r'], o: ['ממתין להתאמה', 'o'], g: ['תקין — לאישור', 'g'], d: ['סומן תקין', 'd'] };
-  function rowHtml(it, c, selP) {
-    const rs = reasons(it, c), a = it.a || {}, sv = c === 'r' || c === 'o' ? sev(it) : 0;
-    const ico = (a.note ? `<span title="${esc(a.note)}">${NOTE_FOR(a) === 'me' ? '🙋' : '🤖'}</span>` : '') + (a.reply && !a.handled ? '<span title="יש תשובה מקלוד">💬</span>' : '') + (a.src ? `<span class="au2-src">${esc(a.src)}</span>` : '');
-    const chk = it.uk || c === 'd' ? '<td class="au2-ck"></td>' : `<td class="au2-ck"><input type="checkbox" data-au2sel="${esc(it.path)}"${(ui.au2Sel || {})[it.path] ? ' checked' : ''} aria-label="בחירה"></td>`;
+  function rowHtml(it, c, selP, MS) {
+    const rs = reasons(it, c), a = it.a || {}, sv = c === 'r' || c === 'o' ? sev(it) : 0, P = esc(it.path);
+    const ico = (a.reply && !a.handled ? '<span title="יש תשובה מקלוד">💬</span>' : '') + (a.src ? `<span class="au2-src">${esc(a.src)}</span>` : '');
+    const chk = it.uk || c === 'd' ? '<td class="au2-ck"></td>' : `<td class="au2-ck"><input type="checkbox" data-au2sel="${P}"${(ui.au2Sel || {})[it.path] ? ' checked' : ''} aria-label="בחירה"></td>`;
+    const cells = MS.map(mm => {
+      const ci = cellInfo(it, mm), v = ci.v, big = ci.st === 'diff' && ci.d >= Math.max(500, Math.abs(v) * 0.1);
+      const mk = ci.marked ? '<i class="au2-mk" title="סומן תקין">✓</i>' : ci.st === 'ok' ? '<i class="au2-okm" title="תואם למקור">✓</i>' : ci.st === 'diff' ? '<i class="au2-dfm">≠</i>' : '';
+      const tip = `${M[mm]}: ₪${nf2.format(v)}${ci.tip ? '\n' + ci.tip : ''}${ci.st === 'miss' ? '\nהיה סכום בחודשים הקודמים — החודש אין' : ''}${ci.st === 'uk' ? '\nלא משויך לשורה ברווח והפסד' : ''}\nלחיצה — פרטי ההתאמה`;
+      return `<td class="au2-c st-${ci.st}${big ? ' big' : ''}${mm === curM ? ' cur' : ''}${selP === it.path && (ui.au2M ?? curM) === mm ? ' csel' : ''}" data-au2c="${P}" data-m="${mm}" title="${esc(tip)}">${Math.abs(v) < 0.005 ? '<span class="au2-z">—</span>' : nf2.format(v)}${mk}</td>`;
+    }).join('');
+    const si = it.uk ? null : sureInfo(it);
+    const chips = it.uk ? `<span class="bd-ch df">${esc(catTxt(it))}</span>` : bdChips(it, si);
     const why = c === 'd' ? `<span class="au2-pill d">✓ סומן${a.at ? ' ' + new Date(a.at).toLocaleDateString('he-IL') : ''}</span>`
       : c === 'g' ? '<span class="au2-pill g">כל המקורות תואמים</span>'
-      : `<span class="au2-pill ${c}" title="${esc(((sureInfo(it) || {}).bad || []).join(' · ') || rs.map(r => r[1]).join(' · '))}">${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</span>${rs.length > 1 ? `<span class="au2-more" title="${esc(rs.slice(1).map(r => r[1]).join(' · '))}">+${rs.length - 1}</span>` : ''}${sv >= 0.5 && !it.uk ? `<span class="au2-df">${ils(sv)}</span>` : ''}`;
-    return `<tr class="au2-r${selP === it.path ? ' sel' : ''}" data-au2="${esc(it.path)}">${chk}<td class="au2-nm"><b>${esc(it.name)}</b> ${ico}</td><td class="au2-am${(amtOf(it) || 0) < -0.5 ? ' neg' : ''}">${ils(amtOf(it))}</td><td class="au2-tp">${esc(topic(it))}<small>${esc(catTxt(it))}</small></td><td class="au2-why">${why}</td><td class="au2-go"><button class="au2-btn" data-au2open="${esc(it.path)}">בדיקה ‹</button></td></tr>`;
+      : `<span class="au2-pill ${c}" title="${esc(((si || {}).bad || []).join(' · ') || rs.map(r => r[1]).join(' · '))}">${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</span>${rs.length > 1 ? `<span class="au2-more" title="${esc(rs.slice(1).map(r => r[1]).join(' · '))}">+${rs.length - 1}</span>` : ''}`;
+    const nt = `<td class="au2-ntc"><input class="au2-note au2-ni" data-p="${P}" data-m="${curM}" value="${esc(a.note || '')}" placeholder="${it.uk || c !== 'd' ? 'הערה…' : ''}" title="${esc(a.note || 'הערה לבדיקה (נשמרת לחודש ' + M[curM] + ')')}">${!it.uk && lineNote(it.path) ? `<span class="au2-ln" title="${esc(lineNote(it.path))}">📝</span>` : ''}</td>`;
+    return `<tr class="au2-r r-${c}${selP === it.path ? ' sel' : ''}" data-au2="${P}">${chk}<td class="au2-nm" title="${esc(it.name + ' · ' + topic(it))}"><b>${esc(it.name)}</b> ${ico}<small>${esc(topic(it))}${catTxt(it) ? ' · ' + esc(catTxt(it)) : ''}</small></td>${cells}<td class="au2-cum">${nf2.format(cumOf(it))}</td><td class="au2-chk">${chips}${sv >= 0.5 && !it.uk ? `<span class="au2-df" title="ההפרש הגדול ביותר החודש">${ils(sv)}</span>` : ''}</td><td class="au2-why">${why}</td>${nt}<td class="au2-go"><button class="au2-btn" data-au2open="${P}" title="פרטי ההתאמה של ${esc(M[curM])}">פרטים ‹</button></td></tr>`;
   }
   function srcBlock(it) {
     const m = curM, rows = [];
@@ -498,12 +533,44 @@ function fBreak(path, m) {
     });
     return out.sort((a, b) => (b.pc || 0) - (a.pc || 0));
   }
+  function monthTabs(it) {
+    const MS = monthsShown(), sel = ui.au2M ?? curM;
+    return `<div class="au2-mt">${MS.map(mm => { const ci = cellInfo(it, mm); return `<button class="st-${ci.st}${mm === sel ? ' on' : ''}" data-au2m="${mm}" title="${esc(M[mm] + ': ₪' + nf2.format(ci.v))}">${M[mm]}</button>`; }).join('')}</div>`;
+  }
+  const editCell = (it, mm) => cellsOf(it.path) && !RO ? `<table class="au2-edt"><tr><td class="ed au2-ed" data-p="${esc(it.path)}" data-m="${mm}" title="לחיצה לעריכה — סכום או חישוב">${ils((mctx(mm).byP[it.path] || {}).val)} <span>✎ עריכה</span></td></tr></table>` : '';
+  /* חודש אחר מהחודש המודגש: הסכום, המקורות באותו חודש, החשבוניות, ו«תקן ל-» הקיים */
+  function monthPanel(it, mm) {
+    const ci = cellInfo(it, mm), a = audGet(mm, it.path) || {}, P = esc(it.path);
+    let h = `<div class="au2-ph"><div class="au2-pt"><b>${esc(it.name)}</b> <span class="au2-chip ${ci.st === 'diff' ? 'r' : ci.st === 'ok' ? 'g' : 'o'}">${M[mm]}</span><div class="au2-ps">${esc(topic(it))} · ${esc(catTxt(it))}${it.uk ? '' : ' · ' + esc(it.basis || '')}</div></div><button class="au2-x" data-au2close title="סגירה">✕</button></div>${monthTabs(it)}`;
+    h += ci.st === 'diff' ? `<div class="au2-al r"><b>⚠ הפרש מהמקור ב${M[mm]}</b><div>${esc(ci.tip.split('\n').filter(x => /הפרש/.test(x)).join(' · '))}</div></div>`
+      : ci.st === 'ok' ? `<div class="au2-al g"><b>✓ תואם למקור ב${M[mm]}</b><div>${esc(ci.tip.split('\n').join(' · '))}</div></div>`
+      : `<div class="au2-al o"><b>⏱ אין מקור להשוואה ב${M[mm]}</b></div>`;
+    const raw = it.uk ? null : (cellsOf(it.path) || [])[mm], fx = raw !== null && raw !== undefined && raw !== '' && PL.isFormula(raw) ? rawShow(raw) : '', cn = ((D.cnote || {})[it.path] || {})[mm];
+    const left = it.uk ? '<div class="au2-kv"><span>שורה</span><b>אין שורה ברווח והפסד</b></div>' : `<div class="au2-kv"><span>סכום</span><b class="au2-big">${ils(ci.v)}</b></div>${fx ? `<div class="au2-kv"><span>בתא</span><b dir="ltr">${esc(fx)}</b></div>` : ''}${cn ? `<div class="au2-kv"><span>פירוט</span><b>${esc(cn)}</b></div>` : ''}${a.ok ? `<div class="au2-kv"><span>סומן</span><b>${a.at ? new Date(a.at).toLocaleDateString('he-IL') : '✓'}${a.src ? ' · ' + esc(a.src) : ''}</b></div>` : ''}${editCell(it, mm)}`;
+    const rows = []; const g = IDX.shontal[it.path], e = g && g.m[String(mm)], inv = e ? e[1] : [];
+    const dt = c => c.st === 'ok' ? '<span class="au2-ok">✓ תואם</span>' : `<span class="au2-bad">הפרש ${ils(c.diff)}</span>`;
+    if (!it.uk) {
+      if (has(ci.s)) rows.push(['שונטל', ci.s.raw, dt(ci.s) + inv.slice(0, 8).map(d => `<div class="au2-doc">${d[8] ? docLink(d) : d[9] ? '☁️' : ''} ${esc(d[1] || '')} · ${dmy(d[2])} · ${ils(d[3])}</div>`).join('')]);
+      const lk = g && g.lk && g.lk[String(mm)]; if (lk && lk[0] != null) rows.push(['קיבוע גיול', lk[0], (lk[1] ? '<span class="au2-ok">הגיול אושר</span>' : '')]);
+      if (has(ci.c)) rows.push(['קונפורטי', ci.c.raw, dt(ci.c)]);
+      if (ci.k) rows.push(['אשראי', ci.k.raw, dt(ci.k)]);
+      if (ci.w) rows.push([ci.w.lbl, ci.w.amt, Math.abs(ci.w.amt - ci.v) <= 1 ? '<span class="au2-ok">✓ תואם</span>' : `<span class="au2-bad">הפרש ${ils(ci.v - ci.w.amt)}</span>`]);
+    } else ['s', 'c', 'k'].forEach(k => { if (it.uk.src[k].length) { const v = ukAmtK(it.uk, mm, k); if (Math.abs(v) >= 0.5) rows.push([UK[k], v, '']); } });
+    const right = rows.length ? rows.map(r => `<div class="au2-sr"><div class="au2-kv"><span>${esc(r[0])}</span><b class="au2-big">${ils(r[1])}</b></div>${r[2] ? `<div class="au2-sd">${r[2]}</div>` : ''}</div>`).join('') : '<div class="au2-none">אין נתון באף מקור בחודש הזה</div>';
+    h += `<div class="au2-cmp"><div class="au2-cd"><div class="au2-ch">🧾 ברווח והפסד · ${M[mm]}</div>${left}</div><div class="au2-mid">⇄${ci.d ? `<small>הפרש<br><b>${ils(ci.d)}</b></small>` : ''}</div><div class="au2-cd"><div class="au2-ch">📄 המקורות · ${M[mm]}</div>${right}</div></div>`;
+    let fixes = '';
+    if (!it.uk && cellsOf(it.path)) ['s', 'c', 'k', 'w'].forEach(k => { let v = null; try { v = srcVal(it, k, mm); } catch (x) { } if (v == null || Math.abs(v) < 0.005 || Math.abs(v - ci.v) <= 1) return; const kk = k === 'w' ? ((ci.w || {}).kind || 'w') : k; fixes += `<button class="au2-b" data-act="audPickM" data-m="${mm}" data-k="${esc(kk)}" data-p="${P}" data-v="${v}" title="לתקן את ${esc(M[mm])} ל-${nf2.format(v)} (לפי ${esc(PK_LBL[kk] || kk)}) ולסמן נבדק">✎ תיקון ל-${ils(v)} <small>(${esc(PK_LBL[kk] || kk)})</small></button>`; });
+    h += `<div class="au2-nt"><div class="au2-sh">הערה לבדיקה · ${M[mm]}</div><textarea class="au2-note" data-p="${P}" data-m="${mm}" rows="2" placeholder="הוסיפי הערה…">${esc(a.note || '')}</textarea></div>`;
+    h += `<div class="au2-act">${fixes}<button class="au2-b" data-au2m="${curM}">חזרה ל${M[curM]} ›</button><button class="au2-b dots" data-act="audOpen" data-p="${P}" title="החלון המלא: כל החודשים, חשבוניות, גיול ועוד">⋯</button></div>`;
+    return h;
+  }
   function panelHtml(it) {
+    if (it && LAST && (ui.au2M ?? curM) !== curM) return monthPanel(it, ui.au2M);
     if (!it || !LAST) return `<div class="au2-empty">בוחרים שורה מהרשימה כדי לראות את כל הפרטים</div>`;
     const c = LAST.U.cat[it.path], m = curM, a = it.a || {}, si = it.uk ? null : sureInfo(it), rs = reasons(it, c);
     const list = LAST.main, i = list.findIndex(x => x.path === it.path);
     const nav = i >= 0 ? `<span class="au2-nav"><button data-au2nav="-1" title="הקודם"${i <= 0 ? ' disabled' : ''}>›</button><span><b>${i + 1}</b> מתוך ${list.length}</span><button data-au2nav="1" title="הבא"${i >= list.length - 1 ? ' disabled' : ''}>‹</button></span>` : '';
-    let h = `<div class="au2-ph"><div class="au2-pt"><b>${esc(it.name)}</b> <span class="au2-chip ${CHIP[c][1]}">${CHIP[c][0]}</span><div class="au2-ps">${esc(topic(it))} · ${esc(catTxt(it))} · ${M[m]}${it.uk ? '' : ' · ' + esc(it.basis || '')}</div></div>${nav}<button class="au2-x" data-au2close title="סגירה">✕</button></div>`;
+    let h = `<div class="au2-ph"><div class="au2-pt"><b>${esc(it.name)}</b> <span class="au2-chip ${CHIP[c][1]}">${CHIP[c][0]}</span><div class="au2-ps">${esc(topic(it))} · ${esc(catTxt(it))} · ${M[m]}${it.uk ? '' : ' · ' + esc(it.basis || '')}</div></div>${nav}<button class="au2-x" data-au2close title="סגירה">✕</button></div>${monthTabs(it)}`;
     /* הודעה */
     if (c === 'r' || c === 'o') {
       const why = it.uk ? `מופיע ב${['s', 'c', 'k'].filter(k => it.uk[k] != null).map(k => UK[k]).join(' וב')} — ואין לו שורה ברווח והפסד.` : ((si && si.bad.length ? si.bad : si ? si.info : []).join(' · ') || 'אין מקור שאפשר להשוות אליו.');
@@ -512,7 +579,7 @@ function fBreak(path, m) {
     /* זה לצד זה */
     const raw = it.uk ? null : (cellsOf(it.path) || [])[m], fx = raw !== null && raw !== undefined && raw !== '' && PL.isFormula(raw) ? rawShow(raw) : '';
     const left = it.uk ? `<div class="au2-kv"><span>סכום</span><b>—</b></div><div class="au2-kv"><span>שורה</span><b>אין שורה ברווח והפסד</b></div>`
-      : `<div class="au2-kv"><span>סכום</span><b class="au2-big">${ils(it.val)}</b></div>${fx ? `<div class="au2-kv"><span>בתא</span><b dir="ltr">${esc(fx)}</b></div>` : ''}<div class="au2-kv"><span>נושא</span><b>${esc(topic(it))}</b></div><div class="au2-kv"><span>מיקום</span><b>${esc(catTxt(it))}</b></div>${a.src ? `<div class="au2-kv"><span>מקור שנבחר</span><b>${esc(a.src)}</b></div>` : ''}`;
+      : `<div class="au2-kv"><span>סכום</span><b class="au2-big">${ils(it.val)}</b></div>${fx ? `<div class="au2-kv"><span>בתא</span><b dir="ltr">${esc(fx)}</b></div>` : ''}<div class="au2-kv"><span>נושא</span><b>${esc(topic(it))}</b></div><div class="au2-kv"><span>מיקום</span><b>${esc(catTxt(it))}</b></div>${a.src ? `<div class="au2-kv"><span>מקור שנבחר</span><b>${esc(a.src)}</b></div>` : ''}${editCell(it, m)}`;
     const R = srcBlock(it);
     const right = R.length ? R.map(r => `<div class="au2-sr"><div class="au2-kv"><span>${esc(r[0])}</span><b class="au2-big">${ils(r[1])}</b></div>${r[2] ? `<div class="au2-sd">${r[2]}</div>` : ''}</div>`).join('') : '<div class="au2-none">אין נתון באף מקור לחודש הזה</div>';
     const best = sugs(it), dff = !it.uk && best.length ? r2((it.val || 0) - best[0].v) : null;
@@ -522,7 +589,7 @@ function fBreak(path, m) {
     if (best.length) h += `<div class="au2-sg"><div class="au2-sh">✦ ${it.uk ? 'הצעות שיוך אוטומטיות' : 'סכום לפי מקור'} (${best.length})</div>${best.map(s => `<label class="au2-so${sel && sel.key === s.key ? ' on' : ''}"><input type="radio" name="au2pk" value="${esc(s.key)}"${sel && sel.key === s.key ? ' checked' : ''}><span class="au2-sl"><b>${esc(s.lbl)}</b><small>${esc(s.sub)}</small></span><span class="au2-sv">${s.v != null ? ils(s.v) : ''}</span>${s.pc != null ? `<span class="au2-pc${s.pc >= 95 ? ' hi' : ''}" title="התאמת סכום: הקטן מתוך הגדול">${s.pc}% התאמה</span>` : (it.uk ? '<span class="au2-pc">שם דומה</span>' : '')}</label>`).join('')}</div>`;
     else if (it.uk) h += `<div class="au2-sg"><div class="au2-sh">✦ הצעות שיוך</div><div class="au2-none">לא נמצאה שורה עם שם דומה או סכום תואם</div></div>`;
     /* הערה */
-    h += `<div class="au2-nt"><div class="au2-sh">הערה לבדיקה ${a.note ? `<small>${NOTE_FOR(a) === 'me' ? '🙋 לעצמי' : '🤖 לבדיקת קלוד'}</small>` : ''}</div><textarea class="au2-note" data-p="${esc(it.path)}" rows="2" placeholder="הוסיפי הערה…">${esc(a.note || '')}</textarea>${a.reply ? `<div class="au2-rep">${a.handled ? '✅ טופל · ' : '💬 '}<b>קלוד:</b> ${esc(a.reply)}</div>` : ''}</div>`;
+    h += `<div class="au2-nt"><div class="au2-sh">הערה לבדיקה ${a.note ? `<small>${NOTE_FOR(a) === 'me' ? '🙋 לעצמי' : '🤖 לבדיקת קלוד'}</small>` : ''}</div><textarea class="au2-note" data-p="${esc(it.path)}" data-m="${m}" rows="2" placeholder="הוסיפי הערה…">${esc(a.note || '')}</textarea>${a.reply ? `<div class="au2-rep">${a.handled ? '✅ טופל · ' : '💬 '}<b>קלוד:</b> ${esc(a.reply)}</div>` : ''}</div>`;
     /* פעולות — כולן פעולות קיימות */
     const P = esc(it.path); let acts = '';
     if (it.uk) {
@@ -542,7 +609,7 @@ function fBreak(path, m) {
   }
   function selPath(B) {
     const ok = p => p && B.U.all.some(x => x.path === p);
-    if (!ok(ui.au2P)) ui.au2P = ui.au2Closed ? null : (B.main[0] || {}).path || null;
+    if (!ok(ui.au2P)) { ui.au2P = null; ui.au2M = null; }
     return ui.au2P;
   }
   vAudit = function () {
@@ -550,60 +617,73 @@ function fBreak(path, m) {
     try { return au2View(); } catch (err) { console.error('au2', err); return _base(); }   /* תקלה — חוזרים ללוח הקודם */
   };
   function au2View() {
-    const B = build(), n = B.n, tot = B.tot, P = x => tot ? Math.round(x * 1000 / tot) / 10 : 0, okN = n.g + n.d;
-    const sp = selPath(B), selIt = sp ? B.U.all.find(x => x.path === sp) : null;
+    MC = {};
+    const B = build(), n = B.n, tot = B.tot, Pc = x => tot ? Math.round(x * 1000 / tot) / 10 : 0, okN = n.g + n.d;
+    const sp = selPath(B), selIt = sp ? B.U.all.find(x => x.path === sp) : null, MS = monthsShown();
+    if (selIt && (ui.au2M == null || ui.au2M > curM)) ui.au2M = curM;
     const tps = [...new Set(B.U.all.map(topic))].sort((a, b) => a.localeCompare(b, 'he'));
     const st = B.st, opt = (v, l, cur) => `<option value="${esc(v)}"${cur === v ? ' selected' : ''}>${esc(l)}</option>`;
     const hidN = typeof ukHidden === 'function' ? ukHidden().length : 0;
     const selN = Object.keys(ui.au2Sel || {}).filter(p => ui.au2Sel[p]).length;
-    let h = `<div class="au2"><div class="au2-top"><div><h1>בדיקת שורה-שורה</h1><div class="au2-sub">התאמת ההוצאות ברווח והפסד מול שונטל, קונפורטי, אשראי ובקרת השכר${EXT.shontal && EXT.shontal.asOf ? ' · שונטל נכון ל-' + esc(EXT.shontal.asOf) : ''}</div></div><div class="au2-tools">${monthPicker()}<button class="au2-b sm" data-act="bdView" data-v="table" title="התצוגה הקודמת — טבלה מלאה עם כל המקורות">☰ טבלה מלאה</button></div></div>`;
-    h += `<div class="au2-kpis"><div class="au2-k t"><span>סה"כ בבדיקה</span><b>${tot}</b><small title="«שורות בדוח» = מה שנספר עד היום ב«נבדקו X מתוך…». ספק לא משויך = מופיע בשונטל/קונפורטי/אשראי ואין לו שורה">${tot - B.nUk} שורות בדוח + ${B.nUk} ספקים לא משויכים · סומנו ${n.d}</small><i class="au2-bar"><i style="width:${P(n.d)}%"></i></i></div>
-      <button class="au2-k r${st === 'r' ? ' on' : ''}" data-au2st="r"><span>⚠ דורשות טיפול</span><b>${n.r}</b><small>${P(n.r)}% · הפרש, אזהרה או ספק לא משויך</small></button>
-      <button class="au2-k o${st === 'o' ? ' on' : ''}" data-au2st="o"><span>⏱ ממתינות להתאמה</span><b>${n.o}</b><small>${P(n.o)}% · אין מקור להשוואה או סכום 0</small></button>
-      <button class="au2-k g${st === 'g' ? ' on' : ''}" data-au2st="g"><span>✓ תקינות</span><b>${okN}</b><small>${P(okN)}% · ${n.g} לאישור · ${n.d} סומנו</small></button></div>`;
-    h += `<div class="au2-grid${selIt ? '' : ' nopn'}"><div class="au2-list"><div class="au2-f">
+    let h = `<div class="au2${selIt ? ' pnopen' : ''}"><div class="au2-top"><div><h1>בדיקת שורה-שורה</h1><div class="au2-sub">רווח והפסד מול שונטל, קונפורטי, אשראי ובקרת השכר — לפי חודשים${EXT.shontal && EXT.shontal.asOf ? ' · שונטל נכון ל-' + esc(EXT.shontal.asOf) : ''}</div></div><div class="au2-tools">${monthPicker()}<button class="au2-b sm" data-act="bdView" data-v="table" title="התצוגה הקודמת — כל המקורות בעמודות לחודש אחד">☰ התצוגה הקודמת</button></div></div>`;
+    h += `<div class="au2-kpis"><div class="au2-k t"><span>סה"כ בבדיקה · ${M[curM]}</span><b>${tot}</b><small title="«שורות בדוח» = מה שנספר עד היום ב«נבדקו X מתוך…». ספק לא משויך = מופיע בשונטל/קונפורטי/אשראי ואין לו שורה">${tot - B.nUk} שורות בדוח + ${B.nUk} ספקים לא משויכים · סומנו ${n.d}</small><i class="au2-bar"><i style="width:${Pc(n.d)}%"></i></i></div>
+      <button class="au2-k r${st === 'r' ? ' on' : ''}" data-au2st="r"><span>⚠ דורשות טיפול</span><b>${n.r}</b><small>${Pc(n.r)}% · הפרש, אזהרה או ספק לא משויך</small></button>
+      <button class="au2-k o${st === 'o' ? ' on' : ''}" data-au2st="o"><span>⏱ ממתינות להתאמה</span><b>${n.o}</b><small>${Pc(n.o)}% · אין מקור להשוואה או סכום 0</small></button>
+      <button class="au2-k g${st === 'g' ? ' on' : ''}" data-au2st="g"><span>✓ תקינות</span><b>${okN}</b><small>${Pc(okN)}% · ${n.g} לאישור · ${n.d} סומנו</small></button></div>`;
+    h += `<div class="au2-bar2"><div class="au2-f">
       <input class="search" id="aq" placeholder="🔍 חיפוש ספק או סכום…" value="${esc(ui.aq || '')}">
-      <select id="au2R" class="au2-sel"><option value="">סיבת הבדיקה</option>${RSN.map(r => opt(r[0], r[1], ui.au2R || '')).join('')}</select>
-      <select id="au2T" class="au2-sel"><option value="">נושא</option>${tps.map(t => opt(t, t, ui.au2T || '')).join('')}</select>
-      <select id="au2St" class="au2-sel">${opt('r', 'סטטוס: דורשות טיפול', st)}${opt('o', 'סטטוס: ממתינות להתאמה', st)}${opt('all', 'סטטוס: כל מה שפתוח', st)}${opt('g', 'סטטוס: תקינות', st)}</select>
-      <select id="au2S" class="au2-sel">${opt('sev', 'מיון: חומרה (ההפרש הגדול למעלה)', ui.au2S || 'sev')}${opt('amt', 'מיון: סכום', ui.au2S || 'sev')}${opt('name', 'מיון: שם', ui.au2S || 'sev')}${opt('ord', 'מיון: סדר הדוח', ui.au2S || 'sev')}</select></div>
+      <select id="au2R" class="au2-sel"><option value="">סיבת הבדיקה: הכל</option>${RSN.map(r => opt(r[0], r[1], ui.au2R || '')).join('')}</select>
+      <select id="au2T" class="au2-sel"><option value="">נושא: הכל</option>${tps.map(t => opt(t, t, ui.au2T || '')).join('')}</select>
+      <select id="au2S" class="au2-sel">${opt('sev', 'מיון: חומרה (ההפרש הגדול למעלה)', ui.au2S || 'sev')}${opt('amt', 'מיון: סכום החודש', ui.au2S || 'sev')}${opt('name', 'מיון: שם', ui.au2S || 'sev')}${opt('ord', 'מיון: סדר הדוח', ui.au2S || 'sev')}</select>
+      <select id="au2V" class="au2-sel" title="כמה חודשים להציג בעמודות">${opt('ytd', 'תצוגה: מתחילת השנה', ui.au2V || 'ytd')}${opt('6', 'תצוגה: 6 חודשים אחרונים', ui.au2V || 'ytd')}${opt('3', 'תצוגה: 3 חודשים אחרונים', ui.au2V || 'ytd')}${opt('cur', 'תצוגה: רק ' + M[curM], ui.au2V || 'ytd')}</select></div>
       <div class="au2-f2"><span class="au2-tabs"><button class="r${st === 'r' ? ' on' : ''}" data-au2st="r">⚠ דורשות טיפול (${n.r})</button><button class="o${st === 'o' ? ' on' : ''}" data-au2st="o">⏱ ממתינות להתאמה (${n.o})</button><button class="a${st === 'all' ? ' on' : ''}" data-au2st="all">כל הפתוחות (${n.r + n.o})</button><button class="g${st === 'g' ? ' on' : ''}" data-au2st="g">✓ תקינות (${okN})</button></span>
-      <span class="au2-sp"></span><label class="small" title="ברירת מחדל: רק שורות הגיוניות — יש סכום החודש, היה סכום בחודש הקודם, או הפרש"><input type="checkbox" id="aAll"${ui.aAll ? ' checked' : ''}> גם שורות 0</label>
+      <span class="au2-sp"></span><span class="au2-lg"><i class="lg diff"></i>הפרש מהמקור <i class="lg miss"></i>חסר החודש / לא משויך <i class="lg ok"></i>✓ תואם <b class="au2-mk">✓</b> סומן</span>
+      <label class="small" title="ברירת מחדל: רק שורות הגיוניות — יש סכום החודש, היה סכום בחודש הקודם, או הפרש"><input type="checkbox" id="aAll"${ui.aAll ? ' checked' : ''}> גם שורות 0</label>
       <select class="au2-sel sm" id="aF" title="סינון נוסף">${opt('', 'הצגה: הכל', ui.aF || '')}${opt('ncl', '🤖 הערות לבדיקת קלוד', ui.aF || '')}${opt('nme', '🙋 הערות לעצמי', ui.aF || '')}${opt('note', 'רק עם הערה', ui.aF || '')}${opt('anydiff', 'רק עם הפרש (מכל מקור)', ui.aF || '')}${opt('exp', 'רק הוצאות', ui.aF || '')}${opt('nosrc', 'הוצאות בלי מקור שנבחר', ui.aF || '')}${CC ? opt('kk', 'רק עם אשראי', ui.aF || '') : ''}</select>
-      ${hidN ? `<button class="au2-b sm" data-act="ukHidList" title="ספקים שסימנת «לא נכנס — תמיד»">🙈 ${hidN} מוסתרים</button>` : ''}</div>`;
+      ${hidN ? `<button class="au2-b sm" data-act="ukHidList" title="ספקים שסימנת «לא נכנס — תמיד»">🙈 ${hidN} מוסתרים</button>` : ''}</div></div>`;
     if (selN) h += `<div class="au2-bulk"><b>${selN} נבחרו</b><button class="au2-b pri sm" data-au2bulk>✓ לסמן תקין את כל ${selN}</button><button class="au2-b sm" data-au2clr>ניקוי בחירה</button></div>`;
-    const head = `<thead><tr><th class="au2-ck"><input type="checkbox" data-au2all title="בחירת כל השורות ברשימה" aria-label="בחירת הכל"></th><th>ספק</th><th class="au2-amh">סכום</th><th>נושא / קטגוריה</th><th>סיבת הבדיקה</th><th>פעולה</th></tr></thead>`;
-    h += `<table class="au2-t">${head}<tbody>${B.main.map(it => rowHtml(it, B.U.cat[it.path], sp)).join('') || `<tr><td colspan="6" class="au2-none">${(ui.aq || ui.au2T || ui.au2R || ui.aF) ? 'אין שורות שמתאימות לחיפוש / לסינון' : 'אין כאן שורות 🎉'}</td></tr>`}</tbody></table>`;
+    const head = all => `<thead><tr><th class="au2-ck">${all ? '<input type="checkbox" data-au2all title="בחירת כל השורות בטבלה" aria-label="בחירת הכל">' : ''}</th><th class="au2-nmh">ספק / שורה</th>${MS.map(mm => `<th class="au2-mh${mm === curM ? ' cur' : ''}">${M[mm]}</th>`).join('')}<th class="au2-mh cum" title="מתחילת השנה עד ${esc(M[curM])}">מצטבר</th><th>בדיקה · ${M[curM]}</th><th>סיבה</th><th class="au2-nth">הערה</th><th></th></tr></thead>`;
+    const nc = MS.length + 7;
+    h += `<div class="au2-tw" id="au2Tw"><table class="au2-t au2-m">${head(true)}<tbody>${B.main.map(it => rowHtml(it, B.U.cat[it.path], sp, MS)).join('') || `<tr><td colspan="${nc}" class="au2-none">${(ui.aq || ui.au2T || ui.au2R || ui.aF) ? 'אין שורות שמתאימות לחיפוש / לסינון' : 'אין כאן שורות 🎉'}</td></tr>`}</tbody></table></div>`;
     if (st !== 'g') {
       const gN = B.okL.filter(it => B.U.cat[it.path] === 'g').length;
       h += `<details class="au2-ok"${ui.au2GO ? ' open' : ''} id="au2G"><summary><span class="au2-okc">✓</span><b>שורות תקינות (${B.okL.length})</b><small>${gN} תואמות בכל המקורות — ממתינות לאישור · ${B.okL.length - gN} כבר סומנו</small><span class="au2-sp"></span>${gN ? `<button class="au2-b g sm" data-act="audOkAllSure" title="מסמן תקין את כל השורות שכל המקורות שלהן תואמים">✓ לאשר את כל ${gN} התואמות</button>` : ''}</summary>
-        <table class="au2-t">${head}<tbody>${B.okL.map(it => rowHtml(it, B.U.cat[it.path], sp)).join('') || '<tr><td colspan="6" class="au2-none">אין</td></tr>'}</tbody></table></details>`;
+        <div class="au2-tw g">${ui.au2GO ? `<table class="au2-t au2-m">${head(false)}<tbody>${B.okL.map(it => rowHtml(it, B.U.cat[it.path], sp, MS)).join('') || `<tr><td colspan="${nc}" class="au2-none">אין</td></tr>`}</tbody></table>` : ''}</div></details>`;
     }
-    h += `</div>${selIt ? `<aside class="au2-pn" id="au2Pn" data-cur="${esc(sp)}">${panelHtml(selIt)}</aside>` : ''}</div></div>`;
+    h += `${selIt ? `<aside class="au2-pn" id="au2Pn" data-cur="${esc(sp)}">${panelHtml(selIt)}</aside>` : ''}</div>`;
+    setTimeout(restoreScroll, 0);
     return h;
   }
+  /* המיקום בטבלה נשמר גם אחרי פעולה שמציירת מחדש */
+  document.addEventListener('scroll', e => { const t = e.target; if (t && t.id === 'au2Tw') { ui.au2Sc = [t.scrollTop, t.scrollLeft]; } }, true);
+  function restoreScroll() { const t = document.getElementById('au2Tw'); if (t && ui.au2Sc) { t.scrollTop = ui.au2Sc[0]; t.scrollLeft = ui.au2Sc[1]; } }
   function repaintPanel() {
     const pn = document.getElementById('au2Pn'); if (!pn || !LAST) { render(); return; }
     const it = LAST.U.all.find(x => x.path === ui.au2P); if (!it) { render(); return; }
     pn.innerHTML = panelHtml(it); pn.dataset.cur = it.path;
     document.querySelectorAll('.au2 tr.au2-r').forEach(tr => tr.classList.toggle('sel', tr.dataset.au2 === ui.au2P));
+    document.querySelectorAll('.au2 td.au2-c.csel').forEach(td => td.classList.remove('csel'));
+    document.querySelectorAll(`.au2 td.au2-c[data-au2c="${CSS.escape(ui.au2P)}"][data-m="${ui.au2M ?? curM}"]`).forEach(td => td.classList.add('csel'));
   }
+  const openP = (p, mm) => { ui.au2P = p; ui.au2M = mm; ui.au2Closed = false; if (document.getElementById('au2Pn')) repaintPanel(); else render(); };
   function nextAfter(p) { if (!LAST) return null; const L = LAST.main, i = L.findIndex(x => x.path === p); return i < 0 ? null : (L[i + 1] || L[i - 1] || {}).path || null; }
   /* בחירה, ניווט, סינונים */
   document.addEventListener('click', e => {
     if (!e.target.closest || !e.target.closest('.au2')) return;
     const t = e.target;
     const st = t.closest('[data-au2st]'); if (st) { ui.au2St = st.dataset.au2st; ui.au2P = null; ui.au2Closed = false; render(); return; }
-    const nv = t.closest('[data-au2nav]'); if (nv && LAST) { const L = LAST.main, i = L.findIndex(x => x.path === ui.au2P), j = i + (+nv.dataset.au2nav); if (L[j]) { ui.au2P = L[j].path; repaintPanel(); const tr = document.querySelector(`.au2 tr[data-au2="${CSS.escape(ui.au2P)}"]`); if (tr) tr.scrollIntoView({ block: 'nearest' }); } return; }
-    if (t.closest('[data-au2close]')) { ui.au2P = null; ui.au2Closed = true; render(); return; }
+    const nv = t.closest('[data-au2nav]'); if (nv && LAST) { const L = LAST.main, i = L.findIndex(x => x.path === ui.au2P), j = i + (+nv.dataset.au2nav); if (L[j]) { ui.au2P = L[j].path; ui.au2M = curM; repaintPanel(); const tr = document.querySelector(`.au2 tr[data-au2="${CSS.escape(ui.au2P)}"]`); if (tr) tr.scrollIntoView({ block: 'nearest' }); } return; }
+    if (t.closest('[data-au2close]')) { ui.au2P = null; ui.au2M = null; ui.au2Closed = true; const pn = document.getElementById('au2Pn'); if (pn) pn.remove(); const r = document.querySelector('.au2'); if (r) r.classList.remove('pnopen'); document.querySelectorAll('.au2 .sel,.au2 .csel').forEach(x => x.classList.remove('sel', 'csel')); return; }
     if (t.closest('[data-au2clr]')) { ui.au2Sel = {}; render(); return; }
-    const op = t.closest('[data-au2open]'); if (op) { ui.au2P = op.dataset.au2open; ui.au2Closed = false; document.querySelector('.au2-grid.nopn') ? render() : repaintPanel(); return; }
-    if (t.closest('input,button,a,select,textarea,label,summary')) return;
-    const tr = t.closest('tr.au2-r'); if (tr) { ui.au2P = tr.dataset.au2; ui.au2Closed = false; document.querySelector('.au2-grid.nopn') ? render() : repaintPanel(); }
+    const op = t.closest('[data-au2open]'); if (op) { openP(op.dataset.au2open, curM); return; }
+    const mt = t.closest('[data-au2m]'); if (mt) { ui.au2M = +mt.dataset.au2m; repaintPanel(); return; }
+    if (t.closest('input,button,a,select,textarea,label,summary,.au2-pn')) return;
+    const cc = t.closest('td.au2-c'); if (cc) { openP(cc.dataset.au2c, +cc.dataset.m); return; }
+    const tr = t.closest('tr.au2-r'); if (tr) openP(tr.dataset.au2, curM);
   });
   document.addEventListener('change', e => {
     const t = e.target; if (!t.closest || !t.closest('.au2')) return;
-    if (t.id === 'au2R') { ui.au2R = t.value; render(); } else if (t.id === 'au2T') { ui.au2T = t.value; render(); }
+    if (t.id === 'au2R') { ui.au2R = t.value; render(); } else if (t.id === 'au2T') { ui.au2T = t.value; render(); } else if (t.id === 'au2V') { ui.au2V = t.value; render(); }
     else if (t.id === 'au2St') { ui.au2St = t.value; ui.au2P = null; render(); } else if (t.id === 'au2S') { ui.au2S = t.value; render(); }
     else if (t.dataset.au2sel) { ui.au2Sel = ui.au2Sel || {}; ui.au2Sel[t.dataset.au2sel] = t.checked; render(); }
     else if (t.hasAttribute('data-au2all')) { ui.au2Sel = ui.au2Sel || {}; t.closest('table').querySelectorAll('[data-au2sel]').forEach(c => { ui.au2Sel[c.dataset.au2sel] = t.checked; }); render(); }
@@ -611,22 +691,22 @@ function fBreak(path, m) {
   });
   /* הערה מהחלונית — נשמרת כמו בחלון הגדול (saveModalNote), בלי לצייר מחדש, כדי שלחיצה על כפתור אחרי הקלדה לא תלך לאיבוד */
   function saveNote(t) {
-    const p = t.dataset.p, v = t.value.trim(), m = curM, old = (audGet(m, p) || {}).note || ''; if (v === old || RO) return;
+    const p = t.dataset.p, v = t.value.trim(), m = t.dataset.m != null ? +t.dataset.m : curM, old = (audGet(m, p) || {}).note || ''; if (v === old || RO) return;
     const it = AUD_ROWS[p], desc = `בדיקה › ${M[m]} › ${it ? it.name : p}: הערה «${v || 'נמחקה'}»`;
     undoStack.push({ s: snap(), d: desc }); redoStack = [];
     D.audit = D.audit || {}; D.audit[m] = D.audit[m] || {};
     D.audit[m][p] = Object.assign({}, D.audit[m][p] || {}, { note: v, u: new Date().toISOString() });
-    if (it) it.a = D.audit[m][p];
+    if (it && m === curM) it.a = D.audit[m][p];
     logAdd(desc); dirty = true; persist(); audSave(); renderStatus();
   }
   document.addEventListener('change', e => { if (e.target.classList && e.target.classList.contains('au2-note')) saveNote(e.target); }, true);
   window.addEventListener('mousedown', e => { const a = document.activeElement; if (a && a.classList && a.classList.contains('au2-note') && e.target !== a) saveNote(a); }, true);
-  document.addEventListener('toggle', e => { if (e.target.id === 'au2G') ui.au2GO = e.target.open; }, true);
+  document.addEventListener('toggle', e => { if (e.target.id === 'au2G' && ui.au2GO !== e.target.open) { ui.au2GO = e.target.open; render(); } }, true);
   /* אחרי פעולה בחלונית — עוברים לשורה הבאה ברשימה (לפני שהפעולה הקיימת רצה ומציירת מחדש) */
   window.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('#au2Pn [data-act="audOkRow"],#au2Pn [data-act="audPick"],#au2Pn [data-act="ukOk"],#au2Pn [data-au2map]');
     if (!b || RO || b.disabled) return;
-    const nx = nextAfter(ui.au2P); if (nx) ui.au2P = nx;
+    const nx = nextAfter(ui.au2P); if (nx) { ui.au2P = nx; ui.au2M = curM; }
   }, true);
   /* אישור התאמה לספק לא משויך = «✓ כן, לחבר לשם» הקיים (ukMapTo) */
   document.addEventListener('click', e => {
@@ -717,6 +797,38 @@ details.au2-ok table.au2-t{background:#fff;border-radius:0 0 12px 12px}
 .au2-rep{font-size:12.5px;background:#f2f7fb;border-radius:8px;padding:6px 8px;margin-top:6px}
 .au2-act{display:flex;gap:8px;flex-wrap:wrap;position:sticky;bottom:-12px;background:#fff;padding:8px 0 2px;border-top:1px solid #f0edf6}
 .ro .au2-act,.ro .au2-ck,.ro .au2-bulk,.ro [data-act="audOkAllSure"]{display:none!important}
+
+.au2-bar2{background:#fff;border:1px solid var(--al);border-radius:12px;padding:10px 12px;margin-bottom:8px}.au2-bar2 .au2-f2{margin:8px 0 0}
+.au2-lg{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#5d5675}.au2-lg i.lg{display:inline-block;width:12px;height:12px;border-radius:3px;margin-inline-start:6px}.lg.diff{background:#fde3df;border:1px solid #f2b8af}.lg.miss{background:#ffefd6;border:1px solid #f1cf98}.lg.ok{background:#e6f5ea;border:1px solid #b9e0c3}
+.au2-tw{overflow:auto;max-height:calc(100vh - var(--audTop,0px) - 24px);background:#fff;border:1px solid var(--al);border-radius:12px;transition:margin .15s}
+.au2.pnopen .au2-tw{margin-left:min(520px,40vw)}
+.au2-tw.g{max-height:70vh;border:0;border-radius:0 0 12px 12px}
+table.au2-m{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;font-size:13.5px}
+table.au2-m th{position:sticky;top:0;z-index:3;background:#f3f0fa;color:#3b3352;font-size:12.5px;font-weight:800;text-align:right;padding:8px 8px;border-bottom:2px solid #ddd5ee;white-space:nowrap}
+table.au2-m td{padding:5px 8px;border-bottom:1px solid #ece8f3;vertical-align:middle;text-align:right;background:#fff;color:#1f1a2e}
+table.au2-m tbody tr:nth-child(even) td{background:#fcfbfe}
+table.au2-m td.au2-ck,table.au2-m th.au2-ck{position:sticky;right:0;z-index:2;width:28px;min-width:28px}table.au2-m th.au2-ck{z-index:4}
+table.au2-m td.au2-nm,table.au2-m th.au2-nmh{position:sticky;right:28px;z-index:2;min-width:200px;max-width:250px;box-shadow:-1px 0 0 #ddd5ee}table.au2-m th.au2-nmh{z-index:4}
+table.au2-m td.au2-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}table.au2-m td.au2-nm b{font-weight:700}table.au2-m td.au2-nm small{display:block;font-size:11.5px;color:#7a7390;overflow:hidden;text-overflow:ellipsis}
+table.au2-m th.au2-mh{text-align:left;direction:rtl;min-width:84px}table.au2-m th.au2-mh.cur{background:#e8e0fb;color:var(--ap2)}table.au2-m th.cum{background:#eeebf5}
+table.au2-m td.au2-c{direction:ltr;text-align:left;white-space:nowrap;font-variant-numeric:tabular-nums;cursor:pointer;min-width:84px;position:relative}
+table.au2-m td.au2-c:hover{outline:2px solid #c9b8f3;outline-offset:-2px}
+table.au2-m td.au2-c.cur{background:#f7f3ff;font-weight:700}table.au2-m tbody tr:nth-child(even) td.au2-c.cur{background:#f4effe}
+table.au2-m td.au2-c.st-diff{background:#fdeeec!important;color:#9b2c1f}table.au2-m td.au2-c.st-diff.big{background:#fbdcd7!important;font-weight:800}
+table.au2-m td.au2-c.st-miss,table.au2-m td.au2-c.st-uk{background:#fff3e0!important;color:#8a4b08}
+table.au2-m td.au2-c.csel{outline:2px solid var(--ap)!important;outline-offset:-2px}
+.au2-z{color:#b9b3c8}.au2-c i{font-style:normal;font-size:10.5px;margin-left:4px}.au2-okm{color:#3f9a5c}.au2-dfm{color:#b42318;font-weight:800}.au2-mk{color:#fff;background:#3f9a5c;border-radius:50%;padding:0 3px;font-size:9.5px!important;font-style:normal}
+table.au2-m td.au2-cum{direction:ltr;text-align:left;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:700;background:#f8f7fb;color:#3b3352;min-width:96px}
+table.au2-m td.au2-chk{white-space:nowrap}.au2-chk .bd-ch{font-size:11px}
+table.au2-m td.au2-why{white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+table.au2-m td.au2-ntc{min-width:170px;max-width:220px;white-space:nowrap}.au2-ni{width:150px;border:1px solid transparent;background:transparent;border-radius:6px;padding:3px 6px;font:inherit;font-size:12.5px;color:#34466b;text-overflow:ellipsis}
+.au2-ni:hover{border-color:var(--al);background:#fff}.au2-ni:focus{border-color:var(--ap);background:#fff;outline:0;width:200px}.au2-ln{font-size:12px;cursor:help}
+tr.au2-r.sel td{background:#f1ebff!important}tr.au2-r.sel td.au2-c.st-diff{background:#f6d9d4!important}tr.au2-r.r-d td{color:#5d5675}
+.au2-pn{position:fixed;left:10px;top:calc(var(--audTop,0px) + 8px);bottom:10px;width:min(510px,39vw);max-height:none;z-index:30;box-shadow:0 10px 34px rgba(50,30,100,.18)}
+.au2-mt{display:flex;flex-wrap:wrap;gap:4px}.au2-mt button{border:1px solid var(--al);background:#fff;border-radius:8px;padding:2px 8px;font:inherit;font-size:12px;cursor:pointer;color:#3b3352}
+.au2-mt button.st-diff{background:#fdeeec;border-color:#f2c6bf;color:#9b2c1f}.au2-mt button.st-ok{background:#ecf8ef;border-color:#bfe3c8}.au2-mt button.st-miss,.au2-mt button.st-uk{background:#fff3e0}.au2-mt button.on{outline:2px solid var(--ap);font-weight:800}
+table.au2-edt{border-collapse:collapse;margin-top:6px;width:100%}table.au2-edt td.au2-ed{border:1px dashed #c9b8f3;border-radius:8px;padding:5px 8px;cursor:pointer;direction:ltr;text-align:left;font-weight:700;background:#faf8ff}table.au2-edt td.au2-ed span{font-size:11.5px;color:var(--ap2);font-weight:600}table.au2-edt td.au2-ed input{width:100%;font:inherit;direction:ltr}
+@media(max-width:1100px){.au2.pnopen .au2-tw{margin-left:0}.au2-pn{width:min(520px,94vw)}}
 </style>`);
 })();
 </script>
