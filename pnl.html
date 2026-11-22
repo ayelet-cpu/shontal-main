@@ -352,6 +352,374 @@ function fBreak(path, m) {
   if (forHover) return r.rows.map(o => o.hit ? `<div>${nf2.format(o.n)} = ${o.hit.doc ? docLink(o.hit.doc) + ' ' : ''}${esc(o.hit.t)} · ${esc(o.hit.n)}${o.hit.s ? ' · ' + esc(o.hit.s) : ''}</div>` : `<div style="color:#b3261e">${nf2.format(o.n)} = לא נמצא מקור (שונטל / אשראי / קונפורטי)</div>`).join('');
 </script>
 <!-- 🟨 «צפוי / לא בטוח» (איילת 10.11.2026): לחיצה ימנית על תא = סימון צהוב, שוב = ביטול. נשמר בנתונים (D.cmark[path][חודש]). נכנס לקוד המערכת דרך PATCHES. -->
+<script type="text/plain" id="au2Js">
+/* ================= בדיקה שורה-שורה — מסך עבודה (איילת 22.11.2026, לפי ההדמיה שאושרה) =================
+   שכבת תצוגה בלבד, מעל כל השכבות הקיימות: אותו חישוב, אותם סטטוסים, אותן פעולות (data-act קיימים) — בלי שינוי בנתונים.
+   הקבוצות = בדיוק הלוח הקודם: 🔴 צריך בדיקה (כולל ספקים לא משויכים) · 🟠 אין במה להשוות · 🟢 תקין בוודאות + סומנו תקין.
+   הפער 61 ↔ 64 בתצוגה הקודמת: «נבדקו X מתוך 61» ספר רק שורות בדוח, והעמודות כללו גם ספקים לא משויכים (שונטל/קונפורטי/אשראי בלי שורה).
+   כאן הסה"כ = כל מה שבבדיקה, עם הפירוט «שורות בדוח + ספקים לא משויכים», כך שהקבוצות תמיד מסתכמות לסה"כ. */
+(function () {
+  if (window.__au2) return; window.__au2 = 1;
+  try { if (typeof vAudit !== 'function' || typeof sureInfo !== 'function' || typeof bdShort !== 'function' || typeof ukSuggest !== 'function') return; } catch (e) { return; }
+  const _base = vAudit;
+  const isExp = it => /^(p:|rep:(salary|fixed|gaManual|finance|deductions):)/.test(it.path);
+  const AFP = { exp: isExp, sdiff: it => it.s && it.s.st === 'diff', cdiff: it => it.c && it.c.st === 'diff', note: it => it.a && it.a.note,
+    nme: it => it.a && it.a.note && NOTE_FOR(it.a) === 'me', ncl: it => it.a && it.a.note && NOTE_FOR(it.a) === 'claude', kk: it => it.k,
+    anydiff: it => [it.s, it.c, it.k].some(c => c && c.st === 'diff'), kdiff: it => it.k && it.k.st === 'diff', nosrc: it => isExp(it) && !(it.a && it.a.src) };
+  const has = c => c && !/na|none/.test(c.st);
+  const ils = v => '₪' + nf2.format(v || 0);
+  const SAL = p => { try { return typeof salOf === 'function' ? salOf(p, curM) : null; } catch (e) { return null; } };
+  const ukAmt0 = o => o.c != null ? o.c : o.s != null ? o.s : o.kk != null ? o.kk : o.k;
+
+  /* כל מה שבבדיקה — מריצים את השרשרת הקיימת בלי חיפוש/סינון, ולוקחים ממנה את השורות */
+  function universe() {
+    const sv = { aq: ui.aq, aF: ui.aF, aView: ui.aView };
+    ui.aq = ''; ui.aF = ''; ui.aView = 'board';
+    try { _base(); } finally { ui.aq = sv.aq; ui.aF = sv.aF; ui.aView = sv.aView; }
+    const todo = AUD_ORDER.map(p => AUD_ROWS[p]).filter(Boolean);
+    const done = Object.keys(AUD_ROWS).filter(p => !AUD_ORDER.includes(p)).map(p => AUD_ROWS[p]);
+    const cat = {};
+    todo.forEach(it => {
+      if (it.uk) { cat[it.path] = 'r'; return; }
+      const si = sureInfo(it);
+      cat[it.path] = si && si.sure ? 'g' : si && si.bad.some(x => !/הסכום 0/.test(x)) ? 'r' : 'o';
+    });
+    done.forEach(it => { cat[it.path] = 'd'; });
+    return { todo, done, cat, all: todo.concat(done) };
+  }
+  /* סיבות — מאותם תנאים ש«תקין בוודאות» בודק */
+  function reasons(it, c) {
+    const out = [];
+    if (it.uk) { out.push(['uk', 'לא משויך לשורה']); return out; }
+    if (it.miss) out.push(['miss', 'חסר החודש']);
+    if (it.changed) out.push(['chg', 'השתנה מאז הסימון']);
+    if (it.s && it.s.st === 'diff') out.push(['s', 'הפרש משונטל']);
+    if (it.c && it.c.st === 'diff') out.push(['c', 'הפרש מקונפורטי']);
+    if (it.k && it.k.st === 'diff') out.push(['k', 'הפרש מאשראי']);
+    const L = has(it.s) ? lockOf(it, curM) : null;
+    if (L && L.amt != null && Math.abs(L.amt - it.s.raw) > 1) out.push(['lk', 'קיבוע גיול שונה']);
+    const si = sureInfo(it) || {};
+    if (si.sc != null && Math.abs(si.sc) > 1) out.push(['sc', 'שונטל ≠ קונפורטי']);
+    const w = SAL(it.path); if (w && Math.abs(w.amt - it.val) > 1) out.push([w.kind === 't' ? 't' : 'w', 'הפרש מ' + w.lbl]);
+    if (it.a && it.a.note && NOTE_FOR(it.a) === 'claude' && !it.a.reply) out.push(['q', 'שאלה פתוחה לקלוד']);
+    if (Math.abs(it.val) < 0.005 && !it.miss) out.push(['zero', 'סכום 0']);
+    if (!out.length && c === 'o') out.push(['none', 'אין מקור להשוואה']);
+    return out;
+  }
+  const RSN = [['uk', 'לא משויך לשורה'], ['s', 'הפרש משונטל'], ['c', 'הפרש מקונפורטי'], ['k', 'הפרש מאשראי'], ['w', 'הפרש מבקרת שכר'], ['t', 'הפרש ממיסים מרו״ח'], ['lk', 'קיבוע גיול שונה'], ['sc', 'שונטל ≠ קונפורטי'], ['miss', 'חסר החודש'], ['chg', 'השתנה מאז הסימון'], ['zero', 'סכום 0'], ['q', 'שאלה פתוחה לקלוד'], ['none', 'אין מקור להשוואה']];
+  /* חומרה = כמה כסף בבעיה (ההפרש הגדול ביותר מכל מקור) */
+  function sev(it) {
+    if (it.uk) return Math.abs(ukAmt0(it) || 0);
+    const d = c => has(c) && c.st === 'diff' ? Math.abs(c.diff || 0) : 0;
+    let v = Math.max(d(it.s), d(it.c), d(it.k));
+    const L = has(it.s) ? lockOf(it, curM) : null; if (L && L.amt != null) v = Math.max(v, Math.abs(L.amt - it.s.raw));
+    const w = SAL(it.path); if (w) v = Math.max(v, Math.abs(w.amt - it.val));
+    if (it.miss) v = Math.max(v, Math.abs(it.prevV || 0));
+    if (it.changed && it.a) v = Math.max(v, Math.abs((it.a.val || 0) - it.val));
+    return v;
+  }
+  const amtOf = it => it.uk ? ukAmt0(it) : it.val;
+  function topic(it) { return bdShort(it); }
+  function catTxt(it) { if (it.uk) return ['s', 'c', 'k'].filter(k => it.uk[k] != null).map(k => UK[k]).join(' + '); if (it.sec === 'ספקים') { const p = String(it.grp).split(' › '); return p.length > 1 ? p[0] : 'קניות'; } return it.sec || ''; }
+  function matchQ(it, q) {
+    if (!q) return true;
+    if ((it.name + ' ' + (it.grp || '') + ' ' + topic(it)).includes(q)) return true;
+    const n = q.replace(/[,₪\s]/g, ''); if (!/^-?\d+(\.\d+)?$/.test(n)) return false;
+    const vs = [amtOf(it)]; if (!it.uk) [it.s, it.c, it.k].forEach(c => { if (has(c)) vs.push(c.raw); });
+    return vs.some(v => v != null && (Math.abs(Math.abs(v) - Math.abs(+n)) < 1 || Math.abs(v).toFixed(2).replace('.00', '').includes(n)));
+  }
+  let LAST = null;
+  function build() {
+    const U = universe(), q = (ui.aq || '').trim(), af = ui.aF || '';
+    const ukOn = !af || ['exp', 'kk', 'nosrc', 'anydiff'].includes(af);
+    const pass = it => (it.uk ? ukOn : (!af || !AFP[af] || AFP[af](it))) && matchQ(it, q)
+      && (!ui.au2T || topic(it) === ui.au2T) && (!ui.au2R || reasons(it, U.cat[it.path]).some(r => r[0] === ui.au2R));
+    const n = { r: 0, o: 0, g: 0, d: 0 }; U.all.forEach(it => { n[U.cat[it.path]]++; });
+    const st = ui.au2St || 'r';
+    const inMain = c => st === 'all' ? (c === 'r' || c === 'o') : st === 'g' ? (c === 'g' || c === 'd') : c === st;
+    const so = ui.au2S || 'sev';
+    const S = { sev: (a, b) => (U.cat[a.path] === U.cat[b.path] ? 0 : U.cat[a.path] === 'r' ? -1 : U.cat[b.path] === 'r' ? 1 : 0) || sev(b) - sev(a) || Math.abs(amtOf(b) || 0) - Math.abs(amtOf(a) || 0),
+      amt: (a, b) => Math.abs(amtOf(b) || 0) - Math.abs(amtOf(a) || 0), name: (a, b) => a.name.localeCompare(b.name, 'he'), ord: (a, b) => (a.uk ? -1 : a.ord || 0) - (b.uk ? -1 : b.ord || 0) };
+    const main = U.all.filter(it => inMain(U.cat[it.path]) && pass(it)).sort(S[so] || S.sev);
+    const okL = st === 'g' ? [] : U.all.filter(it => (U.cat[it.path] === 'g' || U.cat[it.path] === 'd') && pass(it)).sort((a, b) => (U.cat[a.path] === 'g' ? -1 : 1) - (U.cat[b.path] === 'g' ? -1 : 1) || a.name.localeCompare(b.name, 'he'));
+    /* «עבור לבא» בחלון הגדול ו«לאשר את כל הירוקות» — לפי הסדר שעל המסך, וכל השורות שלא סומנו נשארות ברשימה */
+    const vis = main.filter(it => U.cat[it.path] !== 'd').map(it => it.path);
+    AUD_ORDER = vis.concat(U.todo.map(it => it.path).filter(p => !vis.includes(p)));
+    const tot = U.all.length, nUk = U.all.filter(it => it.uk).length;
+    LAST = { U, main, okL, n, tot, nUk, st };
+    return LAST;
+  }
+
+  /* ---------- תצוגה ---------- */
+  const CHIP = { r: ['דורש טיפול', 'r'], o: ['ממתין להתאמה', 'o'], g: ['תקין — לאישור', 'g'], d: ['סומן תקין', 'd'] };
+  function rowHtml(it, c, selP) {
+    const rs = reasons(it, c), a = it.a || {}, sv = c === 'r' || c === 'o' ? sev(it) : 0;
+    const ico = (a.note ? `<span title="${esc(a.note)}">${NOTE_FOR(a) === 'me' ? '🙋' : '🤖'}</span>` : '') + (a.reply && !a.handled ? '<span title="יש תשובה מקלוד">💬</span>' : '') + (a.src ? `<span class="au2-src">${esc(a.src)}</span>` : '');
+    const chk = it.uk || c === 'd' ? '<td class="au2-ck"></td>' : `<td class="au2-ck"><input type="checkbox" data-au2sel="${esc(it.path)}"${(ui.au2Sel || {})[it.path] ? ' checked' : ''} aria-label="בחירה"></td>`;
+    const why = c === 'd' ? `<span class="au2-pill d">✓ סומן${a.at ? ' ' + new Date(a.at).toLocaleDateString('he-IL') : ''}</span>`
+      : c === 'g' ? '<span class="au2-pill g">כל המקורות תואמים</span>'
+      : `<span class="au2-pill ${c}" title="${esc(((sureInfo(it) || {}).bad || []).join(' · ') || rs.map(r => r[1]).join(' · '))}">${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</span>${rs.length > 1 ? `<span class="au2-more" title="${esc(rs.slice(1).map(r => r[1]).join(' · '))}">+${rs.length - 1}</span>` : ''}${sv >= 0.5 && !it.uk ? `<span class="au2-df">${ils(sv)}</span>` : ''}`;
+    return `<tr class="au2-r${selP === it.path ? ' sel' : ''}" data-au2="${esc(it.path)}">${chk}<td class="au2-nm"><b>${esc(it.name)}</b> ${ico}</td><td class="au2-am${(amtOf(it) || 0) < -0.5 ? ' neg' : ''}">${ils(amtOf(it))}</td><td class="au2-tp">${esc(topic(it))}<small>${esc(catTxt(it))}</small></td><td class="au2-why">${why}</td><td class="au2-go"><button class="au2-btn" data-au2open="${esc(it.path)}">בדיקה ‹</button></td></tr>`;
+  }
+  function srcBlock(it) {
+    const m = curM, rows = [];
+    if (it.uk) {
+      const o = it.uk;
+      if (o.s != null) rows.push(['שונטל', o.s, (o.docs || []).map(x => `<div class="au2-doc">${docLink(x)} ${esc(x[1] || '')} · ${dmy(x[2])} · ${ils(x[3])}</div>`).join('')]);
+      if (o.c != null) rows.push(['קונפורטי', o.c, `<div class="au2-doc">${esc([...new Set(o.src.c)].join(', '))}</div>`]);
+      if (o.k != null) rows.push(['אשראי', o.k, (o.lines || []).map(l => `<div class="au2-doc">${dmy(l.d)} · ${esc(l.n)} · ${ils(l.v)}</div>`).join('')]);
+      return rows;
+    }
+    const g = IDX.shontal[it.path], e = g && g.m[String(m)], inv = e ? e[1] : [];
+    const diffTxt = c => c.st === 'ok' ? '<span class="au2-ok">✓ תואם</span>' : `<span class="au2-bad">הפרש ${ils(c.diff)}</span>`;
+    if (has(it.s)) rows.push(['שונטל', it.s.raw, diffTxt(it.s) + (it.s.n > 1 ? `<div class="au2-doc">משותף ל-${it.s.n} שורות בדוח — ההשוואה על כולן יחד</div>` : '') + inv.slice(0, 8).map(d => `<div class="au2-doc">${d[8] ? docLink(d) : d[9] ? '☁️' : ''} ${esc(d[1] || '')} · ${dmy(d[2])} · ${ils(d[3])}${d[4] && d[4] !== 'חשבונית מס' ? ' · ' + esc(d[4]) : ''}</div>`).join('') + (inv.length > 8 ? `<div class="au2-doc">ועוד ${inv.length - 8}…</div>` : '')]);
+    const L = has(it.s) ? lockOf(it, m) : null;
+    if (L && L.amt != null) rows.push(['קיבוע גיול', L.amt, (Math.abs(L.amt - it.s.raw) <= 1 ? '<span class="au2-ok">✓ = החשבוניות</span>' : `<span class="au2-bad">שונה מהחשבוניות ב-${ils(L.amt - it.s.raw)}</span>`) + (L.ok ? ' · <span class="au2-ok">הגיול אושר</span>' : '')]);
+    if (has(it.c)) rows.push(['קונפורטי', it.c.raw, diffTxt(it.c)]);
+    if (it.k) rows.push(['אשראי', it.k.raw, diffTxt(it.k) + (it.k.list || []).slice(0, 6).map(l => `<div class="au2-doc">${dmy(l.d)} · ${esc(l.n)} · ${ils(l.v)}</div>`).join('')]);
+    const w = SAL(it.path); if (w) rows.push([w.lbl, w.amt, Math.abs(w.amt - it.val) <= 1 ? '<span class="au2-ok">✓ תואם</span>' : `<span class="au2-bad">הפרש ${ils(it.val - w.amt)}</span>`]);
+    return rows;
+  }
+  const pct = (a, b) => { a = Math.abs(a || 0); b = Math.abs(b || 0); return a > 0.5 && b > 0.5 ? Math.round(Math.min(a, b) * 100 / Math.max(a, b)) : null; };
+  /* הצעות: שורה רגילה — כל מקור שיש לו סכום (לבחירה ל«תיקון ורישום»); ספק לא משויך — השורות שהמערכת מציעה לשייך אליהן */
+  function sugs(it) {
+    const m = curM;
+    if (it.uk) {
+      const amt = ukAmt0(it), vr = vatR(), items = ukAI(m), by = {}; items.forEach(x => { by[x.path] = x; });
+      return ukSuggest(it.uk, m).map(c => { const x = by[c.path], net = /^rep:/.test(c.path), v = x ? x.val : null; return { key: c.path, lbl: c.name, sub: c.why.join(' · '), v, pc: v != null ? pct(net ? amt / vr : amt, v) : null, sure: c.sure }; });
+    }
+    if (!cellsOf(it.path)) return [];
+    const out = [];
+    ['s', 'c', 'k', 'w'].forEach(k => {
+      let v = null; try { v = srcVal(it, k, m); } catch (e) { }
+      if (v == null || Math.abs(v) < 0.005) return;
+      const kk = k === 'w' ? ((SAL(it.path) || {}).kind || 'w') : k;
+      out.push({ key: kk, lbl: PK_LBL[kk] || kk, sub: Math.abs(v - (it.val || 0)) <= 1 ? 'זהה לסכום ברווח והפסד' : `ברווח והפסד ${ils(it.val)} · הפרש ${ils((it.val || 0) - v)}`, v, pc: pct(v, it.val), same: Math.abs(v - (it.val || 0)) <= 1 });
+    });
+    return out.sort((a, b) => (b.pc || 0) - (a.pc || 0));
+  }
+  function panelHtml(it) {
+    if (!it || !LAST) return `<div class="au2-empty">בוחרים שורה מהרשימה כדי לראות את כל הפרטים</div>`;
+    const c = LAST.U.cat[it.path], m = curM, a = it.a || {}, si = it.uk ? null : sureInfo(it), rs = reasons(it, c);
+    const list = LAST.main, i = list.findIndex(x => x.path === it.path);
+    const nav = i >= 0 ? `<span class="au2-nav"><button data-au2nav="-1" title="הקודם"${i <= 0 ? ' disabled' : ''}>›</button><span><b>${i + 1}</b> מתוך ${list.length}</span><button data-au2nav="1" title="הבא"${i >= list.length - 1 ? ' disabled' : ''}>‹</button></span>` : '';
+    let h = `<div class="au2-ph"><div class="au2-pt"><b>${esc(it.name)}</b> <span class="au2-chip ${CHIP[c][1]}">${CHIP[c][0]}</span><div class="au2-ps">${esc(topic(it))} · ${esc(catTxt(it))} · ${M[m]}${it.uk ? '' : ' · ' + esc(it.basis || '')}</div></div>${nav}<button class="au2-x" data-au2close title="סגירה">✕</button></div>`;
+    /* הודעה */
+    if (c === 'r' || c === 'o') {
+      const why = it.uk ? `מופיע ב${['s', 'c', 'k'].filter(k => it.uk[k] != null).map(k => UK[k]).join(' וב')} — ואין לו שורה ברווח והפסד.` : ((si && si.bad.length ? si.bad : si ? si.info : []).join(' · ') || 'אין מקור שאפשר להשוות אליו.');
+      h += `<div class="au2-al ${c}"><b>${c === 'r' ? '⚠' : '⏱'} ${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</b><div>${esc(why)}</div></div>`;
+    } else h += `<div class="au2-al g"><b>✓ ${c === 'd' ? 'סומן תקין' + (a.at ? ' · ' + new Date(a.at).toLocaleString('he-IL') : '') : 'כל המקורות תואמים — אפשר לאשר'}</b>${si && si.good.length ? `<div>${esc(si.good.join(' · '))}</div>` : ''}</div>`;
+    /* זה לצד זה */
+    const raw = it.uk ? null : (cellsOf(it.path) || [])[m], fx = raw !== null && raw !== undefined && raw !== '' && PL.isFormula(raw) ? rawShow(raw) : '';
+    const left = it.uk ? `<div class="au2-kv"><span>סכום</span><b>—</b></div><div class="au2-kv"><span>שורה</span><b>אין שורה ברווח והפסד</b></div>`
+      : `<div class="au2-kv"><span>סכום</span><b class="au2-big">${ils(it.val)}</b></div>${fx ? `<div class="au2-kv"><span>בתא</span><b dir="ltr">${esc(fx)}</b></div>` : ''}<div class="au2-kv"><span>נושא</span><b>${esc(topic(it))}</b></div><div class="au2-kv"><span>מיקום</span><b>${esc(catTxt(it))}</b></div>${a.src ? `<div class="au2-kv"><span>מקור שנבחר</span><b>${esc(a.src)}</b></div>` : ''}`;
+    const R = srcBlock(it);
+    const right = R.length ? R.map(r => `<div class="au2-sr"><div class="au2-kv"><span>${esc(r[0])}</span><b class="au2-big">${ils(r[1])}</b></div>${r[2] ? `<div class="au2-sd">${r[2]}</div>` : ''}</div>`).join('') : '<div class="au2-none">אין נתון באף מקור לחודש הזה</div>';
+    const best = sugs(it), dff = !it.uk && best.length ? r2((it.val || 0) - best[0].v) : null;
+    h += `<div class="au2-cmp"><div class="au2-cd"><div class="au2-ch">🧾 ברווח והפסד (המערכת)</div>${left}</div><div class="au2-mid">⇄${dff != null && Math.abs(dff) > 0.5 ? `<small>הפרש<br><b>${ils(dff)}</b></small>` : ''}</div><div class="au2-cd"><div class="au2-ch">📄 נתוני המקור (שונטל · קונפורטי · אשראי)</div>${right}</div></div>`;
+    /* הצעות */
+    const pk = (ui.au2Pick || {})[it.path], sel = best.find(s => s.key === pk) || (it.uk ? best.find(s => s.sure) : best[0]);
+    if (best.length) h += `<div class="au2-sg"><div class="au2-sh">✦ ${it.uk ? 'הצעות שיוך אוטומטיות' : 'סכום לפי מקור'} (${best.length})</div>${best.map(s => `<label class="au2-so${sel && sel.key === s.key ? ' on' : ''}"><input type="radio" name="au2pk" value="${esc(s.key)}"${sel && sel.key === s.key ? ' checked' : ''}><span class="au2-sl"><b>${esc(s.lbl)}</b><small>${esc(s.sub)}</small></span><span class="au2-sv">${s.v != null ? ils(s.v) : ''}</span>${s.pc != null ? `<span class="au2-pc${s.pc >= 95 ? ' hi' : ''}" title="התאמת סכום: הקטן מתוך הגדול">${s.pc}% התאמה</span>` : (it.uk ? '<span class="au2-pc">שם דומה</span>' : '')}</label>`).join('')}</div>`;
+    else if (it.uk) h += `<div class="au2-sg"><div class="au2-sh">✦ הצעות שיוך</div><div class="au2-none">לא נמצאה שורה עם שם דומה או סכום תואם</div></div>`;
+    /* הערה */
+    h += `<div class="au2-nt"><div class="au2-sh">הערה לבדיקה ${a.note ? `<small>${NOTE_FOR(a) === 'me' ? '🙋 לעצמי' : '🤖 לבדיקת קלוד'}</small>` : ''}</div><textarea class="au2-note" data-p="${esc(it.path)}" rows="2" placeholder="הוסיפי הערה…">${esc(a.note || '')}</textarea>${a.reply ? `<div class="au2-rep">${a.handled ? '✅ טופל · ' : '💬 '}<b>קלוד:</b> ${esc(a.reply)}</div>` : ''}</div>`;
+    /* פעולות — כולן פעולות קיימות */
+    const P = esc(it.path); let acts = '';
+    if (it.uk) {
+      if (a.ok) acts = `<button class="au2-b" data-act="ukUn" data-p="${P}">↩ החזרה לבדיקה</button>`;
+      else acts = (sel ? `<button class="au2-b pri" data-au2map="${esc(sel.key)}" title="משייך את הספק לשורה «${esc(sel.lbl)}» — נשמר לכל החודשים">✓ אישור התאמה</button>` : `<button class="au2-b pri" disabled title="${best.length ? 'בוחרים הצעה מהרשימה (אין הצעה בטוחה)' : 'אין הצעה — אפשר «⋯» ושם «כבר רשום בשורה אחרת»'}">✓ אישור התאמה</button>`)
+        + `<button class="au2-b" data-act="ukNew" data-k="${esc(it.uk.key)}" title="נפתחת שורת ספק חדשה בקניות עם הסכום של החודש">✎ רישום כספק חדש</button>`
+        + `<button class="au2-b rej" data-act="ukOk" data-p="${P}" title="לא שייך לרווח והפסד בחודש הזה (ב«⋯» אפשר לבחור «תמיד»)">✕ דחייה</button>`;
+    } else if (c === 'd') acts = `<button class="au2-b" data-act="audUn" data-p="${P}">↩ החזרה לבדיקה</button>`;
+    else {
+      const cs = cellsOf(it.path), fixOk = cs && sel && !sel.same;
+      acts = `<button class="au2-b pri" data-act="audOkRow" data-p="${P}" title="מסמן שהסכום ברווח והפסד (${ils(it.val)}) נכון">✓ אישור התאמה</button>`
+        + (fixOk ? `<button class="au2-b" data-act="audPick" data-k="${esc(sel.key)}" data-p="${P}" data-v="${sel.v}" title="כותב ${ils(sel.v)} ברווח והפסד (לפי ${esc(sel.lbl)}) ומסמן תקין">✎ תיקון ורישום ${ils(sel.v)}</button>` : `<button class="au2-b" data-act="audOpen" data-p="${P}" title="פותח את החלון המלא — שם עורכים את הסכום בכל חודש">✎ תיקון ורישום</button>`)
+        + (/^p:/.test(it.path) ? `<button class="au2-b rej" data-act="rowNotPL" data-p="${P}" title="למשל ספק שהוא בעצם שכר — רק אם אין בשורה סכום באף חודש">✕ דחייה</button>` : '');
+    }
+    h += `<div class="au2-act">${acts}<button class="au2-b dots" data-act="audOpen" data-p="${P}" title="החלון המלא: חודשים קודמים, חשבוניות, גיול, הערה לחודש ועוד">⋯</button></div>`;
+    return h;
+  }
+  function selPath(B) {
+    const ok = p => p && B.U.all.some(x => x.path === p);
+    if (!ok(ui.au2P)) ui.au2P = ui.au2Closed ? null : (B.main[0] || {}).path || null;
+    return ui.au2P;
+  }
+  vAudit = function () {
+    if (ui.aView === 'table') { const h0 = _base(); return h0.replace('data-v="board">🗂 לוח', 'data-v="board">✨ מסך עבודה'); }
+    try { return au2View(); } catch (err) { console.error('au2', err); return _base(); }   /* תקלה — חוזרים ללוח הקודם */
+  };
+  function au2View() {
+    const B = build(), n = B.n, tot = B.tot, P = x => tot ? Math.round(x * 1000 / tot) / 10 : 0, okN = n.g + n.d;
+    const sp = selPath(B), selIt = sp ? B.U.all.find(x => x.path === sp) : null;
+    const tps = [...new Set(B.U.all.map(topic))].sort((a, b) => a.localeCompare(b, 'he'));
+    const st = B.st, opt = (v, l, cur) => `<option value="${esc(v)}"${cur === v ? ' selected' : ''}>${esc(l)}</option>`;
+    const hidN = typeof ukHidden === 'function' ? ukHidden().length : 0;
+    const selN = Object.keys(ui.au2Sel || {}).filter(p => ui.au2Sel[p]).length;
+    let h = `<div class="au2"><div class="au2-top"><div><h1>בדיקת שורה-שורה</h1><div class="au2-sub">התאמת ההוצאות ברווח והפסד מול שונטל, קונפורטי, אשראי ובקרת השכר${EXT.shontal && EXT.shontal.asOf ? ' · שונטל נכון ל-' + esc(EXT.shontal.asOf) : ''}</div></div><div class="au2-tools">${monthPicker()}<button class="au2-b sm" data-act="bdView" data-v="table" title="התצוגה הקודמת — טבלה מלאה עם כל המקורות">☰ טבלה מלאה</button></div></div>`;
+    h += `<div class="au2-kpis"><div class="au2-k t"><span>סה"כ בבדיקה</span><b>${tot}</b><small title="«שורות בדוח» = מה שנספר עד היום ב«נבדקו X מתוך…». ספק לא משויך = מופיע בשונטל/קונפורטי/אשראי ואין לו שורה">${tot - B.nUk} שורות בדוח + ${B.nUk} ספקים לא משויכים · סומנו ${n.d}</small><i class="au2-bar"><i style="width:${P(n.d)}%"></i></i></div>
+      <button class="au2-k r${st === 'r' ? ' on' : ''}" data-au2st="r"><span>⚠ דורשות טיפול</span><b>${n.r}</b><small>${P(n.r)}% · הפרש, אזהרה או ספק לא משויך</small></button>
+      <button class="au2-k o${st === 'o' ? ' on' : ''}" data-au2st="o"><span>⏱ ממתינות להתאמה</span><b>${n.o}</b><small>${P(n.o)}% · אין מקור להשוואה או סכום 0</small></button>
+      <button class="au2-k g${st === 'g' ? ' on' : ''}" data-au2st="g"><span>✓ תקינות</span><b>${okN}</b><small>${P(okN)}% · ${n.g} לאישור · ${n.d} סומנו</small></button></div>`;
+    h += `<div class="au2-grid${selIt ? '' : ' nopn'}"><div class="au2-list"><div class="au2-f">
+      <input class="search" id="aq" placeholder="🔍 חיפוש ספק או סכום…" value="${esc(ui.aq || '')}">
+      <select id="au2R" class="au2-sel"><option value="">סיבת הבדיקה</option>${RSN.map(r => opt(r[0], r[1], ui.au2R || '')).join('')}</select>
+      <select id="au2T" class="au2-sel"><option value="">נושא</option>${tps.map(t => opt(t, t, ui.au2T || '')).join('')}</select>
+      <select id="au2St" class="au2-sel">${opt('r', 'סטטוס: דורשות טיפול', st)}${opt('o', 'סטטוס: ממתינות להתאמה', st)}${opt('all', 'סטטוס: כל מה שפתוח', st)}${opt('g', 'סטטוס: תקינות', st)}</select>
+      <select id="au2S" class="au2-sel">${opt('sev', 'מיון: חומרה (ההפרש הגדול למעלה)', ui.au2S || 'sev')}${opt('amt', 'מיון: סכום', ui.au2S || 'sev')}${opt('name', 'מיון: שם', ui.au2S || 'sev')}${opt('ord', 'מיון: סדר הדוח', ui.au2S || 'sev')}</select></div>
+      <div class="au2-f2"><span class="au2-tabs"><button class="r${st === 'r' ? ' on' : ''}" data-au2st="r">⚠ דורשות טיפול (${n.r})</button><button class="o${st === 'o' ? ' on' : ''}" data-au2st="o">⏱ ממתינות להתאמה (${n.o})</button><button class="a${st === 'all' ? ' on' : ''}" data-au2st="all">כל הפתוחות (${n.r + n.o})</button><button class="g${st === 'g' ? ' on' : ''}" data-au2st="g">✓ תקינות (${okN})</button></span>
+      <span class="au2-sp"></span><label class="small" title="ברירת מחדל: רק שורות הגיוניות — יש סכום החודש, היה סכום בחודש הקודם, או הפרש"><input type="checkbox" id="aAll"${ui.aAll ? ' checked' : ''}> גם שורות 0</label>
+      <select class="au2-sel sm" id="aF" title="סינון נוסף">${opt('', 'הצגה: הכל', ui.aF || '')}${opt('ncl', '🤖 הערות לבדיקת קלוד', ui.aF || '')}${opt('nme', '🙋 הערות לעצמי', ui.aF || '')}${opt('note', 'רק עם הערה', ui.aF || '')}${opt('anydiff', 'רק עם הפרש (מכל מקור)', ui.aF || '')}${opt('exp', 'רק הוצאות', ui.aF || '')}${opt('nosrc', 'הוצאות בלי מקור שנבחר', ui.aF || '')}${CC ? opt('kk', 'רק עם אשראי', ui.aF || '') : ''}</select>
+      ${hidN ? `<button class="au2-b sm" data-act="ukHidList" title="ספקים שסימנת «לא נכנס — תמיד»">🙈 ${hidN} מוסתרים</button>` : ''}</div>`;
+    if (selN) h += `<div class="au2-bulk"><b>${selN} נבחרו</b><button class="au2-b pri sm" data-au2bulk>✓ לסמן תקין את כל ${selN}</button><button class="au2-b sm" data-au2clr>ניקוי בחירה</button></div>`;
+    const head = `<thead><tr><th class="au2-ck"><input type="checkbox" data-au2all title="בחירת כל השורות ברשימה" aria-label="בחירת הכל"></th><th>ספק</th><th class="au2-amh">סכום</th><th>נושא / קטגוריה</th><th>סיבת הבדיקה</th><th>פעולה</th></tr></thead>`;
+    h += `<table class="au2-t">${head}<tbody>${B.main.map(it => rowHtml(it, B.U.cat[it.path], sp)).join('') || `<tr><td colspan="6" class="au2-none">${(ui.aq || ui.au2T || ui.au2R || ui.aF) ? 'אין שורות שמתאימות לחיפוש / לסינון' : 'אין כאן שורות 🎉'}</td></tr>`}</tbody></table>`;
+    if (st !== 'g') {
+      const gN = B.okL.filter(it => B.U.cat[it.path] === 'g').length;
+      h += `<details class="au2-ok"${ui.au2GO ? ' open' : ''} id="au2G"><summary><span class="au2-okc">✓</span><b>שורות תקינות (${B.okL.length})</b><small>${gN} תואמות בכל המקורות — ממתינות לאישור · ${B.okL.length - gN} כבר סומנו</small><span class="au2-sp"></span>${gN ? `<button class="au2-b g sm" data-act="audOkAllSure" title="מסמן תקין את כל השורות שכל המקורות שלהן תואמים">✓ לאשר את כל ${gN} התואמות</button>` : ''}</summary>
+        <table class="au2-t">${head}<tbody>${B.okL.map(it => rowHtml(it, B.U.cat[it.path], sp)).join('') || '<tr><td colspan="6" class="au2-none">אין</td></tr>'}</tbody></table></details>`;
+    }
+    h += `</div>${selIt ? `<aside class="au2-pn" id="au2Pn" data-cur="${esc(sp)}">${panelHtml(selIt)}</aside>` : ''}</div></div>`;
+    return h;
+  }
+  function repaintPanel() {
+    const pn = document.getElementById('au2Pn'); if (!pn || !LAST) { render(); return; }
+    const it = LAST.U.all.find(x => x.path === ui.au2P); if (!it) { render(); return; }
+    pn.innerHTML = panelHtml(it); pn.dataset.cur = it.path;
+    document.querySelectorAll('.au2 tr.au2-r').forEach(tr => tr.classList.toggle('sel', tr.dataset.au2 === ui.au2P));
+  }
+  function nextAfter(p) { if (!LAST) return null; const L = LAST.main, i = L.findIndex(x => x.path === p); return i < 0 ? null : (L[i + 1] || L[i - 1] || {}).path || null; }
+  /* בחירה, ניווט, סינונים */
+  document.addEventListener('click', e => {
+    if (!e.target.closest || !e.target.closest('.au2')) return;
+    const t = e.target;
+    const st = t.closest('[data-au2st]'); if (st) { ui.au2St = st.dataset.au2st; ui.au2P = null; ui.au2Closed = false; render(); return; }
+    const nv = t.closest('[data-au2nav]'); if (nv && LAST) { const L = LAST.main, i = L.findIndex(x => x.path === ui.au2P), j = i + (+nv.dataset.au2nav); if (L[j]) { ui.au2P = L[j].path; repaintPanel(); const tr = document.querySelector(`.au2 tr[data-au2="${CSS.escape(ui.au2P)}"]`); if (tr) tr.scrollIntoView({ block: 'nearest' }); } return; }
+    if (t.closest('[data-au2close]')) { ui.au2P = null; ui.au2Closed = true; render(); return; }
+    if (t.closest('[data-au2clr]')) { ui.au2Sel = {}; render(); return; }
+    const op = t.closest('[data-au2open]'); if (op) { ui.au2P = op.dataset.au2open; ui.au2Closed = false; document.querySelector('.au2-grid.nopn') ? render() : repaintPanel(); return; }
+    if (t.closest('input,button,a,select,textarea,label,summary')) return;
+    const tr = t.closest('tr.au2-r'); if (tr) { ui.au2P = tr.dataset.au2; ui.au2Closed = false; document.querySelector('.au2-grid.nopn') ? render() : repaintPanel(); }
+  });
+  document.addEventListener('change', e => {
+    const t = e.target; if (!t.closest || !t.closest('.au2')) return;
+    if (t.id === 'au2R') { ui.au2R = t.value; render(); } else if (t.id === 'au2T') { ui.au2T = t.value; render(); }
+    else if (t.id === 'au2St') { ui.au2St = t.value; ui.au2P = null; render(); } else if (t.id === 'au2S') { ui.au2S = t.value; render(); }
+    else if (t.dataset.au2sel) { ui.au2Sel = ui.au2Sel || {}; ui.au2Sel[t.dataset.au2sel] = t.checked; render(); }
+    else if (t.hasAttribute('data-au2all')) { ui.au2Sel = ui.au2Sel || {}; t.closest('table').querySelectorAll('[data-au2sel]').forEach(c => { ui.au2Sel[c.dataset.au2sel] = t.checked; }); render(); }
+    else if (t.name === 'au2pk') { ui.au2Pick = ui.au2Pick || {}; ui.au2Pick[ui.au2P] = t.value; repaintPanel(); }
+  });
+  /* הערה מהחלונית — נשמרת כמו בחלון הגדול (saveModalNote), בלי לצייר מחדש, כדי שלחיצה על כפתור אחרי הקלדה לא תלך לאיבוד */
+  function saveNote(t) {
+    const p = t.dataset.p, v = t.value.trim(), m = curM, old = (audGet(m, p) || {}).note || ''; if (v === old || RO) return;
+    const it = AUD_ROWS[p], desc = `בדיקה › ${M[m]} › ${it ? it.name : p}: הערה «${v || 'נמחקה'}»`;
+    undoStack.push({ s: snap(), d: desc }); redoStack = [];
+    D.audit = D.audit || {}; D.audit[m] = D.audit[m] || {};
+    D.audit[m][p] = Object.assign({}, D.audit[m][p] || {}, { note: v, u: new Date().toISOString() });
+    if (it) it.a = D.audit[m][p];
+    logAdd(desc); dirty = true; persist(); audSave(); renderStatus();
+  }
+  document.addEventListener('change', e => { if (e.target.classList && e.target.classList.contains('au2-note')) saveNote(e.target); }, true);
+  window.addEventListener('mousedown', e => { const a = document.activeElement; if (a && a.classList && a.classList.contains('au2-note') && e.target !== a) saveNote(a); }, true);
+  document.addEventListener('toggle', e => { if (e.target.id === 'au2G') ui.au2GO = e.target.open; }, true);
+  /* אחרי פעולה בחלונית — עוברים לשורה הבאה ברשימה (לפני שהפעולה הקיימת רצה ומציירת מחדש) */
+  window.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('#au2Pn [data-act="audOkRow"],#au2Pn [data-act="audPick"],#au2Pn [data-act="ukOk"],#au2Pn [data-au2map]');
+    if (!b || RO || b.disabled) return;
+    const nx = nextAfter(ui.au2P); if (nx) ui.au2P = nx;
+  }, true);
+  /* אישור התאמה לספק לא משויך = «✓ כן, לחבר לשם» הקיים (ukMapTo) */
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-au2map]'); if (!b || RO) return;
+    const pn = b.closest('#au2Pn'), cur = pn && pn.dataset.cur, it = LAST && LAST.U.all.find(x => x.uk && x.path === cur);
+    if (!it) return; const o = it.uk;
+    ukMapTo(o, b.dataset.au2map); render(); toast('שויך — נשמר לכל החודשים');
+  });
+  /* סימון מרובה — אותה כתיבה בדיוק כמו «✓ לאשר את כל הירוקות» */
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-au2bulk]'); if (!b || RO) return;
+    const m = curM, at = new Date().toISOString(), sel = ui.au2Sel || {};
+    const L = Object.keys(sel).filter(p => sel[p]).map(p => AUD_ROWS[p]).filter(it => it && !it.uk && !it.done);
+    if (!L.length) { ui.au2Sel = {}; render(); return; }
+    if (!confirm(`לסמן ${L.length} שורות כתקינות?`)) return;
+    commit(L.length === 1 ? `בדיקה › ${M[m]} › ${L[0].name}: סומן תקין (₪${nf2.format(L[0].val)})` : `בדיקה › ${M[m]}: ${L.length} שורות שנבחרו סומנו תקין`, () => {
+      D.audit = D.audit || {}; D.audit[m] = D.audit[m] || {};
+      L.forEach(it => { const o = D.audit[m][it.path] || {}; D.audit[m][it.path] = Object.assign({}, o, { ok: 1, at, val: it.val, src: o.src || sureSrc(it), u: at }); });
+    });
+    audSave(); ui.au2Sel = {}; render();
+  });
+
+  document.head.insertAdjacentHTML('beforeend', `<style id="au2Css">
+.au2{--ap:#6d28d9;--ap2:#5b21b6;--aps:#f4f0ff;--apl:#e7e0f7;--ar:#b42318;--ars:#fdeeec;--ao:#b45309;--aos:#fff4e5;--ag:#15803d;--ags:#ecf8ef;--al:#ebe7f3;color:#1f1a2e}
+.au2-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:2px 0 12px}.au2-top h1{margin:0;font-size:22px;font-weight:800;color:#1f1a2e}.au2-sub{font-size:13px;color:#6b6480;margin-top:2px}
+.au2-tools{display:flex;gap:8px;align-items:center}
+.au2-kpis{display:grid;grid-template-columns:1.1fr repeat(3,1fr);gap:10px;margin-bottom:12px}
+.au2-k{display:flex;flex-direction:column;gap:2px;text-align:right;border:1px solid var(--al);border-radius:12px;padding:10px 14px;background:#fff;font:inherit;color:inherit;min-width:0}
+button.au2-k{cursor:pointer}button.au2-k:hover{box-shadow:0 2px 8px rgba(80,50,140,.10)}
+.au2-k span{font-size:13.5px;font-weight:700}.au2-k b{font-size:28px;line-height:1.15;font-variant-numeric:tabular-nums}.au2-k small{font-size:12px;color:#6b6480}
+.au2-k.r{background:var(--ars);border-color:#f6cfc9}.au2-k.r span,.au2-k.r b{color:var(--ar)}
+.au2-k.o{background:var(--aos);border-color:#f5d9ae}.au2-k.o span,.au2-k.o b{color:var(--ao)}
+.au2-k.g{background:var(--ags);border-color:#bfe3c8}.au2-k.g span,.au2-k.g b{color:var(--ag)}
+.au2-k.on{box-shadow:inset 0 0 0 2px currentColor}.au2-k.r.on{box-shadow:inset 0 0 0 2px var(--ar)}.au2-k.o.on{box-shadow:inset 0 0 0 2px var(--ao)}.au2-k.g.on{box-shadow:inset 0 0 0 2px var(--ag)}
+.au2-bar{display:block;height:5px;background:var(--apl);border-radius:4px;margin-top:5px;overflow:hidden}.au2-bar i{display:block;height:100%;background:var(--ap)}
+.au2-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(440px,520px);gap:12px;align-items:start}.au2-grid.nopn{grid-template-columns:minmax(0,1fr)}
+@media(max-width:1180px){.au2-grid{grid-template-columns:1fr}.au2-kpis{grid-template-columns:1fr 1fr}}
+.au2-list{background:#fff;border:1px solid var(--al);border-radius:12px;padding:10px 12px;min-width:0}
+.au2-f{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.au2-f .search{flex:1 1 220px;min-width:180px;border:1px solid var(--al);border-radius:9px;padding:7px 10px;font:inherit}
+.au2-sel{border:1px solid var(--al);border-radius:9px;padding:6px 8px;font:inherit;font-size:13.5px;background:#fff;color:inherit;max-width:240px}.au2-sel.sm{font-size:12.5px;padding:4px 6px}
+.au2-f2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 8px}.au2-sp{flex:1}
+.au2-tabs{display:inline-flex;gap:6px;flex-wrap:wrap}.au2-tabs button{border:1px solid var(--al);background:#fff;border-radius:9px;padding:5px 12px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
+.au2-tabs button.r{color:var(--ar)}.au2-tabs button.o{color:var(--ao)}.au2-tabs button.g{color:var(--ag)}.au2-tabs button.a{color:var(--ap2)}
+.au2-tabs button.on{background:var(--ap);border-color:var(--ap);color:#fff}
+.au2-bulk{display:flex;gap:8px;align-items:center;background:var(--aps);border:1px solid var(--apl);border-radius:9px;padding:6px 10px;margin-bottom:8px;font-size:13.5px}
+table.au2-t{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
+table.au2-t th{position:sticky;top:var(--audTop,0px);z-index:2;background:#f7f5fc;color:#5d5675;font-size:12.5px;font-weight:700;text-align:right;padding:7px 8px;border-bottom:1px solid var(--al)}
+table.au2-t td{padding:6px 8px;border-bottom:1px solid #f0edf6;vertical-align:middle;text-align:right;background:#fff}
+tr.au2-r{cursor:pointer}tr.au2-r:hover td{background:#faf8ff}tr.au2-r.sel td{background:var(--aps)}tr.au2-r.sel td:first-child{box-shadow:inset -3px 0 0 var(--ap)}
+.au2-ck{width:26px;text-align:center!important}.au2-nm b{font-weight:700}.au2-nm span{font-size:12px;margin-inline-start:2px}
+.au2-src{font-size:11px;background:var(--aps);color:var(--ap2);border-radius:7px;padding:0 6px}
+.au2-am,.au2-amh{direction:ltr;text-align:left!important;white-space:nowrap;font-variant-numeric:tabular-nums}.au2-am{font-weight:700}.au2-am.neg{color:var(--ar)}
+.au2-tp{font-size:13px}.au2-tp small{display:block;font-size:11.5px;color:#8a83a0}
+.au2-why{white-space:nowrap}.au2-pill{display:inline-block;font-size:12px;font-weight:600;border-radius:12px;padding:2px 9px}
+.au2-pill.r{background:var(--ars);color:var(--ar)}.au2-pill.o{background:var(--aos);color:var(--ao)}.au2-pill.g{background:var(--ags);color:var(--ag)}.au2-pill.d{background:#f1f0f4;color:#5d5675}
+.au2-more{font-size:11px;color:#6b6480;margin-inline-start:4px}.au2-df{display:inline-block;direction:ltr;font-size:11.5px;color:var(--ar);margin-inline-start:6px;font-variant-numeric:tabular-nums}
+.au2-go{width:84px}.au2-btn{border:1px solid var(--apl);background:#fff;color:var(--ap2);border-radius:8px;padding:3px 10px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}.au2-btn:hover{background:var(--ap);color:#fff;border-color:var(--ap)}
+.au2-none{color:#8a83a0;font-size:13px;padding:10px;text-align:center}
+details.au2-ok{margin-top:12px;border:1px solid #cfe9d6;background:var(--ags);border-radius:12px;padding:0}
+details.au2-ok>summary{display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 12px;list-style:none}details.au2-ok>summary::-webkit-details-marker{display:none}
+details.au2-ok>summary::after{content:'▾';color:var(--ag);font-size:14px}details.au2-ok[open]>summary::after{content:'▴'}
+details.au2-ok summary b{color:var(--ag)}details.au2-ok summary small{color:#4a6b55;font-size:12px}
+.au2-okc{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ag);color:#fff;font-weight:800;font-size:13px}
+details.au2-ok table.au2-t{background:#fff;border-radius:0 0 12px 12px}
+.au2-b{border:1px solid var(--apl);background:#fff;color:var(--ap2);border-radius:9px;padding:7px 14px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.au2-b:hover{background:var(--aps)}.au2-b.sm{padding:4px 10px;font-size:12.5px}.au2-b.pri{background:var(--ap);border-color:var(--ap);color:#fff}.au2-b.pri:hover{background:var(--ap2)}
+.au2-b.g{background:var(--ag);border-color:var(--ag);color:#fff}.au2-b.rej{color:var(--ar);border-color:#f2c6bf}.au2-b.rej:hover{background:var(--ars)}.au2-b[disabled]{opacity:.45;cursor:not-allowed}.au2-b.dots{padding:7px 12px;color:#5d5675}
+.au2-pn{position:sticky;top:calc(var(--audTop,0px) + 8px);max-height:calc(100vh - var(--audTop,0px) - 16px);overflow:auto;background:#fff;border:1px solid var(--al);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.au2-empty{color:#8a83a0;text-align:center;padding:30px 10px}
+.au2-ph{display:flex;align-items:flex-start;gap:8px}.au2-pt{flex:1;min-width:0}.au2-pt>b{font-size:18px}.au2-ps{font-size:12.5px;color:#6b6480;margin-top:2px}
+.au2-chip{font-size:12px;font-weight:700;border-radius:12px;padding:2px 9px;vertical-align:3px}.au2-chip.r{background:var(--ars);color:var(--ar)}.au2-chip.o{background:var(--aos);color:var(--ao)}.au2-chip.g{background:var(--ags);color:var(--ag)}.au2-chip.d{background:#f1f0f4;color:#5d5675}
+.au2-nav{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:#5d5675;white-space:nowrap}.au2-nav button,.au2-x{border:1px solid var(--al);background:#fff;border-radius:50%;width:26px;height:26px;cursor:pointer;font:inherit;line-height:1;color:#5d5675}.au2-nav button[disabled]{opacity:.35;cursor:default}
+.au2-x{border:0;font-size:16px}
+.au2-al{border-radius:10px;padding:9px 12px;font-size:13px;border:1px solid}.au2-al b{display:block;font-size:14.5px;margin-bottom:2px}
+.au2-al.r{background:var(--ars);border-color:#f6cfc9;color:#7a271a}.au2-al.r b{color:var(--ar)}.au2-al.o{background:var(--aos);border-color:#f5d9ae;color:#7a4a0c}.au2-al.o b{color:var(--ao)}.au2-al.g{background:var(--ags);border-color:#bfe3c8;color:#24573a}.au2-al.g b{color:var(--ag)}
+.au2-cmp{display:grid;grid-template-columns:1fr 34px 1fr;gap:6px;align-items:stretch}
+.au2-cd{border:1px solid var(--al);border-radius:10px;padding:8px 10px;min-width:0}.au2-ch{font-size:12.5px;font-weight:800;color:#3b3352;margin-bottom:6px}
+.au2-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ap);font-size:18px;text-align:center}.au2-mid small{font-size:10.5px;color:var(--ar);line-height:1.3}.au2-mid small b{direction:ltr;display:inline-block}
+.au2-kv{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:3px 0;border-bottom:1px dashed #efebf6}.au2-kv span{color:#7a7390}.au2-kv b{font-weight:600;text-align:left;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.au2-big{font-size:15px;font-weight:800!important;direction:ltr;font-variant-numeric:tabular-nums}
+.au2-sr{padding-bottom:4px}.au2-sd{font-size:12px;color:#5d5675;padding:2px 0 0}.au2-doc{font-size:11.5px;color:#6b6480}.au2-doc a{text-decoration:none}
+.au2-ok{color:var(--ag);font-weight:600}.au2-bad{color:var(--ar);font-weight:700}
+.au2-sg,.au2-nt{border:1px solid var(--al);border-radius:10px;padding:8px 10px}.au2-sh{font-size:13px;font-weight:800;color:#3b3352;margin-bottom:6px}.au2-sh small{font-weight:600;color:#6b6480;margin-inline-start:6px}
+.au2-so{display:flex;align-items:center;gap:8px;border:1px solid #efebf6;border-radius:9px;padding:6px 8px;margin-top:5px;cursor:pointer}.au2-so.on{border-color:var(--ap);background:var(--aps)}.au2-so input{accent-color:var(--ap)}
+.au2-sl{flex:1;min-width:0;display:flex;flex-direction:column}.au2-sl small{font-size:11.5px;color:#6b6480}.au2-sv{direction:ltr;font-weight:700;font-variant-numeric:tabular-nums;font-size:13px}
+.au2-pc{font-size:11.5px;font-weight:700;border-radius:10px;padding:1px 8px;background:#f1f0f4;color:#5d5675;white-space:nowrap}.au2-pc.hi{background:var(--ags);color:var(--ag)}
+.au2-nt textarea{width:100%;box-sizing:border-box;border:1px solid var(--al);border-radius:8px;padding:6px 9px;font:inherit;font-size:13px;resize:vertical}
+.au2-rep{font-size:12.5px;background:#f2f7fb;border-radius:8px;padding:6px 8px;margin-top:6px}
+.au2-act{display:flex;gap:8px;flex-wrap:wrap;position:sticky;bottom:-12px;background:#fff;padding:8px 0 2px;border-top:1px solid #f0edf6}
+.ro .au2-act,.ro .au2-ck,.ro .au2-bulk,.ro [data-act="audOkAllSure"]{display:none!important}
+</style>`);
+})();
+</script>
 <script type="text/plain" id="estJs">
 /* 🟨 צפוי / לא בטוח — נוסף מהענן (pnl/index.html, estJs) */
 document.head.insertAdjacentHTML('beforeend', '<style id="estCss">table td.ed.est,body table.g td.ed.est{background:#ffe27a!important;box-shadow:inset 0 0 0 2px #e0a800!important}' +
@@ -575,6 +943,9 @@ function useLook(){ try{ return localStorage.getItem('pnl-look')!=='plain'; }cat
 function patch(html){
   PATCHES.forEach(function(p){ var n=html.split(p[0]).length-1; if(n!==1) throw new Error('הקוד של המערכת השתנה ולא מתאים לענן ('+p[0].slice(0,30)+'…, '+n+'). לא נפתח לעריכה כדי לא לאבד שינויים.'); html=html.replace(p[0],p[1]); });
   SOFT.forEach(function(p){ html=html.split(p[0]).join(p[1]); });
+  /* ✨ בדיקה שורה-שורה — מסך עבודה (איילת 22.11.2026): נכנס לסוף הבלוק הראשי של המערכת (אותו מקום בכל 5 המערכות).
+     לא נמצא בדיוק פעם אחת — מדלגים, והלשונית נשארת כמו קודם (לא חוסם את הפתיחה) */
+  (function(){ var A='\n})();\n\n<\/script>', i=html.indexOf(A); if(i>=0 && html.indexOf(A,i+1)<0) html=html.slice(0,i)+'\n'+$('au2Js').textContent+html.slice(i); })();
   var pre='<script>/* ענן */ try{ if(parent!==window && parent.__PLC_BRIDGE){ window.__PLC=parent.__PLC_BRIDGE;'+
     ' if(!window.showSaveFilePicker){ window.showSaveFilePicker=async function(){ return window.__PLC.handle; }; window.showOpenFilePicker=async function(){ return [window.__PLC.handle]; }; } } }catch(e){}<\/script>';
   var h=html.indexOf('<head>'); if(h<0) throw new Error('הקוד בענן לא תקין (head)');
