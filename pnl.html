@@ -248,6 +248,20 @@ table tr:not(.tot):not(.big):not(.sub):not(.pct) td.neg{color:var(--ink)!importa
 </script>
 <!-- ✛ הדגשת שורה ועמודה (איילת 10.11.2026): העכבר על תא (או תא בעריכה) — כל השורה וכל העמודה באותה טבלה מקבלות רקע עדין.
      שכבה (background-image) מעל הצבע הקיים — לא מסתירה את הצהוב של «צפוי» ולא את «חודש מודגש». -->
+<!-- 📄 חלון הפירוט שעולה כשעומדים על סכום (22.11.2026, איילת: «אי אפשר להגיע לתמונה כי המסך נעלם»):
+     החלון נפתח 4px מתחת לתא, והעכבר שעבר ברווח סגר אותו. גשר שקוף מעליו + לחיצה על 📄 בתוכו פותחת את החשבונית בלי לסגור אותו. -->
+<script type="text/plain" id="hbJs">
+(function () {
+  var st = document.createElement('style'); st.id = 'hbCss';
+  st.textContent = '.hb::before,.dp::before{content:"";position:absolute;left:0;right:0;top:-12px;height:12px}';
+  (document.head || document.documentElement).appendChild(st);
+  window.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest && e.target.closest('.hb a[href], .dp a[href]'); if (!a) return;
+    var h = a.getAttribute('href') || ''; if (h.indexOf('file:///') !== 0 || !window.__PLC || !window.__PLC.openDoc) return;
+    e.preventDefault(); e.stopPropagation(); var w = window.open('about:blank', '_blank'); window.__PLC.openDoc(h, w);
+  }, true);
+})();
+</script>
 <script type="text/plain" id="xhJs">
 (function () {
   var st = document.createElement('style'); st.id = 'xhCss';
@@ -573,6 +587,7 @@ function patch(html){
     ' fix(); document.addEventListener("DOMContentLoaded",fix); setTimeout(fix,500); } })();<\/script>';
   if(VIEW) docJs+='<script id="plViewJs">'+$('viewJs').textContent.replace(/<\/script/gi,'<\\/script')+'<\/script>';
   docJs+='<script id="plXhJs">'+$('xhJs').textContent.replace(/<\/script/gi,'<\\/script')+'<\/script>';   /* ✛ הדגשת שורה ועמודה (10.11.2026) */
+  docJs+='<script id="plHbJs">'+$('hbJs').textContent.replace(/<\/script/gi,'<\\/script')+'<\/script>';   /* 📄 חלון הפירוט לא נעלם (22.11.2026) */
   var be=html.lastIndexOf('</body>'); html=be<0?html+docJs:html.slice(0,be)+docJs+html.slice(be);
   /* «פחות עומס» (05.11.2026) — בסוף הדף, אחרי שהמערכת בנתה את שורת הכפתורים. «🎨» בשורה העליונה מחזיר למראה הקודם */
   if(useLook()){ var b=html.lastIndexOf('</body>'), look='<style id="plLook">'+$('lookCss').textContent+'</style><script id="plLookJs">'+$('lookJs').textContent.replace(/<\/script/gi,'<\\/script')+'<\/script>';
