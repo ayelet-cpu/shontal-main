@@ -516,7 +516,7 @@ function fBreak(path, m) {
       }
       return `<td class="au2-cmpx">${L.join('')}</td>`;
     })();
-    const okTd = `<td class="au2-okx">${it.uk ? `<button class="au2-bigok uk" data-au2open="${P}" title="לשייך לשורה או לסמן «לא שייך לרווח והפסד»">שיוך / דחייה ‹</button>` : c === 'd' ? `<div class="au2-bigdone">✓ אושר</div><button class="au2-un" data-act="audUn" data-p="${P}" title="החזרה לבדיקה">↩ ביטול</button>` : `<button class="au2-bigok${c === 'g' ? ' g' : ''}" data-act="audOkRow" data-p="${P}" title="${c === 'g' ? 'כל המקורות תואמים — לסמן תקין' : 'לאשר שהסכום ברווח והפסד נכון (' + ils(it.val) + ')'}">✓ אישור</button>`}</td>`;
+    const okTd = `<td class="au2-okx">${it.uk ? (c === 'd' ? `<div class="au2-bigdone">✓ טופל</div><button class="au2-un" data-act="ukUn" data-p="${P}" title="החזרה לבדיקה">↩ ביטול</button>` : `<button class="au2-bigok no" data-au2no="${P}" title="לא נכנס לרווח והפסד — רק החודש או תמיד">✕ לא שייך<small>שכר / לא לרווח והפסד</small></button><button class="au2-ukx" data-act="ukMap" data-k="${esc(it.uk.key)}" title="כבר רשום בשורה קיימת — נזכר לכל החודשים">🔗 שיוך לשורה</button><button class="au2-ukx" data-act="ukNew" data-k="${esc(it.uk.key)}" title="נפתחת שורת ספק חדשה בקניות עם הסכום של החודש">➕ ספק חדש</button>`) : c === 'd' ? `<div class="au2-bigdone">✓ אושר</div><button class="au2-un" data-act="audUn" data-p="${P}" title="החזרה לבדיקה">↩ ביטול</button>` : `<button class="au2-bigok${c === 'g' ? ' g' : ''}" data-act="audOkRow" data-p="${P}" title="${c === 'g' ? 'כל המקורות תואמים — לסמן תקין' : 'לאשר שהסכום ברווח והפסד נכון (' + ils(it.val) + ')'}">✓ אישור</button>`}</td>`;
     const chips = it.uk ? `<span class="bd-ch df">${esc(catTxt(it))}</span>` : bdChips(it, si);
     const why = c === 'd' ? `<span class="au2-pill d">✓ סומן${a.at ? ' ' + new Date(a.at).toLocaleDateString('he-IL') : ''}</span>`
       : c === 'g' ? '<span class="au2-pill g">כל המקורות תואמים</span>'
@@ -775,6 +775,23 @@ function fBreak(path, m) {
     h += cc.map(l => `<div class="au2-inv cc">💳 ${dmy(l.d)} · ${esc(l.n)} · ₪${nf2.format(l.v)}</div>`).join('');
     return h || `<span class="au2-noinv">${g ? 'אין חשבונית בשונטל' : 'השורה לא מחוברת לשונטל'}</span>`;
   }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.au2 [data-au2no]'); if (!b || RO) return;
+    e.stopPropagation(); e.preventDefault();
+    const m = curM, p = b.dataset.au2no, it = AUD_ROWS[p]; if (!it || !it.uk) return;
+    const o = it.uk;
+    pop(b, `<div style="margin-bottom:6px"><b>«${esc(o.name)}» לא נכנס לרווח והפסד</b></div>
+      <label style="display:block;margin:4px 0"><input type="radio" name="ukAlw" value="m" checked> רק ב${M[m]}</label>
+      <label style="display:block;margin:4px 0"><input type="radio" name="ukAlw" value="a"> תמיד — בכל החודשים (לא יחזור לבדיקה)</label>`, el => {
+      const alw = (el.querySelector('input[name="ukAlw"]:checked') || {}).value === 'a';
+      if (!alw) audSet(m, p, { ok: 1, at: new Date().toISOString(), val: 0 }, `בדיקה › ${M[m]} › ${o.name}: לא נכנס לרווח והפסד`);
+      else commit(`בדיקה › «${o.name}»: לא נכנס לרווח והפסד — תמיד`, () => {
+        D.extMap = D.extMap || {}; D.extMap.s = D.extMap.s || {}; D.extMap.c = D.extMap.c || {}; D.ccMap = D.ccMap || {};
+        o.src.s.forEach(n => { D.extMap.s[n] = '-'; }); o.src.c.forEach(n => { D.extMap.c[n] = '-'; }); o.src.k.forEach(k => { D.ccMap[k] = '-'; });
+      });
+      render();
+    });
+  }, true);
   const _amAu2 = audModal;
   audModal = function (p) {
     _amAu2(p);
@@ -939,6 +956,12 @@ table.au2-m td.au2-okx{min-width:118px;text-align:center;vertical-align:middle;b
 .au2-bigok:hover{filter:brightness(1.1)}.au2-bigok.g{background:#15803d;box-shadow:0 2px 6px rgba(21,128,61,.28)}
 .au2-bigok.uk{background:#fff;color:#b42318;border:2px solid #f2c6bf;box-shadow:none;font-size:13.5px}
 .au2-bigdone{font-size:15px;font-weight:800;color:#15803d;margin-bottom:3px}
+
+.au2-bigok.no{background:#fff;color:#b42318;border:2px solid #f2b8ae;box-shadow:none;font-size:14px;padding:5px 4px;line-height:1.25}
+.au2-bigok.no small{display:block;font-size:10.5px;font-weight:600;color:#8a3b30}
+.au2-bigok.no:hover{background:#fff1ef;filter:none}
+.au2-ukx{display:block;width:104px;margin:4px auto 0;border:1px solid #c9b8f3;background:#fff;color:#4c2a9e;border-radius:8px;font:inherit;font-size:12px;font-weight:700;padding:3px 4px;cursor:pointer;white-space:nowrap}
+.au2-ukx:hover{background:#f1ebff}
 </style>`);
 })();
 </script>
