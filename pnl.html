@@ -837,6 +837,33 @@ function fBreak(path, m) {
           const ci = cellInfo(it, mm), own = [ci.s, ci.c, ci.k].some(c => has(c) && c.st !== 'diff');
           if (own) tr.querySelectorAll('.om').forEach(x => x.remove());
         });
+        if (!det.querySelector('tfoot.au2-sum')) {
+          const ths = [...det.querySelectorAll('thead th')].map(th => th.textContent.trim());
+          const col = { pl: ths.findIndex(t => /ברווח והפסד/.test(t)), s: ths.indexOf('שונטל'), c: ths.indexOf('קונפורטי'), k: ths.indexOf('אשראי') };
+          const val = (mm, k) => { const ci = cellInfo(it, mm); if (k === 'pl') return ci.v || 0; const c = ci[k]; return has(c) ? (c.raw || 0) : 0; };
+          const used = { s: false, c: false, k: false };
+          const MM = []; det.querySelectorAll('tbody tr').forEach(tr => { const mm = M.indexOf(((tr.children[0] || {}).textContent || '').trim()); if (mm < 0 || mm > curM) return; MM.push(mm);
+            ['s', 'c', 'k'].forEach(k => { if (has(cellInfo(it, mm)[k])) used[k] = true; });
+            tr.children[0].insertAdjacentHTML('afterbegin', `<input type="checkbox" class="au2-sm" data-m="${mm}" title="לסמן את החודש לחישוב יחד" aria-label="סימון ${M[mm]}"> `); });
+          const sumRow = (label, list, cls) => {
+            const tot = k => list.reduce((a, mm) => a + val(mm, k), 0), pl = tot('pl');
+            const td = []; for (let i = 0; i < ths.length; i++) td.push('<td></td>');
+            td[0] = `<td class="au2-sl">${label}</td>`;
+            if (col.pl >= 0) td[col.pl] = `<td class="au2-sv"><b>₪${nf2.format(pl)}</b></td>`;
+            ['s', 'c', 'k'].forEach(k => { if (col[k] < 0) return; if (!used[k]) { td[col[k]] = '<td class="au2-sv muted">—</td>'; return; } const v = tot(k), d = pl - v;
+              td[col[k]] = `<td class="au2-sv"><b>₪${nf2.format(v)}</b> ${Math.abs(d) < 1 ? '<span class="au2-sok">✓ תואם</span>' : `<span class="au2-sdf">פער ₪${nf2.format(d)}</span>`}</td>`; });
+            return `<tr class="${cls}">${td.join('')}</tr>`;
+          };
+          const ytd = MM.filter(mm => mm >= ST0());
+          const draw = () => {
+            const sel = [...det.querySelectorAll('input.au2-sm:checked')].map(x => +x.dataset.m);
+            det.querySelector('tfoot.au2-sum').innerHTML = (sel.length ? sumRow(`סה״כ ${sel.length} חודשים שסומנו (${sel.sort((a, b) => a - b).map(mm => M[mm]).join(', ')})`, sel, 'au2-sr sel') : `<tr class="au2-sr hint"><td colspan="${ths.length}">☑ אפשר לסמן כמה חודשים (בתיבה ליד שם החודש) — ויופיע כאן הסכום שלהם בכל מקור בנפרד</td></tr>`) + sumRow(`סה״כ מתחילת השנה (${M[ytd[ytd.length - 1] ?? 0]}–${M[curM]})`, ytd, 'au2-sr ytd');
+          };
+          det.querySelector('table').insertAdjacentHTML('beforeend', '<tfoot class="au2-sum"></tfoot>');
+          draw();
+          det.addEventListener('change', e => { if (e.target.closest('input.au2-sm')) draw(); });
+          det.addEventListener('click', e => { if (e.target.closest('input.au2-sm')) e.stopPropagation(); }, true);
+        }
         const SP = splitOf(it.path), groups = {};
         Object.entries(SP).forEach(([mm, x]) => { groups[x.tot + '/' + x.n] = x; });
         if (Object.keys(SP).length && !det.querySelector('.au2-splb')) {
@@ -1011,6 +1038,14 @@ table.au2-m td.au2-okx{min-width:118px;text-align:center;vertical-align:middle;b
 .au2-splok{color:#15803d;font-weight:800}.au2-splno{color:#b45309;font-weight:800}
 .au2-splt{font-size:11.5px;font-weight:800;color:#5b21b6;margin-top:2px;white-space:nowrap}
 .au2-splh{display:inline-block;margin-inline-start:8px;font-size:12.5px;font-weight:800;color:#5b21b6;background:#efe7ff;border:1px solid #d9caf7;border-radius:999px;padding:1px 9px;vertical-align:middle}
+
+#audOv tfoot.au2-sum td{background:#f5f0ff;border-top:2px solid #d9caf7;font-size:13.5px;padding:6px 8px;vertical-align:middle}
+#audOv tfoot.au2-sum tr.ytd td{background:#ede5ff}
+#audOv tfoot.au2-sum tr.hint td{background:#fbfaff;color:#6b5aa6;font-size:12.5px;border-top:2px solid #d9caf7}
+#audOv tfoot.au2-sum td.au2-sl{font-weight:800;color:#2b1d63;white-space:normal;min-width:150px}
+#audOv tfoot.au2-sum .au2-sok{color:#15803d;font-weight:800;font-size:12px;white-space:nowrap}
+#audOv tfoot.au2-sum .au2-sdf{color:#b42318;font-weight:800;font-size:12px;background:#fff1ef;border-radius:5px;padding:0 4px;white-space:nowrap}
+input.au2-sm{accent-color:#6d28d9;width:15px;height:15px;vertical-align:middle;cursor:pointer}
 </style>`);
 })();
 </script>
