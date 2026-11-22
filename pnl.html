@@ -486,7 +486,16 @@ function fBreak(path, m) {
       const ci = cellInfo(it, mm), v = ci.v, big = ci.st === 'diff' && ci.d >= Math.max(500, Math.abs(v) * 0.1);
       const mk = ci.marked ? '<i class="au2-mk" title="סומן תקין">✓</i>' : ci.st === 'ok' ? '<i class="au2-okm" title="תואם למקור">✓</i>' : ci.st === 'diff' ? '<i class="au2-dfm">≠</i>' : '';
       const tip = `${M[mm]}: ₪${nf2.format(v)}${ci.tip ? '\n' + ci.tip : ''}${ci.st === 'miss' ? '\nהיה סכום בחודשים הקודמים — החודש אין' : ''}${ci.st === 'uk' ? '\nלא משויך לשורה ברווח והפסד' : ''}\nלחיצה — פרטי ההתאמה`;
-      return `<td class="au2-c st-${ci.st}${big ? ' big' : ''}${mm === curM ? ' cur' : ''}${selP === it.path && (ui.au2M ?? curM) === mm ? ' csel' : ''}" data-au2c="${P}" data-m="${mm}" title="${esc(tip)}">${Math.abs(v) < 0.005 ? '<span class="au2-z">—</span>' : nf2.format(v)}${mk}</td>`;
+      const f0 = x => Math.round(x).toLocaleString('he-IL');
+      const sl = (lbl, c, val) => `<span class="${c === 'df' ? 'df' : c === 'ok' ? 'ok' : ''}">${lbl} ${f0(val)}</span>`;
+      const SR = [];
+      if (it.uk) { const o = it.uk; ['s', 'c', 'k'].forEach(k => { if (o.src[k].length) { const vv = ukAmtK(o, mm, k); if (Math.abs(vv) >= 0.5) SR.push(sl({ s: 'ש', c: 'ק', k: 'א' }[k], '', vv)); } }); }
+      else {
+        [[ci.s, 'ש'], [ci.c, 'ק'], [ci.k, 'א']].forEach(([c, l]) => { if (has(c)) SR.push(sl(l + (c.n > 1 ? 'Σ' : ''), c.st === 'diff' ? 'df' : 'ok', c.raw)); });
+        if (ci.w) SR.push(sl(ci.w.kind === 't' ? 'מ' : 'ב', Math.abs(ci.w.amt - v) > 1 ? 'df' : 'ok', ci.w.amt));
+      }
+      const srcLine = SR.length ? `<div class="au2-sl2">${SR.join('')}</div>` : '';
+      return `<td class="au2-c st-${ci.st}${big ? ' big' : ''}${mm === curM ? ' cur' : ''}${selP === it.path && (ui.au2M ?? curM) === mm ? ' csel' : ''}" data-au2c="${P}" data-m="${mm}" title="${esc(tip)}"><div class="au2-pl">${Math.abs(v) < 0.005 ? '<span class="au2-z">—</span>' : nf2.format(v)}${mk}</div>${srcLine}</td>`;
     }).join('');
     const si = it.uk ? null : sureInfo(it);
     const chips = it.uk ? `<span class="bd-ch df">${esc(catTxt(it))}</span>` : bdChips(it, si);
@@ -494,7 +503,7 @@ function fBreak(path, m) {
       : c === 'g' ? '<span class="au2-pill g">כל המקורות תואמים</span>'
       : `<span class="au2-pill ${c}" title="${esc(((si || {}).bad || []).join(' · ') || rs.map(r => r[1]).join(' · '))}">${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</span>${rs.length > 1 ? `<span class="au2-more" title="${esc(rs.slice(1).map(r => r[1]).join(' · '))}">+${rs.length - 1}</span>` : ''}`;
     const nt = `<td class="au2-ntc"><input class="au2-note au2-ni" data-p="${P}" data-m="${curM}" value="${esc(a.note || '')}" placeholder="${it.uk || c !== 'd' ? 'הערה…' : ''}" title="${esc(a.note || 'הערה לבדיקה (נשמרת לחודש ' + M[curM] + ')')}">${!it.uk && lineNote(it.path) ? `<span class="au2-ln" title="${esc(lineNote(it.path))}">📝</span>` : ''}</td>`;
-    return `<tr class="au2-r r-${c}${selP === it.path ? ' sel' : ''}" data-au2="${P}">${chk}<td class="au2-nm" title="${esc(it.name + ' · ' + topic(it))}"><b>${esc(it.name)}</b> ${ico}<small>${esc(topic(it))}${catTxt(it) ? ' · ' + esc(catTxt(it)) : ''}</small></td>${cells}<td class="au2-cum">${nf2.format(cumOf(it))}</td><td class="au2-chk">${chips}${sv >= 0.5 && !it.uk ? `<span class="au2-df" title="ההפרש הגדול ביותר החודש">${ils(sv)}</span>` : ''}</td><td class="au2-why">${why}</td>${nt}<td class="au2-go"><button class="au2-btn" data-au2open="${P}" title="פרטי ההתאמה של ${esc(M[curM])}">פרטים ‹</button></td></tr>`;
+    return `<tr class="au2-r r-${c}${selP === it.path ? ' sel' : ''}" data-au2="${P}">${chk}<td class="au2-nm" title="${esc(it.name + ' · ' + topic(it))}"><b>${esc(it.name)}</b> ${ico}<small>${esc(topic(it))}${catTxt(it) ? ' · ' + esc(catTxt(it)) : ''}</small></td>${cells}<td class="au2-cum">${nf2.format(cumOf(it))}</td><td class="au2-chk">${it.uk ? '' : c === 'd' ? `<span class="au2-done">✓ סומן</span><button class="au2-un" data-act="audUn" data-p="${P}" title="החזרה לבדיקה">↩</button>` : `<button class="au2-okb2${c === 'g' ? ' g' : ''}" data-act="audOkRow" data-p="${P}" title="${c === 'g' ? 'כל המקורות תואמים — לסמן תקין' : 'לסמן שהסכום ברווח והפסד נכון (' + ils(it.val) + ')'}">✓ אישור</button>`}${chips}${sv >= 0.5 && !it.uk ? `<span class="au2-df" title="ההפרש הגדול ביותר החודש">${ils(sv)}</span>` : ''}</td><td class="au2-why">${why}</td>${nt}<td class="au2-go"><button class="au2-btn" data-au2open="${P}" title="פרטי ההתאמה של ${esc(M[curM])}">פרטים ‹</button></td></tr>`;
   }
   function srcBlock(it) {
     const m = curM, rows = [];
@@ -610,6 +619,7 @@ function fBreak(path, m) {
   function selPath(B) {
     const ok = p => p && B.U.all.some(x => x.path === p);
     if (!ok(ui.au2P)) { ui.au2P = null; ui.au2M = null; }
+    ui.au2Closed = true;
     return ui.au2P;
   }
   vAudit = function () {
@@ -625,7 +635,7 @@ function fBreak(path, m) {
     const st = B.st, opt = (v, l, cur) => `<option value="${esc(v)}"${cur === v ? ' selected' : ''}>${esc(l)}</option>`;
     const hidN = typeof ukHidden === 'function' ? ukHidden().length : 0;
     const selN = Object.keys(ui.au2Sel || {}).filter(p => ui.au2Sel[p]).length;
-    let h = `<div class="au2${selIt ? ' pnopen' : ''}"><div class="au2-top"><div><h1>בדיקת שורה-שורה</h1><div class="au2-sub">רווח והפסד מול שונטל, קונפורטי, אשראי ובקרת השכר — לפי חודשים${EXT.shontal && EXT.shontal.asOf ? ' · שונטל נכון ל-' + esc(EXT.shontal.asOf) : ''}</div></div><div class="au2-tools">${monthPicker()}<button class="au2-b sm" data-act="bdView" data-v="table" title="התצוגה הקודמת — כל המקורות בעמודות לחודש אחד">☰ התצוגה הקודמת</button></div></div>`;
+    let h = `<div class="au2"><div class="au2-top"><div><h1>בדיקת שורה-שורה</h1><div class="au2-sub">רווח והפסד מול שונטל, קונפורטי, אשראי ובקרת השכר — לפי חודשים${EXT.shontal && EXT.shontal.asOf ? ' · שונטל נכון ל-' + esc(EXT.shontal.asOf) : ''}</div></div><div class="au2-tools">${monthPicker()}<button class="au2-b sm" data-act="bdView" data-v="table" title="התצוגה הקודמת — כל המקורות בעמודות לחודש אחד">☰ התצוגה הקודמת</button></div></div>`;
     h += `<div class="au2-kpis"><div class="au2-k t"><span>סה"כ בבדיקה · ${M[curM]}</span><b>${tot}</b><small title="«שורות בדוח» = מה שנספר עד היום ב«נבדקו X מתוך…». ספק לא משויך = מופיע בשונטל/קונפורטי/אשראי ואין לו שורה">${tot - B.nUk} שורות בדוח + ${B.nUk} ספקים לא משויכים · סומנו ${n.d}</small><i class="au2-bar"><i style="width:${Pc(n.d)}%"></i></i></div>
       <button class="au2-k r${st === 'r' ? ' on' : ''}" data-au2st="r"><span>⚠ דורשות טיפול</span><b>${n.r}</b><small>${Pc(n.r)}% · הפרש, אזהרה או ספק לא משויך</small></button>
       <button class="au2-k o${st === 'o' ? ' on' : ''}" data-au2st="o"><span>⏱ ממתינות להתאמה</span><b>${n.o}</b><small>${Pc(n.o)}% · אין מקור להשוואה או סכום 0</small></button>
@@ -637,7 +647,7 @@ function fBreak(path, m) {
       <select id="au2S" class="au2-sel">${opt('sev', 'מיון: חומרה (ההפרש הגדול למעלה)', ui.au2S || 'sev')}${opt('amt', 'מיון: סכום החודש', ui.au2S || 'sev')}${opt('name', 'מיון: שם', ui.au2S || 'sev')}${opt('ord', 'מיון: סדר הדוח', ui.au2S || 'sev')}</select>
       <select id="au2V" class="au2-sel" title="כמה חודשים להציג בעמודות">${opt('ytd', 'תצוגה: מתחילת השנה', ui.au2V || 'ytd')}${opt('6', 'תצוגה: 6 חודשים אחרונים', ui.au2V || 'ytd')}${opt('3', 'תצוגה: 3 חודשים אחרונים', ui.au2V || 'ytd')}${opt('cur', 'תצוגה: רק ' + M[curM], ui.au2V || 'ytd')}</select></div>
       <div class="au2-f2"><span class="au2-tabs"><button class="r${st === 'r' ? ' on' : ''}" data-au2st="r">⚠ דורשות טיפול (${n.r})</button><button class="o${st === 'o' ? ' on' : ''}" data-au2st="o">⏱ ממתינות להתאמה (${n.o})</button><button class="a${st === 'all' ? ' on' : ''}" data-au2st="all">כל הפתוחות (${n.r + n.o})</button><button class="g${st === 'g' ? ' on' : ''}" data-au2st="g">✓ תקינות (${okN})</button></span>
-      <span class="au2-sp"></span><span class="au2-lg"><i class="lg diff"></i>הפרש מהמקור <i class="lg miss"></i>חסר החודש / לא משויך <i class="lg ok"></i>✓ תואם <b class="au2-mk">✓</b> סומן</span>
+      <span class="au2-sp"></span><span class="au2-lg"><i class="lg diff"></i>הפרש מהמקור <i class="lg miss"></i>חסר החודש / לא משויך <i class="lg ok"></i>✓ תואם <b class="au2-mk">✓</b> סומן · בתא: ש=שונטל ק=קונפורטי א=אשראי ב=בקרת שכר מ=מיסים</span>
       <label class="small" title="ברירת מחדל: רק שורות הגיוניות — יש סכום החודש, היה סכום בחודש הקודם, או הפרש"><input type="checkbox" id="aAll"${ui.aAll ? ' checked' : ''}> גם שורות 0</label>
       <select class="au2-sel sm" id="aF" title="סינון נוסף">${opt('', 'הצגה: הכל', ui.aF || '')}${opt('ncl', '🤖 הערות לבדיקת קלוד', ui.aF || '')}${opt('nme', '🙋 הערות לעצמי', ui.aF || '')}${opt('note', 'רק עם הערה', ui.aF || '')}${opt('anydiff', 'רק עם הפרש (מכל מקור)', ui.aF || '')}${opt('exp', 'רק הוצאות', ui.aF || '')}${opt('nosrc', 'הוצאות בלי מקור שנבחר', ui.aF || '')}${CC ? opt('kk', 'רק עם אשראי', ui.aF || '') : ''}</select>
       ${hidN ? `<button class="au2-b sm" data-act="ukHidList" title="ספקים שסימנת «לא נכנס — תמיד»">🙈 ${hidN} מוסתרים</button>` : ''}</div></div>`;
@@ -650,13 +660,18 @@ function fBreak(path, m) {
       h += `<details class="au2-ok"${ui.au2GO ? ' open' : ''} id="au2G"><summary><span class="au2-okc">✓</span><b>שורות תקינות (${B.okL.length})</b><small>${gN} תואמות בכל המקורות — ממתינות לאישור · ${B.okL.length - gN} כבר סומנו</small><span class="au2-sp"></span>${gN ? `<button class="au2-b g sm" data-act="audOkAllSure" title="מסמן תקין את כל השורות שכל המקורות שלהן תואמים">✓ לאשר את כל ${gN} התואמות</button>` : ''}</summary>
         <div class="au2-tw g">${ui.au2GO ? `<table class="au2-t au2-m">${head(false)}<tbody>${B.okL.map(it => rowHtml(it, B.U.cat[it.path], sp, MS)).join('') || `<tr><td colspan="${nc}" class="au2-none">אין</td></tr>`}</tbody></table>` : ''}</div></details>`;
     }
-    h += `${selIt ? `<aside class="au2-pn" id="au2Pn" data-cur="${esc(sp)}">${panelHtml(selIt)}</aside>` : ''}</div>`;
+    h += `</div>`;
     setTimeout(restoreScroll, 0);
     return h;
   }
   /* המיקום בטבלה נשמר גם אחרי פעולה שמציירת מחדש */
   document.addEventListener('scroll', e => { const t = e.target; if (t && t.id === 'au2Tw') { ui.au2Sc = [t.scrollTop, t.scrollLeft]; } }, true);
-  function restoreScroll() { const t = document.getElementById('au2Tw'); if (t && ui.au2Sc) { t.scrollTop = ui.au2Sc[0]; t.scrollLeft = ui.au2Sc[1]; } }
+  function restoreScroll() {
+    const t = document.getElementById('au2Tw'); if (!t) return;
+    if (ui.au2Sc) { t.scrollTop = ui.au2Sc[0]; t.scrollLeft = ui.au2Sc[1]; }
+    const r = !document.getElementById('audOv') && ui.au2P && t.querySelector(`tr.au2-r[data-au2="${CSS.escape(ui.au2P)}"]`);
+    if (r) { const a = r.getBoundingClientRect(), b = t.getBoundingClientRect(); if (a.top < b.top + 40 || a.bottom > b.bottom) r.scrollIntoView({ block: 'center' }); }
+  }
   function repaintPanel() {
     const pn = document.getElementById('au2Pn'); if (!pn || !LAST) { render(); return; }
     const it = LAST.U.all.find(x => x.path === ui.au2P); if (!it) { render(); return; }
@@ -665,7 +680,12 @@ function fBreak(path, m) {
     document.querySelectorAll('.au2 td.au2-c.csel').forEach(td => td.classList.remove('csel'));
     document.querySelectorAll(`.au2 td.au2-c[data-au2c="${CSS.escape(ui.au2P)}"][data-m="${ui.au2M ?? curM}"]`).forEach(td => td.classList.add('csel'));
   }
-  const openP = (p, mm) => { ui.au2P = p; ui.au2M = mm; ui.au2Closed = false; if (document.getElementById('au2Pn')) repaintPanel(); else render(); };
+  const openP = (p, mm) => {
+    ui.au2P = p; ui.au2M = mm;
+    document.querySelectorAll('.au2 tr.au2-r').forEach(tr => tr.classList.toggle('sel', tr.dataset.au2 === p));
+    document.querySelectorAll('.au2 td.au2-c.csel').forEach(td => td.classList.remove('csel'));
+    if (AUD_ROWS[p]) audModal(p);
+  };
   function nextAfter(p) { if (!LAST) return null; const L = LAST.main, i = L.findIndex(x => x.path === p); return i < 0 ? null : (L[i + 1] || L[i - 1] || {}).path || null; }
   /* בחירה, ניווט, סינונים */
   document.addEventListener('click', e => {
@@ -679,7 +699,7 @@ function fBreak(path, m) {
     const mt = t.closest('[data-au2m]'); if (mt) { ui.au2M = +mt.dataset.au2m; repaintPanel(); return; }
     if (t.closest('input,button,a,select,textarea,label,summary,.au2-pn')) return;
     const cc = t.closest('td.au2-c'); if (cc) { openP(cc.dataset.au2c, +cc.dataset.m); return; }
-    const tr = t.closest('tr.au2-r'); if (tr) openP(tr.dataset.au2, curM);
+    const nm = t.closest('td.au2-nm'); if (nm) { const tr = nm.closest('tr.au2-r'); openP(tr.dataset.au2, curM); }
   });
   document.addEventListener('change', e => {
     const t = e.target; if (!t.closest || !t.closest('.au2')) return;
@@ -728,6 +748,42 @@ function fBreak(path, m) {
     });
     audSave(); ui.au2Sel = {}; render();
   });
+
+  function invCell(it, mm) {
+    const g = IDX.shontal[it.path], e = g && g.m[String(mm)], inv = e ? e[1] : [], stl = { paid: 'שולם', due: 'לתשלום' };
+    const cc = CC ? CC.lines.filter(l => ccPath(l) === it.path && ccMon(l) === mm) : [];
+    let h = inv.map(d => `<div class="au2-inv">${d[8] ? docLink(d) : d[9] ? '<span title="הקובץ נמצא רק בענן של שונטל">☁️</span>' : '<span class="muted" title="אין קובץ מצורף">·</span>'} <b>${esc(d[1] || '')}</b> · ${dmy(d[2])} · ₪${nf2.format(d[3])}${d[4] && d[4] !== 'חשבונית מס' ? ' · ' + esc(d[4]) : ''}${d[5] ? ' · ' + esc(stl[d[5]] || d[5]) : ''}</div>`).join('');
+    h += cc.map(l => `<div class="au2-inv cc">💳 ${dmy(l.d)} · ${esc(l.n)} · ₪${nf2.format(l.v)}</div>`).join('');
+    return h || `<span class="au2-noinv">${g ? 'אין חשבונית בשונטל' : 'השורה לא מחוברת לשונטל'}</span>`;
+  }
+  const _amAu2 = audModal;
+  audModal = function (p) {
+    _amAu2(p);
+    try {
+      const ov = document.getElementById('audOv'), it = AUD_ROWS[p]; if (!ov || !it) return;
+      if (ui.au2P !== p) { ui.au2P = p; ui.au2M = curM; }   /* «עבור לבא» — בסגירה חוזרים לשורה האחרונה שנפתחה */
+      const md = ov.querySelector('.aud-modal'); if (md) md.classList.add('au2big');
+      const det = [...ov.querySelectorAll('.aud-hist')].find(d => /לפי חודש|השוואה/.test((d.querySelector('summary') || {}).textContent || ''));
+      if (det && !it.uk) {
+        det.open = true;
+        const hr = det.querySelector('thead tr');
+        if (hr && !hr.querySelector('.au2-invh')) {
+          hr.insertAdjacentHTML('beforeend', '<th class="au2-invh">📄 חשבוניות ואשראי</th>');
+          det.querySelectorAll('tbody tr').forEach(tr => {
+            const mm = M.indexOf(((tr.children[0] || {}).textContent || '').trim());
+            if (mm < 0) { tr.insertAdjacentHTML('beforeend', '<td></td>'); return; }
+            tr.insertAdjacentHTML('beforeend', `<td class="au2-invc">${invCell(it, mm)}</td>`);
+            if (mm === (ui.au2M ?? curM)) tr.classList.add('au2-hm');
+          });
+          const g = IDX.shontal[it.path], agd = (g && g.agd) || [];
+          if (!agd.length && !det.querySelector('.ip-ag') && g) det.querySelector('table').insertAdjacentHTML('beforebegin', '<div class="ip-ag muted">📑 אין קובץ גיול מהספק בשונטל</div>');
+        }
+        const hm = det.querySelector('tr.au2-hm'); if (hm && ui.au2M != null) setTimeout(() => hm.scrollIntoView({ block: 'center' }), 0);
+      }
+      const L = { audOkNext: '✓ אישור התאמה ועבור לבא ›', audSaveNext: 'שמור בלי לאשר ועבור ›', rowNotPL: '✕ דחייה — לא שייך לרווח והפסד', audUn: '↩ החזרה לבדיקה' };
+      ov.querySelectorAll('.am-foot [data-act]').forEach(b => { if (L[b.dataset.act]) b.textContent = L[b.dataset.act]; });
+    } catch (err) { console.error('au2 modal', err); }
+  };
 
   document.head.insertAdjacentHTML('beforeend', `<style id="au2Css">
 .au2{--ap:#6d28d9;--ap2:#5b21b6;--aps:#f4f0ff;--apl:#e7e0f7;--ar:#b42318;--ars:#fdeeec;--ao:#b45309;--aos:#fff4e5;--ag:#15803d;--ags:#ecf8ef;--al:#ebe7f3;color:#1f1a2e}
@@ -829,6 +885,26 @@ tr.au2-r.sel td{background:#f1ebff!important}tr.au2-r.sel td.au2-c.st-diff{backg
 .au2-mt button.st-diff{background:#fdeeec;border-color:#f2c6bf;color:#9b2c1f}.au2-mt button.st-ok{background:#ecf8ef;border-color:#bfe3c8}.au2-mt button.st-miss,.au2-mt button.st-uk{background:#fff3e0}.au2-mt button.on{outline:2px solid var(--ap);font-weight:800}
 table.au2-edt{border-collapse:collapse;margin-top:6px;width:100%}table.au2-edt td.au2-ed{border:1px dashed #c9b8f3;border-radius:8px;padding:5px 8px;cursor:pointer;direction:ltr;text-align:left;font-weight:700;background:#faf8ff}table.au2-edt td.au2-ed span{font-size:11.5px;color:var(--ap2);font-weight:600}table.au2-edt td.au2-ed input{width:100%;font:inherit;direction:ltr}
 @media(max-width:1100px){.au2.pnopen .au2-tw{margin-left:0}.au2-pn{width:min(520px,94vw)}}
+
+table.au2-m td.au2-c{min-width:104px;vertical-align:top;padding-top:6px}
+.au2-pl{font-size:13.5px}.au2-sl2{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:1px 6px;margin-top:2px;font-size:10.8px;font-weight:500;color:#5d5675;direction:rtl}
+.au2-sl2 span{white-space:nowrap}.au2-sl2 .ok{color:#2f7d4f}.au2-sl2 .df{color:#b42318;font-weight:800}
+table.au2-m td.au2-c.st-diff .au2-sl2 .ok{color:#2f7d4f}
+.au2-okb2{border:1px solid #c9b8f3;background:#fff;color:var(--ap2);border-radius:8px;padding:2px 9px;font:inherit;font-size:12px;font-weight:800;cursor:pointer;margin-inline-end:6px;white-space:nowrap}
+.au2-okb2:hover{background:var(--ap);color:#fff;border-color:var(--ap)}.au2-okb2.g{background:#ecf8ef;border-color:#9fd0ad;color:#15803d}.au2-okb2.g:hover{background:#15803d;color:#fff}
+.au2-done{font-size:12px;font-weight:700;color:#15803d;margin-inline-end:4px}.au2-un{border:1px solid var(--al);background:#fff;border-radius:6px;cursor:pointer;font-size:11px;padding:0 5px;margin-inline-end:6px}
+#audOv .aud-modal.au2big{width:min(80vw,1500px)!important;min-height:84vh;padding:0 18px 10px!important;font-size:14px}
+#audOv:has(.au2big){padding:4vh 10px}
+#audOv .au2big .am-head{padding:12px 0 10px}#audOv .au2big .am-ttl b{font-size:20px}
+#audOv .au2big table.aud-ht th,#audOv .au2big table.aud-ht td{font-size:13.5px;padding:5px 8px;vertical-align:top}
+#audOv .au2big table.aud-ht thead th{position:sticky;top:52px;z-index:2;background:#f3f0fa}
+#audOv .au2big tr.au2-hm>td{background:#f1ebff!important;box-shadow:inset 0 2px 0 #c9b8f3,inset 0 -2px 0 #c9b8f3}
+#audOv .au2big .aud-df,#audOv .au2big .hdf-d{font-weight:800}
+td.au2-invc{min-width:240px;max-width:380px;white-space:normal}.au2-inv{font-size:12.5px;margin:1px 0;color:#2b2540}.au2-inv a.aud-doc{font-size:16px;text-decoration:none}.au2-inv.cc{color:#4a5a6b}
+.au2-noinv{font-size:12px;color:#b45309;background:#fff4e5;border-radius:6px;padding:1px 6px}
+#audOv .au2big .am-foot{gap:10px;padding:10px 0 8px}#audOv .au2big .am-foot .btn{font-size:14px;padding:8px 16px}
+#audOv .au2big .am-foot [data-act="audOkNext"]{background:var(--ap,#6d28d9);border-color:var(--ap,#6d28d9);color:#fff}
+#audOv .au2big .am-foot [data-act="rowNotPL"],#audOv .au2big .am-foot [data-act="ukOk"]{color:#b42318;border-color:#f2c6bf}
 </style>`);
 })();
 </script>
