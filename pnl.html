@@ -809,6 +809,17 @@ function fBreak(path, m) {
       render();
     });
   }, true);
+  /* לחיצה על סכום של מקור שמחליפה סכום שכבר רשום — קודם שואלים (איילת 23.11: «לחצתי והסכום נעלם», ארמה ספט׳) */
+  window.addEventListener('click', e => {
+    const td = e.target.closest && e.target.closest('#audOv td.cl-pick');
+    if (!td || e.target.closest('button,a,input') || RO) return;
+    const p = ui.audOpenP, mm = +td.dataset.pm, v = +td.dataset.pv, it = AUD_ROWS[p];
+    if (!it || !(mm >= 0)) return;
+    const cur = cellInfo(it, mm).v || 0;
+    if (Math.abs(cur) < 0.005 || Math.abs(cur - v) <= 0.005) return;
+    if (!confirm(`${M[mm]} — ${it.name}
+להחליף ${nf2.format(cur)} ב-${nf2.format(v)} (לפי ${PK_LBL[td.dataset.pk] || ''})?`)) { e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true);
   const _amAu2 = audModal;
   audModal = function (p) {
     _amAu2(p);
