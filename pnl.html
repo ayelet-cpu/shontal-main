@@ -820,6 +820,14 @@ function fBreak(path, m) {
     if (!confirm(`${M[mm]} — ${it.name}
 להחליף ${nf2.format(cur)} ב-${nf2.format(v)} (לפי ${PK_LBL[td.dataset.pk] || ''})?`)) { e.stopImmediatePropagation(); e.preventDefault(); }
   }, true);
+  /* ספק עם חלק פטור בשורה אחת: בתא ‎=סה״כ+פטור*0.18 (כדי שאחרי ÷1.18 הפטור ייכנס מלא). בבדיקה מול המקורות — רק הסה״כ (איילת 23.11) */
+  const VATX = /^=\s*(-?[\d.]+)\s*\+\s*([\d.]+)\s*\*\s*0?\.18\s*$/;
+  const _aiVx = auditItems;
+  auditItems = function (m) {
+    const out = _aiVx(m);
+    out.forEach(x => { if (!/^p:/.test(x.path)) return; const cs = cellsOf(x.path), c = cs && cs[m]; const mt = typeof c === 'string' && c.match(VATX); if (mt) { x.val = r2(+mt[1]); x.exempt = +mt[2]; } });
+    return out;
+  };
   const _amAu2 = audModal;
   audModal = function (p) {
     _amAu2(p);
