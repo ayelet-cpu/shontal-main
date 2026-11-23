@@ -836,6 +836,11 @@ function fBreak(path, m) {
           const mm = M.indexOf(((tr.children[0] || {}).textContent || '').trim()); if (mm < 0) return;
           const ci = cellInfo(it, mm), own = [ci.s, ci.c, ci.k].some(c => has(c) && c.st !== 'diff');
           if (own) tr.querySelectorAll('.om').forEach(x => x.remove());
+          /* ספק מפוצל לכמה שורות (למשל יוכי: חייב + פטור) — מציגים גם את הסכום של כל השורות יחד (איילת 23.11) */
+          const sp = [ci.s, ci.c, ci.k].find(c => has(c) && c.n > 1 && c.mine != null), plTd = tr.children[1];
+          if (sp && plTd && !plTd.querySelector('.au2-spl')) plTd.insertAdjacentHTML('beforeend', `<div class="au2-spl" title="הספק רשום ב-${sp.n} שורות ברווח והפסד — ההשוואה למקורות היא על כולן יחד">${sp.n} שורות יחד: ₪${nf2.format(sp.mine)}</div>`);
+          /* סכום 0 במקור = בדרך כלל מסמך חסר — לא בוחרים אותו בלחיצה (איילת 23.11: «לחצתי והסכום נעלם») */
+          tr.querySelectorAll('td.cl-pick').forEach(td => { if (Math.abs(+td.dataset.pv || 0) < 0.005) { td.classList.remove('cl-pick'); delete td.dataset.pk; td.title = 'סכום 0 במקור — כנראה מסמך חסר; לא נבחר בלחיצה'; } });
         });
         if (!det.querySelector('tfoot.au2-sum')) {
           const ths = [...det.querySelectorAll('thead th')].map(th => th.textContent.trim());
@@ -845,12 +850,14 @@ function fBreak(path, m) {
           const MM = []; det.querySelectorAll('tbody tr').forEach(tr => { const mm = M.indexOf(((tr.children[0] || {}).textContent || '').trim()); if (mm < 0 || mm > curM) return; MM.push(mm);
             ['s', 'c', 'k'].forEach(k => { if (has(cellInfo(it, mm)[k])) used[k] = true; });
             tr.children[0].insertAdjacentHTML('afterbegin', `<input type="checkbox" class="au2-sm" data-m="${mm}" title="לסמן את החודש לחישוב יחד" aria-label="סימון ${M[mm]}"> `); });
+          /* ספק מפוצל: מה שמושווה למקור = כל השורות שלו יחד (c.mine), לא רק השורה הזאת */
           const sumRow = (label, list, cls) => {
             const tot = k => list.reduce((a, mm) => a + val(mm, k), 0), pl = tot('pl');
+            const plAll = list.reduce((a, mm) => { const c = ['s', 'c', 'k'].map(k => cellInfo(it, mm)[k]).find(c => has(c) && c.n > 1 && c.mine != null); return a + (c ? c.mine : val(mm, 'pl')); }, 0);
             const td = []; for (let i = 0; i < ths.length; i++) td.push('<td></td>');
             td[0] = `<td class="au2-sl">${label}</td>`;
-            if (col.pl >= 0) td[col.pl] = `<td class="au2-sv"><b>₪${nf2.format(pl)}</b></td>`;
-            ['s', 'c', 'k'].forEach(k => { if (col[k] < 0) return; if (!used[k]) { td[col[k]] = '<td class="au2-sv muted">—</td>'; return; } const v = tot(k), d = pl - v;
+            if (col.pl >= 0) td[col.pl] = `<td class="au2-sv"><b>₪${nf2.format(pl)}</b>${Math.abs(plAll - pl) >= 0.5 ? `<div class="au2-spl">כל השורות יחד: ₪${nf2.format(plAll)}</div>` : ''}</td>`;
+            ['s', 'c', 'k'].forEach(k => { if (col[k] < 0) return; if (!used[k]) { td[col[k]] = '<td class="au2-sv muted">—</td>'; return; } const v = tot(k), d = plAll - v;
               td[col[k]] = `<td class="au2-sv"><b>₪${nf2.format(v)}</b> ${Math.abs(d) < 1 ? '<span class="au2-sok">✓ תואם</span>' : `<span class="au2-sdf">פער ₪${nf2.format(d)}</span>`}</td>`; });
             return `<tr class="${cls}">${td.join('')}</tr>`;
           };
@@ -1044,7 +1051,7 @@ table.au2-m td.au2-okx{min-width:118px;text-align:center;vertical-align:middle;b
 #audOv tfoot.au2-sum tr.hint td{background:#fbfaff;color:#6b5aa6;font-size:12.5px;border-top:2px solid #d9caf7}
 #audOv tfoot.au2-sum td.au2-sl{font-weight:800;color:#2b1d63;white-space:normal;min-width:150px}
 #audOv tfoot.au2-sum .au2-sok{color:#15803d;font-weight:800;font-size:12px;white-space:nowrap}
-#audOv tfoot.au2-sum .au2-sdf{color:#b42318;font-weight:800;font-size:12px;background:#fff1ef;border-radius:5px;padding:0 4px;white-space:nowrap}
+#audOv .au2-spl{font-size:11px;color:#6b6480;font-weight:600;margin-top:2px;white-space:nowrap}#audOv tfoot.au2-sum .au2-sdf{color:#b42318;font-weight:800;font-size:12px;background:#fff1ef;border-radius:5px;padding:0 4px;white-space:nowrap}
 input.au2-sm{accent-color:#6d28d9;width:15px;height:15px;vertical-align:middle;cursor:pointer}
 </style>`);
 })();
