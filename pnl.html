@@ -816,9 +816,10 @@ function fBreak(path, m) {
     const p = ui.audOpenP, mm = +td.dataset.pm, v = +td.dataset.pv, it = AUD_ROWS[p];
     if (!it || !(mm >= 0)) return;
     const cur = cellInfo(it, mm).v || 0;
-    if (Math.abs(cur) < 0.005 || Math.abs(cur - v) <= 0.005) return;
+    if (Math.abs(cur - v) <= 0.005) return;
+    const q = Math.abs(cur) < 0.005 ? `לרשום ${nf2.format(v)} (לפי ${PK_LBL[td.dataset.pk] || ''})? כרגע ריק` : `להחליף ${nf2.format(cur)} ב-${nf2.format(v)} (לפי ${PK_LBL[td.dataset.pk] || ''})?`;
     if (!confirm(`${M[mm]} — ${it.name}
-להחליף ${nf2.format(cur)} ב-${nf2.format(v)} (לפי ${PK_LBL[td.dataset.pk] || ''})?`)) { e.stopImmediatePropagation(); e.preventDefault(); }
+${q}`)) { e.stopImmediatePropagation(); e.preventDefault(); }
   }, true);
   /* ספק עם חלק פטור בשורה אחת: בתא ‎=סה״כ+פטור*0.18 (כדי שאחרי ÷1.18 הפטור ייכנס מלא). בבדיקה מול המקורות — רק הסה״כ (איילת 23.11) */
   const VATX = /^=\s*(-?[\d.]+)\s*\+\s*([\d.]+)\s*\*\s*0?\.18\s*$/;
