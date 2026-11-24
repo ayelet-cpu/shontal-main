@@ -1151,14 +1151,18 @@ table.md-t td.n small.pok{color:#15803d}table.md-t td.n small.pbad{color:#b42318
       const h = _vRep();
       try {
         const P = R.rep, m = curM, ys = a => PL.ysum(a), rng = M[PL.ystart()] + (PL.yend() > PL.ystart() ? '–' + M[PL.yend()] : '');
-        /* מינימליסטי (איילת 25.11): טבלה קטנה אחת — שורה לכל נתון, עמודה למסעדה / קיוסק / ביחד */
-        const f = (x, pct) => `<span class="${!pct && x < 0 ? 'neg' : ''}">${pct ? fp(x) : fm(x)}</span>`;
-        const C = [[P.incR, P.netR, P.pct.netR, P.pct.cogsR, P.pct.salR, ys(P.netR), ys(P.incR)], [P.incK, P.netK, P.pct.netK, P.pct.cogsK, P.pct.salK, ys(P.netK), ys(P.incK)], [P.inc, P.netT, P.pct.net, P.cogsPct, P.pct.sal, P.netToDate, ys(P.inc)]];
-        const row = (lbl, i, pct, cls) => `<tr class="${cls || ''}"><td>${lbl}</td>${C.map(c => `<td>${f(Array.isArray(c[i]) ? c[i][m] : c[i], pct)}</td>`).join('')}</tr>`;
-        const box = `<table class="kp3t"><thead><tr><th></th><th>מסעדה</th><th>קיוסק</th><th>ביחד</th></tr></thead><tbody>`
-          + row('הכנסות ' + M[m], 0) + row('רווח נקי ' + M[m], 1) + row('% רווח', 2, 1, 'sm') + row('% עלות מכר', 3, 1, 'sm') + row('% שכר', 4, 1, 'sm')
-          + row('רווח עד היום', 5, 0, 'y') + row('הכנסות עד היום', 6, 0, 'y')
-          + `</tbody></table><div class="kp3-n">₪ ללא מע״מ · עד היום = ${rng}${P.incS && ys(P.incS) ? ' · «ביחד» כולל הכנסות משותפות' : ''}</div>`;
+        /* ריבועים כמו קודם (איילת 25.11: «הריבועים שהיו קודם היו טובים — שים הכל בכאלה רק עם הנתונים»): בכל ריבוע הסה״כ, ומתחת מסעדה וקיוסק במלואם */
+        const f = (x, pct) => pct ? fp(x) : '₪' + fm(x);
+        const sq = (l, t, r, k, pct, extra) => `<div class="kpi kp3q"><div class="l">${l}</div><div class="v${!pct && t < 0 ? ' neg' : ''}" style="${!pct && t < 0 ? 'color:var(--neg)' : ''}">${f(t, pct)}</div>`
+          + `<div class="kp3s"><span>מסעדה <b>${f(r, pct)}</b></span><span>קיוסק <b>${f(k, pct)}</b></span>${extra ? `<span class="x">${extra}</span>` : ''}</div></div>`;
+        const box = `<div class="kpis">`
+          + sq('הכנסות ' + M[m], P.inc[m], P.incR[m], P.incK[m], 0)
+          + sq('רווח נקי ' + M[m], P.netT[m], P.netR[m], P.netK[m], 0, `${fp(P.pct.net[m])} מההכנסות`)
+          + sq('% עלות מכר ' + M[m], P.cogsPct[m], P.pct.cogsR[m], P.pct.cogsK[m], 1)
+          + sq('% שכר ' + M[m], P.pct.sal[m], P.pct.salR[m], P.pct.salK[m], 1)
+          + sq('רווח עד היום', P.netToDate, ys(P.netR), ys(P.netK), 0, rng)
+          + sq('הכנסות עד היום', ys(P.inc), ys(P.incR), ys(P.incK), 0, rng + ', ללא מע״מ')
+          + `</div>`;
         const i0 = h.indexOf('<div class="kpis">'); if (i0 < 0) return h;
         let dep = 0, j = i0; const re = /<div\b|<\/div>/g; re.lastIndex = i0; let mt;
         while ((mt = re.exec(h))) { dep += mt[0] === '</div>' ? -1 : 1; if (dep === 0) { j = re.lastIndex; break; } }
@@ -1166,12 +1170,9 @@ table.md-t td.n small.pok{color:#15803d}table.md-t td.n small.pbad{color:#b42318
       } catch (e) { console.error('kp3', e); return h; }
     };
     document.head.insertAdjacentHTML('beforeend', `<style id="kp3Css">
-.kp3t{border-collapse:collapse;margin:4px 0 2px;font-size:13.5px;min-width:440px;background:transparent}
-.kp3t th{font-weight:600;color:#6b6480;font-size:12px;padding:2px 14px 4px;text-align:left;border-bottom:1px solid #e7e0f7}.kp3t th:first-child{text-align:right}
-.kp3t td{padding:3px 14px;text-align:left;font-variant-numeric:tabular-nums;color:#1f1a2e;white-space:nowrap}.kp3t td:first-child{text-align:right;color:#6b6480}
-.kp3t td:last-child,.kp3t th:last-child{font-weight:700;color:#2f2566}.kp3t tr.sm td{font-size:12.5px;color:#5d5675}.kp3t tr.sm td:first-child{color:#8c86a0}
-.kp3t tr.y td{color:#6b6480;font-size:12.5px}.kp3t tr.y:first-of-type td,.kp3t tr.y td{border-top:0}.kp3t tbody tr:nth-child(6) td{border-top:1px solid #f0edf6;padding-top:5px}
-.kp3t .neg{color:#b42318}.kp3-n{color:#a19bb3;font-size:11.5px;margin:2px 0 10px}
+.kp3q .kp3s{display:flex;flex-direction:column;gap:1px;margin-top:4px;font-size:12.5px;color:#6b6480;white-space:normal}
+.kp3q .kp3s span{display:flex;justify-content:space-between;gap:8px}.kp3q .kp3s b{color:#2f2566;font-weight:600;font-variant-numeric:tabular-nums}
+.kp3q .kp3s span.x{color:#a19bb3;font-size:11.5px;display:block}
 </style>`);
   }
   vAudit = function () {
