@@ -909,7 +909,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     const SR = {}; for (let mm = curM; mm >= ST0(); mm--) if (!MDIGN(mm)) SR[mm] = mdSrcs(it, mm, cellInfo(it, mm), KSH);
     const SK = MD_SK.filter(([k]) => Object.values(SR).some(o => o[k]));
     const nS = Math.max(SK.length, 1);
-    const head = `<tr><th rowspan="2">חודש</th><th colspan="${nS}" class="hsrc">מקורות</th><th colspan="${multi ? PS.length + 1 : 1}" class="hpl">רשום ברווח והפסד</th><th rowspan="2">מצב</th><th rowspan="2">מסמכים</th></tr>`
+    const head = `<tr><th rowspan="2">חודש</th><th colspan="${nS}" class="hsrc">מקורות<small>«← לרשום» כותב את הסכום · תא עם צפי / חישוב / הערה — קודם מראה מה רשום ושואל</small></th><th colspan="${multi ? PS.length + 1 : 1}" class="hpl">רשום ברווח והפסד</th><th rowspan="2">מצב</th><th rowspan="2">מסמכים</th></tr>`
       + `<tr>${SK.length ? SK.map(([k, l]) => `<th class="hsrc2">${l}${k === 'k' && KSH ? '<small>נגבה בחודש שאחרי</small>' : ''}</th>`).join('') : '<th class="hsrc2">—</th>'}${multi ? PS.map(p => `<th class="hpl2">${esc(mdLbl(p, mdBase(it)))}</th>`).join('') + '<th class="hpl2 tot">סה״כ</th>' : '<th class="hpl2 tot">סה״כ</th>'}</tr>`;
     const R = [];
     for (let mm = curM; mm >= ST0(); mm--) {
@@ -919,7 +919,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
       const vals = multi ? PS.map(p => `<td class="n">${MDF((mctx(mm).byP[p] || {}).val)}</td>`).join('') + `<td class="n tot">${MDF(plTot(mm))}</td>` : `<td class="n tot">${MDF(ci.v)}</td>`;
       const tv = multi ? plTot(mm) : ci.v;
       const sc = SK.length ? SK.map(([k, l]) => { const o = SR[mm][k]; if (!o) return '<td class="n sx na">—</td>'; const eq = Math.abs((tv || 0) - o.v) <= 1, main = sr && Math.abs(sr.v - o.v) < 0.005 && sr.l.indexOf(l.replace('🔒 ', '')) >= 0;
-        const pl = null;   /* «← לרשום» מוסתר (איילת 24.11: דרס צפי בביימי וחלוקה בטורנדו) — עד שיכבד את הכללים */
+        const pl = eq || RO ? null : mdPlan(it, PS, k, o.v, mm);
         return `<td class="n sx${eq ? ' eq' : ''}${main ? ' main' : ''}">${MDF(o.v)}${k === 'l' && o.ok ? '<small>אושר</small>' : ''}${o.nx != null ? `<small>חיוב ${esc(M[o.nx])}</small>` : ''}${eq ? '<small class="g">✓ זהה</small>' : pl ? `<button class="md-pk" data-mdpick='${esc(JSON.stringify(pl))}' data-m="${mm}" data-l="${esc(l.replace('🔒 ', ''))}" data-v="${o.v}" title="לרשום ${MDF(o.v)} ברווח והפסד ב${esc(M[mm])}${pl.length > 1 ? ' — ' + pl.map(x => esc(mdLbl(x[0], mdBase(it))) + ' ' + esc(String(x[1]))).join(' · ') : ''}">← לרשום</button>` : `<small>הפרש ${MDF(r2((tv || 0) - o.v))}</small>`}</td>`; }).join('') : '<td class="n sx na">—</td>';
       R.push(`<tr class="${mdCmp(it, mm).st === 'diff' ? 'rb' : ''}${mm === curM ? ' cur' : ''}"><td class="mo">${M[mm]}</td>${sc}${vals}<td>${mdSt2(mdCmp(it, mm))}</td><td>${nd ? `<details class="md-dd"><summary>📄 ${nd}</summary>${invCell(it, mm)}</details>` : '<span class="na">—</span>'}</td></tr>`);
     }
@@ -961,9 +961,38 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     let pl; try { pl = JSON.parse(b.dataset.mdpick); } catch (x) { return; }
     const mm = +b.dataset.m, v = +b.dataset.v, src = b.dataset.l;
     const lines = pl.map(([p, val]) => { const cs = cellsOf(p); return `${labelOf(p)}: ${rawShow(cs[mm]) || 'ריק'} ← ${val}`; });
-    if (!confirm(`לרשום ${nf2.format(v)} (לפי ${src}) ב${M[mm]}?\n` + lines.join('\n'))) return;
+    if (mdGuarded(pl.map(x => x[0]), mm)) { if (!mdGuardOk(pl.map(x => x[0]), mm, v, src)) return; }
+    else if (!confirm(`לרשום ${nf2.format(v)} (לפי ${src}) ב${M[mm]}?\n` + lines.join('\n'))) return;
     const l = document.getElementById('mdList'); ui.mdSc = l ? l.scrollTop : 0;
     commit(`${labelOf(pl[0][0])} › ${M[mm]}: ${nf2.format(v)} לפי ${src}${pl.length > 1 ? ' (מחולק ל-' + pl.length + ' שורות)' : ''}`, () => { pl.forEach(([p, val]) => { cellsOf(p)[mm] = val; }); });
+  }, true);
+  /* הגנה (איילת 24.11): תא שנקבע לפי כלל — חישוב, הערה או צהוב — לא מוחלף בלי לראות מה רשום ולמה */
+  function mdGuard(p, mm) {
+    const cs = cellsOf(p); if (!cs) return '';
+    const raw = cs[mm], n = ((D.cnote || {})[p] || {})[String(mm)], y = ((D.cmark || {})[p] || {})[String(mm)], w = [];
+    if (typeof raw === 'string' && /^=/.test(raw)) w.push('חישוב: ' + raw);
+    if (n) w.push('הערה: ' + n);
+    if (y) w.push('מסומן בצהוב (צפי / לא בטוח)');
+    return w.join('\n');
+  }
+  const mdGuarded = (ps, mm) => ps.some(p => mdGuard(p, mm));
+  function mdGuardOk(ps, mm, v, src) {
+    const g = ps.map(p => { const t = mdGuard(p, mm); if (!t) return ''; const cur = (mctx(mm).byP[p] || {}).val; return `${labelOf(p)} · ${M[mm]}\nרשום עכשיו: ${cur == null ? 'ריק' : nf2.format(cur)}\n${t}`; }).filter(Boolean);
+    if (!g.length) return true;
+    return confirm(`⚠️ הסכום שרשום עכשיו נקבע לפי כלל או החלטה:\n\n${g.join('\n\n')}\n\nלהחליף ב-${nf2.format(v)} (לפי ${src})?`);
+  }
+  /* אותה הגנה בחלון המלא: «לבחור», «תקן ל-», ולחיצה על סכום של מקור */
+  window.addEventListener('click', e => {
+    if (RO || !e.target.closest) return;
+    const t = e.target.closest('[data-act="audPickM"],[data-act="audPick"]') || (!e.target.closest('button,a,input') && e.target.closest('#audOv td.cl-pick'));
+    if (!t) return;
+    let p, mm, v, src;
+    if (t.dataset.act) { p = t.dataset.p; mm = t.dataset.act === 'audPickM' ? +t.dataset.m : curM; v = +t.dataset.v; src = (typeof PK_LBL !== 'undefined' && PK_LBL[t.dataset.k]) || t.dataset.k; }
+    else { p = ui.audOpenP; mm = +t.dataset.pm; v = +t.dataset.pv; src = (typeof PK_LBL !== 'undefined' && PK_LBL[t.dataset.pk]) || t.dataset.pk; }
+    if (!p || isNaN(mm)) return;
+    const cur = (mctx(mm).byP[p] || {}).val;
+    if (cur != null && Math.abs(cur - v) <= 0.005) return;
+    if (!mdGuardOk([p], mm, v, src)) { e.stopImmediatePropagation(); e.preventDefault(); }
   }, true);
   function mdRestore() { const l = document.getElementById('mdList'); if (!l) return; if (ui.mdSc != null) l.scrollTop = ui.mdSc; const on = l.querySelector('.md-it.on'); if (on) { const a = on.getBoundingClientRect(), b = l.getBoundingClientRect(); if (a.top < b.top || a.bottom > b.bottom) on.scrollIntoView({ block: 'nearest' }); } }
   document.head.insertAdjacentHTML('beforeend', `<style id="au2MdCss">
