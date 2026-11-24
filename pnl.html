@@ -807,14 +807,22 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
   const MD = () => (ui.au2Mode || (() => { try { return localStorage.getItem('pl_au2_md'); } catch (x) { return null; } })() || 'md') === 'md';
   const MDF = v => v == null ? '—' : nf2.format(v);
   const MDIGN = mm => ((D.settings && D.settings.ignoreMonths) || []).includes(mm);
+  /* כל השורות של אותו ספק: השורות שמשותפות לו בשונטל + שורות ששמן מתחיל בשם הספק (למשל «קירור פלדמן — ויטרינת נירוסטה» בהשקעות) */
+  const mdBase = it => String(it.name || '').split(/\s+[—–-]\s+|\s*\(/)[0].trim();
   function mdPaths(it) {
     if (it.uk) return [it.path];
     const g = IDX.shontal && IDX.shontal[it.path];
-    const P = g && Array.isArray(g.paths) && g.paths.length > 1 ? g.paths.filter(p => au2Line(p)) : [it.path];
-    return P.length ? P : [it.path];
+    const S = new Set(g && Array.isArray(g.paths) ? g.paths.filter(p => au2Line(p)) : []); S.add(it.path);
+    const base = mdBase(it);
+    if (/^p:/.test(it.path) && base.length >= 3) for (const sx of D.purchases || []) for (const gr of sx.groups || []) for (const LL of Object.values(gr.sides || {})) for (const l of LL) if (String(l.name || '').startsWith(base)) S.add('p:' + l.id);
+    const P = [...S];
+    const ord = p => { const s = mdLbl(p, base); return /^מסעדה/.test(s) ? 0 : /^קיוסק/.test(s) ? 1 : /^משותף/.test(s) ? 2 : 3; };
+    return P.sort((x, y) => ord(x) - ord(y));
   }
-  function mdLbl(p) {
+  function mdLbl(p, base) {
     const l = au2Line(p); if (!l) return p;
+    const rem = base && String(l.name || '').startsWith(base) ? String(l.name).slice(base.length).replace(/^[\s—–-]+/, '').trim() : '';
+    if (rem && !/^\(/.test(rem)) { let gname = ''; const id0 = (/^p:(.+)$/.exec(p) || [])[1]; if (id0) for (const sx of D.purchases || []) for (const gr of sx.groups || []) for (const LL of Object.values(gr.sides || {})) if (LL.some(x => x.id === id0)) gname = gr.name; gname = gname.replace(/\s*\(.*\)\s*$/, ''); return rem + (gname ? ' · ' + gname : ''); }
     const m = /\((\d+%?)\)/.exec(l.name || ''); let side = '';
     const id = (/^p:(.+)$/.exec(p) || [])[1];
     if (id) for (const sx of D.purchases || []) for (const gr of sx.groups || []) for (const [sd, LL] of Object.entries(gr.sides || {})) if (LL.some(x => x.id === id)) side = sd;
@@ -834,6 +842,16 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     if (ci.marked) return '<span class="md-s d">✓ אושר</span>';
     return ci.st === 'ok' ? '<span class="md-s ok">✓ תואם</span>' : ci.st === 'diff' ? `<span class="md-s bad">פער ${nf2.format(ci.d || 0)}</span>` : ci.st === 'miss' ? '<span class="md-s bad">חסר החודש</span>' : '<span class="md-s na">אין מקור</span>';
   }
+  /* מצב לחודש = «יחד ברווח והפסד» מול «סכום המקור» שמוצג בשורה (איילת 24.11: «מה לאשר כשהספק מחולק לאחוזים — רשום באדום כטעות»).
+     חיוב אשראי של ספק עם חשבוניות הוא תשלום — לא משווים אליו כשיש קיבוע/שונטל/קונפורטי. שורות דוח (בלי מע״מ) — לפי ההשוואה הקיימת. */
+  function mdCmp(it, mm) {
+    const ci = cellInfo(it, mm); if (ci.marked) return { st: 'marked', ci };
+    if (!/^p:/.test(it.path)) return { st: ci.st === 'ok' ? 'ok' : ci.st === 'diff' ? 'diff' : ci.st === 'miss' ? 'miss' : 'none', d: ci.d || 0, ci };
+    const PS = mdPaths(it), tot = PS.reduce((t, p) => { const x = mctx(mm).byP[p]; return t + (x ? x.val || 0 : 0); }, 0), sr = mdSrc(it, mm, ci);
+    if (!sr) return { st: Math.abs(tot) < 0.005 ? 'none' : 'none', d: 0, ci, tot };
+    const d = tot - sr.v; return { st: Math.abs(d) <= 1 ? 'ok' : 'diff', d, ci, tot, sr };
+  }
+  function mdSt2(r) { return r.st === 'marked' ? '<span class="md-s d">✓ אושר</span>' : r.st === 'ok' ? '<span class="md-s ok">✓ תואם</span>' : r.st === 'diff' ? `<span class="md-s bad">פער ${nf2.format(Math.abs(r.d || 0))}</span>` : r.st === 'miss' ? '<span class="md-s bad">חסר החודש</span>' : '<span class="md-s na">אין מקור</span>'; }
   function mdDetail(it, c) {
     if (!it) return '<div class="md-det md-empty">בוחרים ספק מהרשימה</div>';
     const P = esc(it.path), a = it.a || {};
@@ -851,22 +869,25 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     const ci0 = cellInfo(it, curM), src0 = mdSrc(it, curM, ci0);
     const plTot = mm => PS.reduce((t, p) => { const x = mctx(mm).byP[p]; return t + (x ? x.val || 0 : 0); }, 0);
     let ans;
+    const r0 = mdCmp(it, curM);
     if (a.reply && !a.handled) ans = `<div class="md-ans b">🤖 ${esc(a.reply)}</div>`;
-    else if (c === 'g' || c === 'd') ans = `<div class="md-ans g">${M[curM]}: ${multi ? PS.map(p => `${esc(mdLbl(p))} <b>${MDF((mctx(curM).byP[p] || {}).val)}</b>`).join(' + ') + ` = <b>${MDF(plTot(curM))}</b>` : `ברווח והפסד <b>${MDF(ci0.v)}</b>`}${src0 ? ` · ${esc(src0.l)} <b>${MDF(src0.v)}</b>` : ''} — ${c === 'd' ? 'אושר' : 'הכל תואם'} ✓</div>`;
+    else if (c === 'g' || c === 'd' || r0.st === 'ok' || r0.st === 'marked') ans = `<div class="md-ans g">${M[curM]}: ${multi ? PS.map(p => `${esc(mdLbl(p, mdBase(it)))} <b>${MDF((mctx(curM).byP[p] || {}).val)}</b>`).join(' + ') + ` = <b>${MDF(plTot(curM))}</b>` : `ברווח והפסד <b>${MDF(ci0.v)}</b>`}${src0 ? ` · ${esc(src0.l)} <b>${MDF(src0.v)}</b>` : ''} — ${c === 'd' || r0.st === 'marked' ? 'אושר' : 'תואם — אפשר לאשר'} ✓${it.k && it.k.st === 'diff' && /^p:/.test(it.path) ? '<div class="md-note">חיוב האשראי של הספק הוא תשלום על החשבוניות — לא משווים אליו.</div>' : ''}</div>`;
     else ans = `<div class="md-ans r"><b>${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</b>${(si.bad || []).length ? ' · ' + esc(si.bad.join(' · ')) : rs.length > 1 ? ' · ' + esc(rs.slice(1).map(r => r[1]).join(' · ')) : ''}</div>`;
-    const head = `<tr><th>חודש</th><th>סכום המקור</th>${multi ? PS.map(p => `<th>${esc(mdLbl(p))}</th>`).join('') + '<th>יחד ברווח והפסד</th>' : '<th>ברווח והפסד</th>'}<th>מצב</th><th>מסמכים</th></tr>`;
+    const head = multi
+      ? `<tr><th rowspan="2">חודש</th><th rowspan="2" class="hsrc">מה צריך להיות<small>קיבוע / שונטל / קונפורטי</small></th><th colspan="${PS.length + 1}" class="hpl">רשום ברווח והפסד</th><th rowspan="2">מצב</th><th rowspan="2">מסמכים</th></tr><tr>${PS.map(p => `<th class="hpl2">${esc(mdLbl(p, mdBase(it)))}</th>`).join('')}<th class="hpl2 tot">סה״כ</th></tr>`
+      : `<tr><th>חודש</th><th class="hsrc">מה צריך להיות<small>קיבוע / שונטל / קונפורטי</small></th><th class="hpl">רשום ברווח והפסד</th><th>מצב</th><th>מסמכים</th></tr>`;
     const R = [];
     for (let mm = curM; mm >= ST0(); mm--) {
       if (MDIGN(mm)) continue;
       const ci = cellInfo(it, mm), sr = mdSrc(it, mm, ci);
       const g = IDX.shontal[it.path], e = g && g.m[String(mm)], nd = (e ? e[1].length : 0) + (CC ? CC.lines.filter(l => ccPath(l) === it.path && ccMon(l) === mm).length : 0);
       const vals = multi ? PS.map(p => `<td class="n">${MDF((mctx(mm).byP[p] || {}).val)}</td>`).join('') + `<td class="n tot">${MDF(plTot(mm))}</td>` : `<td class="n tot">${MDF(ci.v)}</td>`;
-      R.push(`<tr class="${ci.st === 'diff' && !ci.marked ? 'rb' : ''}${mm === curM ? ' cur' : ''}"><td class="mo">${M[mm]}</td><td class="n src">${sr ? MDF(sr.v) + `<small>${esc(sr.l)}</small>` : '—'}</td>${vals}<td>${mdSt(ci)}</td><td>${nd ? `<details class="md-dd"><summary>📄 ${nd}</summary>${invCell(it, mm)}</details>` : '<span class="na">—</span>'}</td></tr>`);
+      R.push(`<tr class="${mdCmp(it, mm).st === 'diff' ? 'rb' : ''}${mm === curM ? ' cur' : ''}"><td class="mo">${M[mm]}</td><td class="n src">${sr ? MDF(sr.v) + `<small>${esc(sr.l)}</small>` : '—'}</td>${vals}<td>${mdSt2(mdCmp(it, mm))}</td><td>${nd ? `<details class="md-dd"><summary>📄 ${nd}</summary>${invCell(it, mm)}</details>` : '<span class="na">—</span>'}</td></tr>`);
     }
     const ln = lineNote(it.path);
     const acts = c === 'd' ? `<button class="au2-b" data-act="audUn" data-p="${P}">↩ החזרה לבדיקה</button>`
       : `<button class="au2-b pri" data-act="audOkRow" data-p="${P}" data-md="1">✓ אישור ${M[curM]}</button>`;
-    return `<div class="md-det"><h2>${esc(it.name)}</h2><div class="md-sub">${esc(topic(it))}${catTxt(it) ? ' · ' + esc(catTxt(it)) : ''}${multi ? ' · מתחלק: ' + PS.map(p => esc(mdLbl(p))).join(' / ') : ''}</div>${ans}
+    return `<div class="md-det"><h2>${esc(it.name)}</h2><div class="md-sub">${esc(topic(it))}${catTxt(it) ? ' · ' + esc(catTxt(it)) : ''}${multi ? ' · רשום ב: ' + PS.map(p => esc(mdLbl(p, mdBase(it)))).join(' / ') : ''}</div>${ans}
       <div class="md-tw"><table class="md-t"><thead>${head}</thead><tbody>${R.join('')}</tbody></table></div>
       ${ln ? `<div class="md-ln">💬 ${esc(ln)}</div>` : ''}
       <div class="md-act">${acts}<input class="au2-note md-ni" data-p="${P}" data-m="${curM}" value="${esc(a.note || '')}" placeholder="הערה ל${M[curM]}…"><button class="au2-b dots" data-act="audOpen" data-p="${P}" title="החלון המלא: בחירת סכום ממקור, עריכה, פירוט החישוב">⋯ החלון המלא</button></div></div>`;
@@ -875,7 +896,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     const L = B.main.concat(B.U.all.filter(x => !B.main.includes(x) && x.path === sp));
     const sel = L.find(x => x.path === sp) || L[0] || null; if (sel) ui.au2P = sel.path;
     const dot = c => `<i class="md-dot ${c}"></i>`;
-    const li = L.map(it => { const c = B.U.cat[it.path], ci = it.uk ? null : cellInfo(it, curM); return `<div class="md-it${sel && it.path === sel.path ? ' on' : ''}" data-mdp="${esc(it.path)}">${dot(c)}<b>${esc(it.name)}</b><small>${it.uk ? 'לא משויך' : ci && ci.st === 'diff' ? 'פער ' + nf2.format(ci.d || 0) : ''}</small></div>`; }).join('') || '<div class="md-none">אין כאן ספקים 🎉</div>';
+    const li = L.map(it => { const c = B.U.cat[it.path], r = it.uk ? null : mdCmp(it, curM), dc = it.uk ? 'r' : r.st === 'ok' || r.st === 'marked' ? 'g' : r.st === 'diff' || r.st === 'miss' ? 'r' : 'o'; return `<div class="md-it${sel && it.path === sel.path ? ' on' : ''}" data-mdp="${esc(it.path)}">${dot(dc)}<b>${esc(it.name)}</b><small class="${dc}">${it.uk ? 'לא משויך' : r.st === 'diff' ? 'פער ' + nf2.format(Math.abs(r.d || 0)) : r.st === 'ok' ? '✓ תואם — לאשר' : r.st === 'miss' ? 'חסר החודש' : r.st === 'none' ? 'אין מקור' : ''}</small></div>`; }).join('') || '<div class="md-none">אין כאן ספקים 🎉</div>';
     return `<div class="md"><div class="md-list" id="mdList"><div class="md-lh">${L.length} ספקים · ${M[curM]}</div>${li}</div>${mdDetail(sel, sel ? B.U.cat[sel.path] : '')}</div>`;
   }
   window.addEventListener('click', e => {
@@ -911,12 +932,12 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
 .md-tw{overflow:visible;background:#fff}table.md-t{display:table!important;width:100%!important;border-collapse:collapse;font-size:14px;background:#fff!important;table-layout:auto}
 table.md-t th{background:#f4f1fb;color:#5d5675;font-weight:600;padding:8px;text-align:right;font-size:12.5px;white-space:nowrap;position:static}
 table.md-t td{padding:8px;border-bottom:1px solid #f0edf6;vertical-align:top;background:#fff}
-table.md-t td.n{direction:ltr;text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap}table.md-t td.n small{display:block;color:#8c86a0;font-size:11px;direction:rtl;text-align:left}
-table.md-t td.src{font-weight:800;font-size:15px}table.md-t td.tot{font-weight:700}table.md-t td.mo{font-weight:700;white-space:nowrap}
+table.md-t td.n{direction:ltr;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}table.md-t td.n small{display:block;color:#8c86a0;font-size:11px;direction:rtl;text-align:right}
+table.md-t td.src{font-weight:800;font-size:15px;background:#f7f7f9}table.md-t td.tot{font-weight:800;font-size:15px;background:#efe9ff!important;color:#2f2566}table.md-t th.hsrc{background:#ececf1}table.md-t th small{display:block;font-weight:400;font-size:11px;color:#8c86a0}table.md-t th.hpl{background:#e3d9fb;color:#2f2566;text-align:center;font-size:13.5px}table.md-t th.hpl2{background:#efe9ff;color:#4a3d99}table.md-t th.hpl2.tot{color:#2f2566;font-weight:800}table.md-t td.mo{font-weight:700;white-space:nowrap}
 table.md-t tr.rb td:first-child{box-shadow:inset -3px 0 0 #b42318}table.md-t tr.cur td{background:#fbfaff}
 .md-s{font-weight:700;white-space:nowrap;font-size:13px}.md-s.ok{color:#15803d}.md-s.bad{color:#b42318}.md-s.na{color:#8c86a0;font-weight:500}.md-s.d{color:#5d5675}
 .md-dd summary{cursor:pointer;color:#6d28d9;white-space:nowrap}.md-dd .au2-inv{font-size:12.5px;white-space:nowrap}
-.md-ln{margin-top:8px;color:#455b6b;font-size:13px}
+.md-ln{margin-top:8px;color:#455b6b;font-size:13px}.md-note{font-size:12.5px;color:#455b6b;margin-top:4px}.md-it small.g{color:#15803d}.md-it small.o{color:#b45309}
 .md-act{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}.md-act .md-ni{flex:1;min-width:180px;border:1px solid #e3ddf3;border-radius:8px;padding:7px 10px;font:inherit}
 </style>`);
   function selPath(B) {
