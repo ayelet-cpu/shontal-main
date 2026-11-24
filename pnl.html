@@ -868,8 +868,9 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
   }
   function mdSrcs(it, mm, ci, sh) {
     const o = {}; let L = null; try { L = has(ci.s) ? lockOf(it, mm) : null; } catch (x) { }
-    if (L && L.amt != null && Math.abs(L.amt) >= 0.005) o.l = { v: L.amt, ok: L.ok };
-    ['s', 'c'].forEach(k => { const c = ci[k]; if (has(c) && Math.abs(c.raw || 0) >= 0.005) o[k] = { v: c.raw, n: c.n }; });
+    const net = /^rep:/.test(it.path) ? (x => r2(x / ((D.settings && D.settings.vat) || 1.18))) : (x => x);   /* שורות הדוח בלי מע״מ — גם המקורות מוצגים בלי מע״מ */
+    if (L && L.amt != null && Math.abs(L.amt) >= 0.005) o.l = { v: net(L.amt), ok: L.ok };
+    ['s', 'c'].forEach(k => { const c = ci[k]; if (has(c) && Math.abs(c.raw || 0) >= 0.005) o[k] = { v: net(c.raw), n: c.n }; });
     const kv = mdK(it, sh ? mm + 1 : mm); if (kv != null) o.k = { v: kv, nx: sh ? mm + 1 : null };
     return o;
   }
@@ -903,13 +904,13 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     let ans;
     const r0 = mdCmp(it, curM);
     if (a.reply && !a.handled) ans = `<div class="md-ans b">🤖 ${esc(a.reply)}</div>`;
-    else if (c === 'g' || c === 'd' || r0.st === 'ok' || r0.st === 'marked') ans = `<div class="md-ans g">✓ ${M[curM]} <b>${MDF(multi ? plTot(curM) : ci0.v)}</b>${src0 ? ' = ' + esc(src0.l.replace(/^🔒\s*/, '').replace(/\s*\(.*\)$/, '')) : ''}${c === 'd' || r0.st === 'marked' ? ' · אושר' : ''}</div>`;
+    else if (c === 'g' || c === 'd' || r0.st === 'ok' || r0.st === 'marked') ans = `<div class="md-ans g">✓ ${M[curM]} <b>${MDF(multi ? plTot(curM) : ci0.v)}</b>${src0 && /^p:/.test(it.path) ? ' = ' + esc(src0.l.replace(/^🔒\s*/, '').replace(/\s*\(.*\)$/, '')) : ''}${c === 'd' || r0.st === 'marked' ? ' · אושר' : ''}</div>`;
     else ans = `<div class="md-ans r" title="${esc(((si.bad || []).length ? si.bad : rs.slice(1).map(r => r[1])).join(' · '))}"><b>${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</b></div>`;
     const KSH = mdShift(it, mm => multi ? plTot(mm) : cellInfo(it, mm).v);
     const SR = {}; for (let mm = curM; mm >= ST0(); mm--) if (!MDIGN(mm)) SR[mm] = mdSrcs(it, mm, cellInfo(it, mm), KSH);
     const SK = MD_SK.filter(([k]) => Object.values(SR).some(o => o[k]));
     const nS = Math.max(SK.length, 1);
-    const head = `<tr><th rowspan="2">חודש</th><th colspan="${nS}" class="hsrc">מקורות<small>«← לרשום» כותב את הסכום · תא עם צפי / חישוב / הערה — קודם מראה מה רשום ושואל</small></th><th colspan="${multi ? PS.length + 1 : 1}" class="hpl">רשום ברווח והפסד</th><th rowspan="2">מצב</th><th rowspan="2">מסמכים</th></tr>`
+    const head = `<tr><th rowspan="2">חודש</th><th colspan="${nS}" class="hsrc">מקורות${/^rep:/.test(it.path) ? ' — בלי מע״מ' : ''}<small>«← לרשום» כותב את הסכום · תא עם צפי / חישוב / הערה — קודם מראה מה רשום ושואל</small></th><th colspan="${multi ? PS.length + 1 : 1}" class="hpl">רשום ברווח והפסד</th><th rowspan="2">מצב</th><th rowspan="2">מסמכים</th></tr>`
       + `<tr>${SK.length ? SK.map(([k, l]) => `<th class="hsrc2">${l}${k === 'k' && KSH ? '<small>נגבה בחודש שאחרי</small>' : ''}</th>`).join('') : '<th class="hsrc2">—</th>'}${multi ? PS.map(p => `<th class="hpl2">${esc(mdLbl(p, mdBase(it)))}</th>`).join('') + '<th class="hpl2 tot">סה״כ</th>' : '<th class="hpl2 tot">סה״כ</th>'}</tr>`;
     const R = [];
     for (let mm = curM; mm >= ST0(); mm--) {
@@ -920,7 +921,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
       const pTot = multi ? plTot(mm) : 0;
       const pctOf = p => { const x = /\((\d+(?:\.\d+)?)%/.exec((au2Line(p) || {}).name || ''); return x ? +x[1] : null; };
       const vals = multi ? PS.map(p => { const v = (mctx(mm).byP[p] || {}).val, want = pctOf(p), got = Math.abs(pTot) >= 0.5 && v != null ? v / pTot * 100 : null, bad = want != null && got != null && Math.abs(got - want) > 0.5;
-        return `<td class="n">${MDF(v)}${got != null ? `<small class="${bad ? 'pbad' : 'pok'}">${bad ? '⚠ ' : ''}${Math.round(got * 10) / 10}%${bad ? ` (צריך ${want}%)` : ''}</small>` : ''}</td>`; }).join('') + `<td class="n tot">${MDF(pTot)}</td>` : `<td class="n tot">${MDF(ci.v)}</td>`;
+        return `<td class="n ed${estOn(p, mm) ? ' est' : ''}" data-p="${esc(p)}" data-m="${mm}">${MDF(v)}${got != null ? `<small class="${bad ? 'pbad' : 'pok'}">${bad ? '⚠ ' : ''}${Math.round(got * 10) / 10}%${bad ? ` (צריך ${want}%)` : ''}</small>` : ''}</td>`; }).join('') + `<td class="n tot">${MDF(pTot)}</td>` : `<td class="n tot ed${estOn(it.path, mm) ? ' est' : ''}" data-p="${esc(it.path)}" data-m="${mm}">${MDF(ci.v)}</td>`;
       const tv = multi ? plTot(mm) : ci.v;
       const sc = SK.length ? SK.map(([k, l]) => { const o = SR[mm][k]; if (!o) return '<td class="n sx na">—</td>'; const eq = Math.abs((tv || 0) - o.v) <= 1, main = sr && Math.abs(sr.v - o.v) < 0.005 && sr.l.indexOf(l.replace('🔒 ', '')) >= 0;
         const pl = eq || RO ? null : mdPlan(it, PS, k, o.v, mm);
