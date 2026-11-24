@@ -882,7 +882,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     if (PS.some(p => !gp.includes(p)) || PS.some(p => !cellsOf(p))) return null;
     const pc = PS.map(p => { const x = /\((\d+(?:\.\d+)?)%\)/.exec((au2Line(p) || {}).name || ''); return x ? +x[1] : null; });
     if (pc.every(x => x != null) && Math.abs(pc.reduce((a, b) => a + b, 0) - 100) < 0.01) return PS.map((p, i) => [p, `=${v}*${r2(pc[i] / 100)}`]);
-    for (let m2 = mm; m2 >= 0; m2--) { const xs = PS.map(p => (mctx(m2).byP[p] || {}).val || 0), t = xs.reduce((a, b) => a + b, 0); if (Math.abs(t) >= 1 && xs.every(x => x * t >= 0)) { let acc = 0; return PS.map((p, i) => { const val = i === PS.length - 1 ? r2(v - acc) : r2(v * xs[i] / t); acc += val; return [p, val]; }); } }
+    /* בלי אחוזים בשם — לא מחלקים לבד (איילת 24.11: סנדר — הסכום התחלק בין תפעול להשקעות) */
     return null;
   }
   const mdName = it => it.uk ? it.name : (mdPaths(it).length > 1 ? String(it.name || '').replace(/\s*\([^)]*\d+%[^)]*\)\s*/g, ' ').replace(/\s*\((מסעדה|קיוסק|משותף)\)\s*/g, ' ').replace(/\s+/g, ' ').trim() || it.name : it.name);   /* ספק מפוצל — שם הספק בלי האחוז (איילת 24.11) */
