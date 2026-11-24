@@ -709,6 +709,98 @@ body.xlLook .pdfDoc .foot,body.xlLook .pdfDoc .kp span{color:#595959!important}
     h += `<div class="au2-act">${acts}<button class="au2-b dots" data-act="audOpen" data-p="${P}" title="החלון המלא: חודשים קודמים, חשבוניות, גיול, הערה לחודש ועוד">⋯</button></div>`;
     return h;
   }
+  /* ---------- 📋 תצוגת רשימה (איילת 24.11.2026: «לראות רק את החודש הנוכחי של כל ספק וכשלוחצים על שם הספק יפתח כל השנה; ואם יש אי התאמה בחודשים קודמים — לרשום») ----------
+     שורה לכל ספק: החודש הנבדק מול שונטל · 🔒 קיבוע (עמודה נפרדת) · קונפורטי · אשראי. פער בחודש קודם = תווית בשורה.
+     לחיצה על השם = טבלת כל השנה מתחת לשורה; מסמכים נפתחים רק בלחיצה. אותן פעולות בדיוק כמו בתצוגה לפי חודשים — בלי שינוי בנתונים. */
+  const L2 = () => (ui.au2Mode || (() => { try { return localStorage.getItem('pl_au2_mode'); } catch (x) { return null; } })() || 'list') === 'list';
+  const L2N = v => Math.abs(v || 0) < 0.005 ? '—' : nf2.format(v);
+  function l2Src(it, mm, ci) {
+    const td = (c, lbl) => {
+      if (!has(c)) return '<td class="l2n na">—</td>';
+      const tip = `${lbl} ${M[mm]}: ₪${nf2.format(c.raw)}${c.st === 'diff' ? ' — הפרש ₪' + nf2.format(c.diff || 0) : ' ✓ תואם'}${c.n > 1 ? `\nמשותף ל-${c.n} שורות ברווח והפסד — ההשוואה על כולן יחד` : ''}`;
+      return `<td class="l2n ${c.st === 'diff' ? 'bad' : 'ok'}" title="${esc(tip)}">${nf2.format(c.raw)}${c.n > 1 ? '<sup>Σ</sup>' : ''}</td>`;
+    };
+    let L = null; try { L = lockOf(it, mm); } catch (x) { }
+    let lk = '<td class="l2n lk na">—</td>';
+    if (L && L.amt != null) {
+      const ok = has(ci.s) && ci.s.st !== 'diff' && Math.abs(L.amt - ci.s.raw) <= 1;
+      lk = `<td class="l2n lk ${ok ? 'ok' : 'bad'}" title="${esc(`קיבוע גיול ${M[mm]}: ₪${nf2.format(L.amt)}${has(ci.s) ? (Math.abs(L.amt - ci.s.raw) <= 1 ? ' — שווה לחשבוניות בשונטל' : ' — שונה מהחשבוניות בשונטל ב-₪' + nf2.format(L.amt - ci.s.raw)) : ''}${L.ok ? '\nהגיול אושר' : ''}`)}">🔒 ${nf2.format(L.amt)}${L.ok ? '<i class="l2-lok">✓</i>' : ''}</td>`;
+    }
+    return td(ci.s, 'שונטל') + lk + td(ci.c, 'קונפורטי') + td(ci.k, 'אשראי');
+  }
+  function l2St(ci) {
+    if (ci.marked) return '<span class="l2-s d">✓ סומן</span>';
+    return ci.st === 'ok' ? '<span class="l2-s ok">✓ תואם</span>' : ci.st === 'diff' ? `<span class="l2-s bad">פער ₪${nf2.format(ci.d || 0)}</span>` : ci.st === 'miss' ? '<span class="l2-s bad">חסר החודש</span>' : ci.st === 'uk' ? '<span class="l2-s bad">לא משויך</span>' : '<span class="l2-s na">אין מקור</span>';
+  }
+  const l2Head = inner => `<thead><tr>${inner ? '<th>חודש</th>' : '<th class="au2-ck"><input type="checkbox" data-au2all title="בחירת כל השורות בטבלה" aria-label="בחירת הכל"></th><th class="l2-nmh">ספק <small>· לחיצה על השם = כל השנה</small></th>'}<th class="l2h">ברווח והפסד</th><th class="l2h">שונטל</th><th class="l2h lk">🔒 קיבוע</th><th class="l2h">קונפורטי</th><th class="l2h">אשראי</th><th>מצב</th>${inner ? '<th>מסמכים</th><th>הערה לחודש</th>' : '<th>ממצא / סיבה</th><th>הערה</th><th>אישור</th>'}</tr></thead>`;
+  function l2Docs(it, mm) {
+    const g = IDX.shontal[it.path], e = g && g.m[String(mm)], n = (e ? e[1].length : 0) + (CC ? CC.lines.filter(l => ccPath(l) === it.path && ccMon(l) === mm).length : 0);
+    return n;
+  }
+  function l2Year(it) {
+    const P = esc(it.path), R = [];
+    for (let mm = curM; mm >= ST0(); mm--) {
+      const ci = cellInfo(it, mm), n = l2Docs(it, mm), am = audGet(mm, it.path) || {};
+      const sp = [ci.s, ci.c, ci.k].find(c => has(c) && c.n > 1 && c.mine != null);
+      R.push(`<tr class="${ci.st === 'diff' && !ci.marked ? 'l2-rb' : ''}${mm === curM ? ' l2-cur' : ''}"><td class="l2-mo">${M[mm]}</td><td class="l2n pl">${L2N(ci.v)}${sp ? `<div class="l2-sp">${sp.n} שורות יחד: ${nf2.format(sp.mine)}</div>` : ''}</td>${l2Src(it, mm, ci)}<td>${l2St(ci)}</td><td>${n ? `<details class="l2-dd"><summary>📄 ${n} מסמכים</summary>${invCell(it, mm)}</details>` : '<span class="na">—</span>'}</td><td><input class="au2-note au2-ni" data-p="${P}" data-m="${mm}" value="${esc(am.note || '')}" placeholder="הערה ל${M[mm]}…"></td></tr>`);
+    }
+    const ln = lineNote(it.path);
+    return `<tr class="l2-exp"><td colspan="11"><div class="l2-yr"><div class="l2-yh"><b>כל השנה — ${esc(it.name)}</b><small>${esc(topic(it))}</small><span class="au2-sp"></span><button class="au2-b sm" data-au2open="${P}" title="החלון המלא: בחירת סכום ממקור, עריכה, פירוט החישוב">⋯ החלון המלא</button></div><table class="l2-in">${l2Head(true)}<tbody>${R.join('')}</tbody></table>${ln ? `<div class="l2-ln">💬 ${esc(ln)}</div>` : ''}</div></td></tr>`;
+  }
+  function l2Row(it, c) {
+    const P = esc(it.path), a = it.a || {}, rs = reasons(it, c), open = !it.uk && !!(ui.au2X || {})[it.path];
+    const ci = cellInfo(it, curM);
+    let srcs, pl;
+    if (it.uk) {
+      const o = it.uk, u = k => o.src[k].length ? ukAmtK(o, curM, k) : null, t = v => v == null || Math.abs(v) < 0.005 ? '<td class="l2n na">—</td>' : `<td class="l2n">${nf2.format(v)}</td>`;
+      srcs = t(u('s')) + '<td class="l2n lk na">—</td>' + t(u('c')) + t(u('k')); pl = '<td class="l2n uk">לא משויך</td>';
+    } else {
+      srcs = l2Src(it, curM, ci);
+      const sp = [ci.s, ci.c, ci.k].find(x => has(x) && x.n > 1 && x.mine != null);
+      pl = `<td class="l2n pl">${L2N(ci.v)}${sp ? `<div class="l2-sp">${sp.n} שורות יחד: ${nf2.format(sp.mine)}</div>` : ''}</td>`;
+    }
+    const past = []; if (!it.uk) for (let mm = ST0(); mm < curM; mm++) { const x = cellInfo(it, mm); if ((x.st === 'diff' || x.st === 'miss') && !x.marked) past.push(M[mm]); }
+    const why = c === 'd' ? `<span class="au2-pill d">✓ סומן${a.at ? ' ' + new Date(a.at).toLocaleDateString('he-IL') : ''}</span>`
+      : c === 'g' ? '<span class="au2-pill g">כל המקורות תואמים</span>'
+      : `<span class="au2-pill ${c}">${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</span>${rs.length > 1 ? ` <span class="au2-more" title="${esc(rs.slice(1).map(r => r[1]).join(' · '))}">+${rs.length - 1}</span>` : ''}`;
+    const ans = a.reply && !a.handled ? `<div class="l2-ans" title="${esc(a.reply)}">🤖 ${esc(a.reply)}</div>` : '';
+    const pb = past.length ? `<div class="l2-past" data-l2x="${P}" title="לחיצה — כל השנה">⚠ פער בחודשים קודמים: ${past.join(', ')}</div>` : '';
+    const n = it.uk ? 0 : l2Docs(it, curM);
+    const chk = it.uk || c === 'd' ? '<td class="au2-ck"></td>' : `<td class="au2-ck"><input type="checkbox" data-au2sel="${P}"${(ui.au2Sel || {})[it.path] ? ' checked' : ''} aria-label="בחירה"></td>`;
+    const okTd = `<td class="au2-okx l2-ok">${it.uk ? (c === 'd' ? `<div class="au2-bigdone">✓ טופל</div><button class="au2-un" data-act="ukUn" data-p="${P}">↩ ביטול</button>` : `<button class="au2-ukx" data-act="ukMap" data-k="${esc(it.uk.key)}" title="כבר רשום בשורה קיימת — נזכר לכל החודשים">🔗 שיוך לשורה</button><button class="au2-ukx" data-act="ukNew" data-k="${esc(it.uk.key)}" title="נפתחת שורת ספק חדשה בקניות עם הסכום של החודש">➕ ספק חדש</button><button class="au2-ukx no" data-au2no="${P}" title="לא נכנס לרווח והפסד — רק החודש או תמיד">✕ לא שייך</button>`) : c === 'd' ? `<div class="au2-bigdone">✓ אושר</div><button class="au2-un" data-act="audUn" data-p="${P}">↩ ביטול</button>` : `<button class="au2-bigok${c === 'g' ? ' g' : ''}" data-act="audOkRow" data-p="${P}" title="${c === 'g' ? 'כל המקורות תואמים — לסמן תקין' : 'לאשר שהסכום ברווח והפסד נכון (' + ils(it.val) + ')'}">✓ אישור</button>`}</td>`;
+    const nt = `<td class="au2-ntc"><input class="au2-note au2-ni" data-p="${P}" data-m="${curM}" value="${esc(a.note || '')}" placeholder="הערה…" title="${esc(a.note || 'הערה לבדיקה (נשמרת לחודש ' + M[curM] + ')')}"></td>`;
+    const nm = `<td class="l2-nm" data-l2x="${P}" title="${it.uk ? 'לחיצה — פרטי הספק' : 'לחיצה — כל השנה'}"><span class="l2-tw">${it.uk ? '◂' : open ? '▾' : '◂'}</span><b>${esc(it.name)}</b>${a.src ? ` <span class="au2-src">${esc(a.src)}</span>` : ''}<small>${esc(topic(it))}${catTxt(it) ? ' · ' + esc(catTxt(it)) : ''}${n ? ` · 📄 ${n}` : ''}</small></td>`;
+    return `<tr class="au2-r l2-r r-${c}${open ? ' l2-open' : ''}" data-au2="${P}">${chk}${nm}${pl}${srcs}<td>${l2St(ci)}</td><td class="l2-why">${why}${ans}${pb}</td>${nt}${okTd}</tr>` + (open ? l2Year(it) : '');
+  }
+  document.addEventListener('click', e => {
+    const t = e.target; if (!t.closest || !t.closest('.au2')) return;
+    const md = t.closest('[data-au2mode]'); if (md) { ui.au2Mode = md.dataset.au2mode; try { localStorage.setItem('pl_au2_mode', ui.au2Mode); } catch (x) { } render(); return; }
+  });
+  window.addEventListener('click', e => {
+    const x = e.target.closest && e.target.closest('.au2 [data-l2x]'); if (!x || e.target.closest('input,button,a,select,textarea,summary')) return;
+    e.stopPropagation(); e.preventDefault();
+    const p = x.dataset.l2x, it = LAST && LAST.U.all.find(z => z.path === p);
+    if (it && it.uk) { openP(p, curM); return; }
+    ui.au2X = ui.au2X || {}; ui.au2X[p] = !ui.au2X[p]; ui.au2P = p; render();
+  }, true);
+  document.head.insertAdjacentHTML('beforeend', `<style id="au2L2Css">
+table.l2 td{vertical-align:top}table.l2 td.l2-nm{cursor:pointer;min-width:190px}table.l2 td.l2-nm b{color:#2f2566;font-size:14.5px}table.l2 td.l2-nm small{display:block;color:#7a7390;font-size:12px;margin-right:16px}
+.l2-tw{display:inline-block;width:16px;color:#6d28d9}table.l2 tr.l2-r:hover td{background:#fbfaff}table.l2 tr.l2-open>td{background:#f6f3ff}
+.l2n{direction:ltr;text-align:left!important;font-variant-numeric:tabular-nums;white-space:nowrap}.l2n.pl{font-weight:800;font-size:14.5px}.l2n.ok{color:#15803d}.l2n.bad{color:#b42318;font-weight:700}.l2n.na,.na{color:#b8b3c6}.l2n.uk{color:#b42318;direction:rtl;text-align:right!important;font-weight:600}
+th.l2h{text-align:left!important}th.lk,td.lk{background:#f3effd!important}td.lk{font-weight:800}.l2-lok{font-style:normal;color:#15803d;margin-left:3px}.l2n sup{color:#7a7390}
+.l2-sp{font-size:11px;color:#7a7390;font-weight:500}
+.l2-s{font-size:12.5px;font-weight:700;white-space:nowrap}.l2-s.ok{color:#15803d}.l2-s.bad{color:#b42318}.l2-s.na{color:#8c86a0;font-weight:500}.l2-s.d{color:#5d5675}
+.l2-why{min-width:180px;max-width:380px}.l2-ans{font-size:12px;color:#34466b;background:#f2f8fc;border-radius:6px;padding:3px 7px;margin-top:4px;max-height:3.2em;overflow:hidden}
+.l2-past{display:inline-block;margin-top:4px;background:#fff4e5;color:#b45309;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700;cursor:pointer}
+td.l2-ok .au2-bigok{width:92px;font-size:14px;padding:7px 4px}td.l2-ok .au2-ukx{display:block;margin:2px auto;font-size:12px}
+tr.l2-exp>td{background:#f6f3ff!important;padding:4px 34px 14px 12px!important}.l2-yr{background:#fff;border:1px solid #e3dcf5;border-radius:10px;padding:8px 10px}
+.l2-yh{display:flex;gap:10px;align-items:center;margin:0 2px 6px}.l2-yh b{color:#2f2566;font-size:14.5px}.l2-yh small{color:#7a7390}
+table.l2-in{width:100%;border-collapse:collapse;font-size:13px}table.l2-in th{background:#f4f1fb;color:#5d5675;font-size:12px;padding:5px 8px;text-align:right;position:static}
+table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}table.l2-in tr.l2-rb td:first-child{border-right:3px solid #b42318}table.l2-in tr.l2-cur td{background:#fbfaff}
+.l2-mo{font-weight:700;white-space:nowrap}.l2-dd summary{cursor:pointer;color:#6d28d9;font-size:12.5px;white-space:nowrap}.l2-dd .au2-inv{font-size:12px;white-space:nowrap}
+.l2-ln{margin-top:6px;font-size:12.5px;color:#455b6b}
+.au2-tw.l2w{margin-left:0}
+</style>`);
   function selPath(B) {
     const ok = p => p && B.U.all.some(x => x.path === p);
     if (!ok(ui.au2P)) { ui.au2P = null; ui.au2M = null; }
@@ -729,7 +821,7 @@ body.xlLook .pdfDoc .foot,body.xlLook .pdfDoc .kp span{color:#595959!important}
     const st = B.st, opt = (v, l, cur) => `<option value="${esc(v)}"${cur === v ? ' selected' : ''}>${esc(l)}</option>`;
     const hidN = typeof ukHidden === 'function' ? ukHidden().length : 0;
     const selN = Object.keys(ui.au2Sel || {}).filter(p => ui.au2Sel[p]).length;
-    let h = `<div class="au2"><div class="au2-top"><div><h1>בדיקת שורה-שורה</h1><div class="au2-sub">רווח והפסד מול שונטל, קונפורטי, אשראי ובקרת השכר — לפי חודשים${EXT.shontal && EXT.shontal.asOf ? ' · שונטל נכון ל-' + esc(EXT.shontal.asOf) : ''}</div></div><div class="au2-tools">${monthPicker()}<button class="au2-b sm" data-act="bdView" data-v="table" title="התצוגה הקודמת — כל המקורות בעמודות לחודש אחד">☰ התצוגה הקודמת</button></div></div>`;
+    let h = `<div class="au2"><div class="au2-top"><div><h1>בדיקת שורה-שורה</h1><div class="au2-sub">רווח והפסד מול שונטל, קונפורטי, אשראי ובקרת השכר — לפי חודשים${EXT.shontal && EXT.shontal.asOf ? ' · שונטל נכון ל-' + esc(EXT.shontal.asOf) : ''}</div></div><div class="au2-tools">${monthPicker()}<button class="au2-b sm" data-au2mode="${L2() ? 'grid' : 'list'}" title="${L2() ? 'כל החודשים בעמודות' : 'שורה לכל ספק עם החודש הנבדק · לחיצה על השם = כל השנה'}">${L2() ? '▦ לפי חודשים' : '📋 רשימה'}</button><button class="au2-b sm" data-act="bdView" data-v="table" title="התצוגה הקודמת — כל המקורות בעמודות לחודש אחד">☰ התצוגה הקודמת</button></div></div>`;
     h += `<div class="au2-kpis"><div class="au2-k t"><span>סה"כ בבדיקה · ${M[curM]}</span><b>${tot}</b><small title="«שורות בדוח» = מה שנספר עד היום ב«נבדקו X מתוך…». ספק לא משויך = מופיע בשונטל/קונפורטי/אשראי ואין לו שורה">${tot - B.nUk} שורות בדוח + ${B.nUk} ספקים לא משויכים · סומנו ${n.d}</small><i class="au2-bar"><i style="width:${Pc(n.d)}%"></i></i></div>
       <button class="au2-k r${st === 'r' ? ' on' : ''}" data-au2st="r"><span>⚠ דורשות טיפול</span><b>${n.r}</b><small>${Pc(n.r)}% · הפרש, אזהרה או ספק לא משויך</small></button>
       <button class="au2-k o${st === 'o' ? ' on' : ''}" data-au2st="o"><span>⏱ ממתינות להתאמה</span><b>${n.o}</b><small>${Pc(n.o)}% · אין מקור להשוואה או סכום 0</small></button>
@@ -748,11 +840,12 @@ body.xlLook .pdfDoc .foot,body.xlLook .pdfDoc .kp span{color:#595959!important}
     if (selN) h += `<div class="au2-bulk"><b>${selN} נבחרו</b><button class="au2-b pri sm" data-au2bulk>✓ לסמן תקין את כל ${selN}</button><button class="au2-b sm" data-au2clr>ניקוי בחירה</button></div>`;
     const head = all => `<thead><tr><th class="au2-ck">${all ? '<input type="checkbox" data-au2all title="בחירת כל השורות בטבלה" aria-label="בחירת הכל">' : ''}</th><th class="au2-nmh">ספק / שורה</th><th class="au2-okh">אישור</th><th class="au2-cmph" title="החודש שנבדק — מה רשום ברווח והפסד ומה אומר כל מקור">${M[curM]} <small>(נבדק)</small></th>${MS.map(mm => `<th class="au2-mh${mm === curM ? ' cur' : ''}">${M[mm]}</th>`).join('')}<th class="au2-mh cum" title="מתחילת השנה עד ${esc(M[curM])}">מצטבר</th><th>סימנים</th><th>סיבה</th><th class="au2-nth">הערה</th><th></th></tr></thead>`;
     const nc = (MS.length + 7) + 2;
-    h += `<div class="au2-tw" id="au2Tw"><table class="au2-t au2-m">${head(true)}<tbody>${B.main.map(it => rowHtml(it, B.U.cat[it.path], sp, MS)).join('') || `<tr><td colspan="${nc}" class="au2-none">${(ui.aq || ui.au2T || ui.au2R || ui.aF) ? 'אין שורות שמתאימות לחיפוש / לסינון' : 'אין כאן שורות 🎉'}</td></tr>`}</tbody></table></div>`;
+    const RW = it => L2() ? l2Row(it, B.U.cat[it.path]) : rowHtml(it, B.U.cat[it.path], sp, MS), HD = all => L2() ? l2Head(false) : head(all);
+    h += `<div class="au2-tw${L2() ? ' l2w' : ''}" id="au2Tw"><table class="au2-t ${L2() ? 'l2' : 'au2-m'}">${HD(true)}<tbody>${B.main.map(RW).join('') || `<tr><td colspan="${nc}" class="au2-none">${(ui.aq || ui.au2T || ui.au2R || ui.aF) ? 'אין שורות שמתאימות לחיפוש / לסינון' : 'אין כאן שורות 🎉'}</td></tr>`}</tbody></table></div>`;
     if (st !== 'g') {
       const gN = B.okL.filter(it => B.U.cat[it.path] === 'g').length;
       h += `<details class="au2-ok"${ui.au2GO ? ' open' : ''} id="au2G"><summary><span class="au2-okc">✓</span><b>שורות תקינות (${B.okL.length})</b><small>${gN} תואמות בכל המקורות — ממתינות לאישור · ${B.okL.length - gN} כבר סומנו</small><span class="au2-sp"></span>${gN ? `<button class="au2-b g sm" data-act="audOkAllSure" title="מסמן תקין את כל השורות שכל המקורות שלהן תואמים">✓ לאשר את כל ${gN} התואמות</button>` : ''}</summary>
-        <div class="au2-tw g">${ui.au2GO ? `<table class="au2-t au2-m">${head(false)}<tbody>${B.okL.map(it => rowHtml(it, B.U.cat[it.path], sp, MS)).join('') || `<tr><td colspan="${nc}" class="au2-none">אין</td></tr>`}</tbody></table>` : ''}</div></details>`;
+        <div class="au2-tw g">${ui.au2GO ? `<table class="au2-t ${L2() ? 'l2' : 'au2-m'}">${HD(false)}<tbody>${B.okL.map(RW).join('') || `<tr><td colspan="${nc}" class="au2-none">אין</td></tr>`}</tbody></table>` : ''}</div></details>`;
     }
     h += `</div>`;
     setTimeout(restoreScroll, 0);
