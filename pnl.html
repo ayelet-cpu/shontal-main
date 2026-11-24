@@ -1144,6 +1144,36 @@ table.md-t td.n small.pok{color:#15803d}table.md-t td.n small.pbad{color:#b42318
     ui.au2Closed = true;
     return ui.au2P;
   }
+  /* 📊 ריבועי הסיכום בראש «רווח והפסד» — הפרדה מלאה: מסעדה · קיוסק · ביחד (איילת 25.11.2026). רק במערכות עם קיוסק */
+  if (typeof vReport === 'function' && !NOK) {
+    const _vRep = vReport;
+    vReport = function () {
+      const h = _vRep();
+      try {
+        const P = R.rep, m = curM, ys = a => PL.ysum(a), rng = M[PL.ystart()] + (PL.yend() > PL.ystart() ? '–' + M[PL.yend()] : '');
+        /* מינימליסטי (איילת 25.11): טבלה קטנה אחת — שורה לכל נתון, עמודה למסעדה / קיוסק / ביחד */
+        const f = (x, pct) => `<span class="${!pct && x < 0 ? 'neg' : ''}">${pct ? fp(x) : fm(x)}</span>`;
+        const C = [[P.incR, P.netR, P.pct.netR, P.pct.cogsR, P.pct.salR, ys(P.netR), ys(P.incR)], [P.incK, P.netK, P.pct.netK, P.pct.cogsK, P.pct.salK, ys(P.netK), ys(P.incK)], [P.inc, P.netT, P.pct.net, P.cogsPct, P.pct.sal, P.netToDate, ys(P.inc)]];
+        const row = (lbl, i, pct, cls) => `<tr class="${cls || ''}"><td>${lbl}</td>${C.map(c => `<td>${f(Array.isArray(c[i]) ? c[i][m] : c[i], pct)}</td>`).join('')}</tr>`;
+        const box = `<table class="kp3t"><thead><tr><th></th><th>מסעדה</th><th>קיוסק</th><th>ביחד</th></tr></thead><tbody>`
+          + row('הכנסות ' + M[m], 0) + row('רווח נקי ' + M[m], 1) + row('% רווח', 2, 1, 'sm') + row('% עלות מכר', 3, 1, 'sm') + row('% שכר', 4, 1, 'sm')
+          + row('רווח עד היום', 5, 0, 'y') + row('הכנסות עד היום', 6, 0, 'y')
+          + `</tbody></table><div class="kp3-n">₪ ללא מע״מ · עד היום = ${rng}${P.incS && ys(P.incS) ? ' · «ביחד» כולל הכנסות משותפות' : ''}</div>`;
+        const i0 = h.indexOf('<div class="kpis">'); if (i0 < 0) return h;
+        let dep = 0, j = i0; const re = /<div\b|<\/div>/g; re.lastIndex = i0; let mt;
+        while ((mt = re.exec(h))) { dep += mt[0] === '</div>' ? -1 : 1; if (dep === 0) { j = re.lastIndex; break; } }
+        return j > i0 ? h.slice(0, i0) + box + h.slice(j) : h;
+      } catch (e) { console.error('kp3', e); return h; }
+    };
+    document.head.insertAdjacentHTML('beforeend', `<style id="kp3Css">
+.kp3t{border-collapse:collapse;margin:4px 0 2px;font-size:13.5px;min-width:440px;background:transparent}
+.kp3t th{font-weight:600;color:#6b6480;font-size:12px;padding:2px 14px 4px;text-align:left;border-bottom:1px solid #e7e0f7}.kp3t th:first-child{text-align:right}
+.kp3t td{padding:3px 14px;text-align:left;font-variant-numeric:tabular-nums;color:#1f1a2e;white-space:nowrap}.kp3t td:first-child{text-align:right;color:#6b6480}
+.kp3t td:last-child,.kp3t th:last-child{font-weight:700;color:#2f2566}.kp3t tr.sm td{font-size:12.5px;color:#5d5675}.kp3t tr.sm td:first-child{color:#8c86a0}
+.kp3t tr.y td{color:#6b6480;font-size:12.5px}.kp3t tr.y:first-of-type td,.kp3t tr.y td{border-top:0}.kp3t tbody tr:nth-child(6) td{border-top:1px solid #f0edf6;padding-top:5px}
+.kp3t .neg{color:#b42318}.kp3-n{color:#a19bb3;font-size:11.5px;margin:2px 0 10px}
+</style>`);
+  }
   vAudit = function () {
     if (ui.aView === 'table') { const h0 = _base(); return h0.replace('data-v="board">🗂 לוח', 'data-v="board">✨ מסך עבודה'); }
     try { return au2View(); } catch (err) { console.error('au2', err); return _base(); }   /* תקלה — חוזרים ללוח הקודם */
