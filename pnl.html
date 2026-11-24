@@ -854,15 +854,28 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
   function mdSt2(r) { return r.st === 'marked' ? '<span class="md-s d">✓ אושר</span>' : r.st === 'ok' ? '<span class="md-s ok">✓ תואם</span>' : r.st === 'diff' ? `<span class="md-s bad">פער ${nf2.format(Math.abs(r.d || 0))}</span>` : r.st === 'miss' ? '<span class="md-s bad">חסר החודש</span>' : '<span class="md-s na">אין מקור</span>'; }
   /* כל מקור בעמודה משלו (איילת 24.11: «מה רשום ברווח והפסד? מה החשבוניות? קיבוע? קונפורטי? אפשרות לבחור את מה שאני רוצה») */
   const MD_SK = [['l', '🔒 קיבוע'], ['s', 'שונטל'], ['c', 'קונפורטי'], ['k', 'אשראי']];
-  function mdSrcs(it, mm, ci) {
+  /* אשראי — סכום החיובים בחודש (שורות דוח: בלי מע״מ) */
+  function mdK(it, mm) {
+    if (mm < 0 || mm > 11) return null; let c = null; try { c = cellInfo(it, mm).k; } catch (x) { return null; }
+    if (!has(c) || Math.abs(c.raw || 0) < 0.005) return null;
+    return /^rep:/.test(it.path) ? r2(c.raw / ((D.settings && D.settings.vat) || 1.18)) : c.raw;
+  }
+  /* ספק שמשולם באשראי על החודש הקודם (איילת 24.11): החיוב של החודש הבא תואם יותר פעמים מהחיוב של אותו חודש → מציגים אותו ליד החודש שהוא משלם */
+  function mdShift(it, tot) {
+    let same = 0, prev = 0;
+    for (let mm = ST0(); mm <= curM; mm++) { const t = tot(mm); if (Math.abs(t || 0) < 0.5) continue; const a = mdK(it, mm), b = mdK(it, mm + 1); if (a != null && Math.abs(a - t) <= 1) same++; if (b != null && Math.abs(b - t) <= 1) prev++; }
+    return prev > same;
+  }
+  function mdSrcs(it, mm, ci, sh) {
     const o = {}; let L = null; try { L = has(ci.s) ? lockOf(it, mm) : null; } catch (x) { }
     if (L && L.amt != null && Math.abs(L.amt) >= 0.005) o.l = { v: L.amt, ok: L.ok };
-    ['s', 'c', 'k'].forEach(k => { const c = ci[k]; if (has(c) && Math.abs(c.raw || 0) >= 0.005) o[k] = { v: c.raw, n: c.n }; });
+    ['s', 'c'].forEach(k => { const c = ci[k]; if (has(c) && Math.abs(c.raw || 0) >= 0.005) o[k] = { v: c.raw, n: c.n }; });
+    const kv = mdK(it, sh ? mm + 1 : mm); if (kv != null) o.k = { v: kv, nx: sh ? mm + 1 : null };
     return o;
   }
   /* מה נכתב בכל שורה כשבוחרים סכום: שורה אחת = הסכום; ספק מפוצל = לפי האחוזים בשם השורה, אחרת לפי היחס שרשום היום */
   function mdPlan(it, PS, k, v, mm) {
-    if (!/^p:/.test(it.path)) { if (k === 'l') return null; let w = null; try { w = srcVal(it, k, mm); } catch (x) { } return w == null || !cellsOf(it.path) ? null : [[it.path, r2(w)]]; }
+    if (!/^p:/.test(it.path)) { if (k === 'l') return null; if (k === 'k') return cellsOf(it.path) ? [[it.path, r2(v)]] : null; let w = null; try { w = srcVal(it, k, mm); } catch (x) { } return w == null || !cellsOf(it.path) ? null : [[it.path, r2(w)]]; }
     if (PS.length === 1) return cellsOf(PS[0]) ? [[PS[0], v]] : null;
     const g = IDX.shontal && IDX.shontal[it.path], gp = g && Array.isArray(g.paths) ? g.paths : [];
     if (PS.some(p => !gp.includes(p)) || PS.some(p => !cellsOf(p))) return null;
@@ -892,11 +905,12 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     if (a.reply && !a.handled) ans = `<div class="md-ans b">🤖 ${esc(a.reply)}</div>`;
     else if (c === 'g' || c === 'd' || r0.st === 'ok' || r0.st === 'marked') ans = `<div class="md-ans g">✓ ${M[curM]} <b>${MDF(multi ? plTot(curM) : ci0.v)}</b>${src0 ? ' = ' + esc(src0.l.replace(/^🔒\s*/, '').replace(/\s*\(.*\)$/, '')) : ''}${c === 'd' || r0.st === 'marked' ? ' · אושר' : ''}</div>`;
     else ans = `<div class="md-ans r" title="${esc(((si.bad || []).length ? si.bad : rs.slice(1).map(r => r[1])).join(' · '))}"><b>${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</b></div>`;
-    const SR = {}; for (let mm = curM; mm >= ST0(); mm--) if (!MDIGN(mm)) SR[mm] = mdSrcs(it, mm, cellInfo(it, mm));
+    const KSH = mdShift(it, mm => multi ? plTot(mm) : cellInfo(it, mm).v);
+    const SR = {}; for (let mm = curM; mm >= ST0(); mm--) if (!MDIGN(mm)) SR[mm] = mdSrcs(it, mm, cellInfo(it, mm), KSH);
     const SK = MD_SK.filter(([k]) => Object.values(SR).some(o => o[k]));
     const nS = Math.max(SK.length, 1);
     const head = `<tr><th rowspan="2">חודש</th><th colspan="${nS}" class="hsrc">מקורות<small>לחיצה על «← לרשום» כותבת את הסכום ברווח והפסד</small></th><th colspan="${multi ? PS.length + 1 : 1}" class="hpl">רשום ברווח והפסד</th><th rowspan="2">מצב</th><th rowspan="2">מסמכים</th></tr>`
-      + `<tr>${SK.length ? SK.map(([k, l]) => `<th class="hsrc2">${l}</th>`).join('') : '<th class="hsrc2">—</th>'}${multi ? PS.map(p => `<th class="hpl2">${esc(mdLbl(p, mdBase(it)))}</th>`).join('') + '<th class="hpl2 tot">סה״כ</th>' : '<th class="hpl2 tot">סה״כ</th>'}</tr>`;
+      + `<tr>${SK.length ? SK.map(([k, l]) => `<th class="hsrc2">${l}${k === 'k' && KSH ? '<small>נגבה בחודש שאחרי</small>' : ''}</th>`).join('') : '<th class="hsrc2">—</th>'}${multi ? PS.map(p => `<th class="hpl2">${esc(mdLbl(p, mdBase(it)))}</th>`).join('') + '<th class="hpl2 tot">סה״כ</th>' : '<th class="hpl2 tot">סה״כ</th>'}</tr>`;
     const R = [];
     for (let mm = curM; mm >= ST0(); mm--) {
       if (MDIGN(mm)) continue;
@@ -906,7 +920,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
       const tv = multi ? plTot(mm) : ci.v;
       const sc = SK.length ? SK.map(([k, l]) => { const o = SR[mm][k]; if (!o) return '<td class="n sx na">—</td>'; const eq = Math.abs((tv || 0) - o.v) <= 1, main = sr && Math.abs(sr.v - o.v) < 0.005 && sr.l.indexOf(l.replace('🔒 ', '')) >= 0;
         const pl = eq || RO ? null : mdPlan(it, PS, k, o.v, mm);
-        return `<td class="n sx${eq ? ' eq' : ''}${main ? ' main' : ''}">${MDF(o.v)}${k === 'l' && o.ok ? '<small>אושר</small>' : ''}${eq ? '<small class="g">✓ זהה</small>' : pl ? `<button class="md-pk" data-mdpick='${esc(JSON.stringify(pl))}' data-m="${mm}" data-l="${esc(l.replace('🔒 ', ''))}" data-v="${o.v}" title="לרשום ${MDF(o.v)} ברווח והפסד ב${esc(M[mm])}${pl.length > 1 ? ' — ' + pl.map(x => esc(mdLbl(x[0], mdBase(it))) + ' ' + esc(String(x[1]))).join(' · ') : ''}">← לרשום</button>` : `<small>הפרש ${MDF(r2((tv || 0) - o.v))}</small>`}</td>`; }).join('') : '<td class="n sx na">—</td>';
+        return `<td class="n sx${eq ? ' eq' : ''}${main ? ' main' : ''}">${MDF(o.v)}${k === 'l' && o.ok ? '<small>אושר</small>' : ''}${o.nx != null ? `<small>חיוב ${esc(M[o.nx])}</small>` : ''}${eq ? '<small class="g">✓ זהה</small>' : pl ? `<button class="md-pk" data-mdpick='${esc(JSON.stringify(pl))}' data-m="${mm}" data-l="${esc(l.replace('🔒 ', ''))}" data-v="${o.v}" title="לרשום ${MDF(o.v)} ברווח והפסד ב${esc(M[mm])}${pl.length > 1 ? ' — ' + pl.map(x => esc(mdLbl(x[0], mdBase(it))) + ' ' + esc(String(x[1]))).join(' · ') : ''}">← לרשום</button>` : `<small>הפרש ${MDF(r2((tv || 0) - o.v))}</small>`}</td>`; }).join('') : '<td class="n sx na">—</td>';
       R.push(`<tr class="${mdCmp(it, mm).st === 'diff' ? 'rb' : ''}${mm === curM ? ' cur' : ''}"><td class="mo">${M[mm]}</td>${sc}${vals}<td>${mdSt2(mdCmp(it, mm))}</td><td>${nd ? `<details class="md-dd"><summary>📄 ${nd}</summary>${invCell(it, mm)}</details>` : '<span class="na">—</span>'}</td></tr>`);
     }
     const ln = lineNote(it.path);
