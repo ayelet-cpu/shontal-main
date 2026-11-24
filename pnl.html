@@ -1329,6 +1329,8 @@ var SOFT=[["💾 שמירה לקובץ","💾 שמירה"],["🔄 הקובץ ע�
 function useLook(){ try{ return localStorage.getItem('pnl-look')!=='plain'; }catch(_){ return true; } }
 (function(){ var b=$('lookBtn'); if(!b) return; b.title=useLook()?'עכשיו: פחות עומס · לחיצה = המראה הקודם':'עכשיו: המראה הקודם · לחיצה = פחות עומס';
   b.onclick=function(){ try{ localStorage.setItem('pnl-look',useLook()?'plain':'look'); }catch(_){} location.reload(); }; })();
+/* אסא — «חובות עבר» → «ריביות על הלוואות והשקעות» (איילת 24.11.2026). רק בקוד של אסא, לא בנתונים */
+function asaWords(c){ [['לא כולל חובות עבר, ריבית הלוואות','לא כולל ריבית הלוואות'],['חובות עבר, מימון, הקמה וניכויים','ריביות על הלוואות, השקעות וניכויים'],['לפני חובות עבר, מימון והקמה','לפני ריביות על הלוואות והשקעות'],['אחרי חובות עבר','אחרי ריביות על הלוואות והשקעות']].forEach(function(p){ c=c.split(p[0]).join(p[1]); }); return c; }
 function patch(html){
   PATCHES.forEach(function(p){ var n=html.split(p[0]).length-1; if(n!==1) throw new Error('הקוד של המערכת השתנה ולא מתאים לענן ('+p[0].slice(0,30)+'…, '+n+'). לא נפתח לעריכה כדי לא לאבד שינויים.'); html=html.replace(p[0],p[1]); });
   SOFT.forEach(function(p){ html=html.split(p[0]).join(p[1]); });
@@ -1414,7 +1416,7 @@ function open(rest){
     var docs=g.docs||{}; BASE=(docs.data||{}).stamp; FILE_NAME=(((docs.data||{}).data||{}).meta||{}).fileName||'';
     PEEK={}; Object.keys(docs).forEach(function(k){ PEEK[k]={stamp:docs[k].stamp}; });
     VIEW=g.can_edit===false;   /* צפייה בלבד (pl_users.can_edit) — השרת כבר שלח את הנתונים במצב «לצפייה בלבד» וחוסם שמירה */
-    var html=patch(build(g.code,docs));
+    var html=patch(build(rest==='asa'?asaWords(g.code):g.code,docs));
     window.__PLC_BRIDGE={handle:makeHandle(),rest:rest,openDoc:openDoc,view:VIEW};
     if(VIEW) $('back').classList.add('hid');
     document.title=(g.title||'רווח והפסד')+' · ענן';
