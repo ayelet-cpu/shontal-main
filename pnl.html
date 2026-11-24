@@ -802,6 +802,123 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
 .l2-ln{margin-top:6px;font-size:12.5px;color:#455b6b}
 .au2-tw.l2w{margin-left:0}
 </style>`);
+  /* ---------- 📋 תצוגה «רשימה + ספק» (איילת 24.11.2026, דוגמה 3): רשימה קבועה של הספקים מימין (לא זזה), ומשמאל הספק שנבחר —
+     משפט הסבר, טבלה לפי חודשים: סכום המקור · כל שורה ברווח והפסד (למשל 15% / 85%) · יחד · מצב. אותן פעולות כמו בתצוגה לפי חודשים. ---------- */
+  const MD = () => (ui.au2Mode || (() => { try { return localStorage.getItem('pl_au2_md'); } catch (x) { return null; } })() || 'md') === 'md';
+  const MDF = v => v == null ? '—' : nf2.format(v);
+  const MDIGN = mm => ((D.settings && D.settings.ignoreMonths) || []).includes(mm);
+  function mdPaths(it) {
+    if (it.uk) return [it.path];
+    const g = IDX.shontal && IDX.shontal[it.path];
+    const P = g && Array.isArray(g.paths) && g.paths.length > 1 ? g.paths.filter(p => au2Line(p)) : [it.path];
+    return P.length ? P : [it.path];
+  }
+  function mdLbl(p) {
+    const l = au2Line(p); if (!l) return p;
+    const m = /\((\d+%?)\)/.exec(l.name || ''); let side = '';
+    const id = (/^p:(.+)$/.exec(p) || [])[1];
+    if (id) for (const sx of D.purchases || []) for (const gr of sx.groups || []) for (const [sd, LL] of Object.entries(gr.sides || {})) if (LL.some(x => x.id === id)) side = sd;
+    return (side || l.name) + (m ? ' ' + m[1] : '');
+  }
+  function mdSrc(it, mm, ci) {
+    let L = null; try { L = has(ci.s) ? lockOf(it, mm) : null; } catch (x) { }
+    const nz = c => has(c) && Math.abs(c.raw || 0) >= 0.005;
+    if (L && L.amt != null && Math.abs(L.amt) >= 0.005) return { v: L.amt, l: '🔒 קיבוע' + (L.ok ? ' (אושר)' : '') };
+    if (nz(ci.s)) return { v: ci.s.raw, l: 'שונטל' };
+    if (nz(ci.c)) return { v: ci.c.raw, l: 'קונפורטי' };
+    if (nz(ci.k)) return { v: ci.k.raw, l: 'אשראי' };
+    if (ci.w) return { v: ci.w.amt, l: ci.w.lbl || 'בקרת שכר' };
+    return null;
+  }
+  function mdSt(ci) {
+    if (ci.marked) return '<span class="md-s d">✓ אושר</span>';
+    return ci.st === 'ok' ? '<span class="md-s ok">✓ תואם</span>' : ci.st === 'diff' ? `<span class="md-s bad">פער ${nf2.format(ci.d || 0)}</span>` : ci.st === 'miss' ? '<span class="md-s bad">חסר החודש</span>' : '<span class="md-s na">אין מקור</span>';
+  }
+  function mdDetail(it, c) {
+    if (!it) return '<div class="md-det md-empty">בוחרים ספק מהרשימה</div>';
+    const P = esc(it.path), a = it.a || {};
+    if (it.uk) {
+      const o = it.uk, R = [];
+      ['s', 'c', 'k'].forEach(k => { if (o.src[k].length) { const v = ukAmtK(o, curM, k); if (Math.abs(v) >= 0.5) R.push(`<tr><td>${{ s: 'שונטל', c: 'קונפורטי', k: 'אשראי' }[k]}</td><td class="n">${MDF(v)}</td></tr>`); } });
+      return `<div class="md-det"><h2>${esc(it.name)}</h2><div class="md-sub">לא משויך לשום שורה ברווח והפסד · ${esc(M[curM])}</div>
+        <div class="md-ans r">הספק מופיע במקורות ואין לו שורה ברווח והפסד. לשייך לשורה קיימת, לפתוח ספק חדש, או לסמן «לא שייך».</div>
+        <table class="md-t"><tbody>${R.join('')}</tbody></table>
+        <details class="md-dd"><summary>📄 המסמכים</summary>${(o.docs || []).map(x => `<div class="au2-inv">${docLink(x)} <b>${esc(x[1] || '')}</b> · ${dmy(x[2])} · ₪${nf2.format(x[3])}</div>`).join('') || '—'}</details>
+        <div class="md-act"><button class="au2-b pri" data-act="ukMap" data-k="${esc(o.key)}">🔗 שיוך לשורה</button><button class="au2-b" data-act="ukNew" data-k="${esc(o.key)}">➕ ספק חדש</button><button class="au2-b rej" data-au2no="${P}">✕ לא שייך</button></div></div>`;
+    }
+    const PS = mdPaths(it), multi = PS.length > 1;
+    const rs = reasons(it, c), si = sureInfo(it) || {};
+    const ci0 = cellInfo(it, curM), src0 = mdSrc(it, curM, ci0);
+    const plTot = mm => PS.reduce((t, p) => { const x = mctx(mm).byP[p]; return t + (x ? x.val || 0 : 0); }, 0);
+    let ans;
+    if (a.reply && !a.handled) ans = `<div class="md-ans b">🤖 ${esc(a.reply)}</div>`;
+    else if (c === 'g' || c === 'd') ans = `<div class="md-ans g">${M[curM]}: ${multi ? PS.map(p => `${esc(mdLbl(p))} <b>${MDF((mctx(curM).byP[p] || {}).val)}</b>`).join(' + ') + ` = <b>${MDF(plTot(curM))}</b>` : `ברווח והפסד <b>${MDF(ci0.v)}</b>`}${src0 ? ` · ${esc(src0.l)} <b>${MDF(src0.v)}</b>` : ''} — ${c === 'd' ? 'אושר' : 'הכל תואם'} ✓</div>`;
+    else ans = `<div class="md-ans r"><b>${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</b>${(si.bad || []).length ? ' · ' + esc(si.bad.join(' · ')) : rs.length > 1 ? ' · ' + esc(rs.slice(1).map(r => r[1]).join(' · ')) : ''}</div>`;
+    const head = `<tr><th>חודש</th><th>סכום המקור</th>${multi ? PS.map(p => `<th>${esc(mdLbl(p))}</th>`).join('') + '<th>יחד ברווח והפסד</th>' : '<th>ברווח והפסד</th>'}<th>מצב</th><th>מסמכים</th></tr>`;
+    const R = [];
+    for (let mm = curM; mm >= ST0(); mm--) {
+      if (MDIGN(mm)) continue;
+      const ci = cellInfo(it, mm), sr = mdSrc(it, mm, ci);
+      const g = IDX.shontal[it.path], e = g && g.m[String(mm)], nd = (e ? e[1].length : 0) + (CC ? CC.lines.filter(l => ccPath(l) === it.path && ccMon(l) === mm).length : 0);
+      const vals = multi ? PS.map(p => `<td class="n">${MDF((mctx(mm).byP[p] || {}).val)}</td>`).join('') + `<td class="n tot">${MDF(plTot(mm))}</td>` : `<td class="n tot">${MDF(ci.v)}</td>`;
+      R.push(`<tr class="${ci.st === 'diff' && !ci.marked ? 'rb' : ''}${mm === curM ? ' cur' : ''}"><td class="mo">${M[mm]}</td><td class="n src">${sr ? MDF(sr.v) + `<small>${esc(sr.l)}</small>` : '—'}</td>${vals}<td>${mdSt(ci)}</td><td>${nd ? `<details class="md-dd"><summary>📄 ${nd}</summary>${invCell(it, mm)}</details>` : '<span class="na">—</span>'}</td></tr>`);
+    }
+    const ln = lineNote(it.path);
+    const acts = c === 'd' ? `<button class="au2-b" data-act="audUn" data-p="${P}">↩ החזרה לבדיקה</button>`
+      : `<button class="au2-b pri" data-act="audOkRow" data-p="${P}" data-md="1">✓ אישור ${M[curM]}</button>`;
+    return `<div class="md-det"><h2>${esc(it.name)}</h2><div class="md-sub">${esc(topic(it))}${catTxt(it) ? ' · ' + esc(catTxt(it)) : ''}${multi ? ' · מתחלק: ' + PS.map(p => esc(mdLbl(p))).join(' / ') : ''}</div>${ans}
+      <div class="md-tw"><table class="md-t"><thead>${head}</thead><tbody>${R.join('')}</tbody></table></div>
+      ${ln ? `<div class="md-ln">💬 ${esc(ln)}</div>` : ''}
+      <div class="md-act">${acts}<input class="au2-note md-ni" data-p="${P}" data-m="${curM}" value="${esc(a.note || '')}" placeholder="הערה ל${M[curM]}…"><button class="au2-b dots" data-act="audOpen" data-p="${P}" title="החלון המלא: בחירת סכום ממקור, עריכה, פירוט החישוב">⋯ החלון המלא</button></div></div>`;
+  }
+  function mdHtml(B, sp) {
+    const L = B.main.concat(B.U.all.filter(x => !B.main.includes(x) && x.path === sp));
+    const sel = L.find(x => x.path === sp) || L[0] || null; if (sel) ui.au2P = sel.path;
+    const dot = c => `<i class="md-dot ${c}"></i>`;
+    const li = L.map(it => { const c = B.U.cat[it.path], ci = it.uk ? null : cellInfo(it, curM); return `<div class="md-it${sel && it.path === sel.path ? ' on' : ''}" data-mdp="${esc(it.path)}">${dot(c)}<b>${esc(it.name)}</b><small>${it.uk ? 'לא משויך' : ci && ci.st === 'diff' ? 'פער ' + nf2.format(ci.d || 0) : ''}</small></div>`; }).join('') || '<div class="md-none">אין כאן ספקים 🎉</div>';
+    return `<div class="md"><div class="md-list" id="mdList"><div class="md-lh">${L.length} ספקים · ${M[curM]}</div>${li}</div>${mdDetail(sel, sel ? B.U.cat[sel.path] : '')}</div>`;
+  }
+  window.addEventListener('click', e => {
+    const x = e.target.closest && e.target.closest('.au2 [data-mdp]'); if (!x) return;
+    e.stopPropagation(); e.preventDefault();
+    const l = document.getElementById('mdList'); ui.mdSc = l ? l.scrollTop : 0;
+    ui.au2P = x.dataset.mdp; ui.au2M = curM; render();
+  }, true);
+  window.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.au2 [data-mdmode]'); if (!b) return;
+    e.stopPropagation(); ui.au2Mode = b.dataset.mdmode; try { localStorage.setItem('pl_au2_md', ui.au2Mode); } catch (x) { } render();
+  }, true);
+  /* אחרי אישור בתצוגה הזו — עוברים לספק הבא ברשימה (לפני שהפעולה הקיימת מציירת מחדש) */
+  window.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.md-det [data-act="audOkRow"],.md-det [data-act="ukMap"],.md-det [data-au2no]');
+    if (!b || RO) return;
+    const l = document.getElementById('mdList'); ui.mdSc = l ? l.scrollTop : 0;
+    const nx = nextAfter(ui.au2P); if (nx) { ui.au2P = nx; ui.au2M = curM; }
+  }, true);
+  function mdRestore() { const l = document.getElementById('mdList'); if (!l) return; if (ui.mdSc != null) l.scrollTop = ui.mdSc; const on = l.querySelector('.md-it.on'); if (on) { const a = on.getBoundingClientRect(), b = l.getBoundingClientRect(); if (a.top < b.top || a.bottom > b.bottom) on.scrollIntoView({ block: 'nearest' }); } }
+  document.head.insertAdjacentHTML('beforeend', `<style id="au2MdCss">
+.md{display:grid;grid-template-columns:270px minmax(0,1fr);gap:14px;align-items:start}
+.md-list{background:#fff;border:1px solid #e7e0f7;border-radius:12px;overflow:auto;position:sticky;top:calc(var(--audTop,0px) + 8px);max-height:calc(100vh - var(--audTop,0px) - 24px)}
+.md-lh{padding:10px 14px;font-weight:700;color:#2f2566;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff}
+.md-it{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid #f3f0fa;cursor:pointer}.md-it:hover{background:#faf8ff}
+.md-it.on{background:#efe9ff;box-shadow:inset -4px 0 0 #6d28d9}.md-it b{font-weight:600;color:#1f1a2e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.md-it small{margin-right:auto;color:#b42318;font-size:11.5px;white-space:nowrap}
+.md-dot{flex:none;width:9px;height:9px;border-radius:50%;display:inline-block;background:#b8b3c6}.md-dot.r{background:#b42318}.md-dot.o{background:#d97706}.md-dot.g{background:#15803d}.md-dot.d{background:#8c86a0}
+.md-none{padding:16px;color:#6b6480}
+.md-det{background:#fff;border:1px solid #e7e0f7;border-radius:12px;padding:16px 18px;min-width:0}.md-empty{color:#6b6480}
+.md-det h2{margin:0;color:#2f2566;font-size:20px}.md-sub{color:#6b6480;margin:2px 0 12px}
+.md-ans{border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:14px;line-height:1.55}.md-ans.g{background:#ecf8ef;border:1px solid #bfe3c8}.md-ans.g b{color:#15803d}
+.md-ans.r{background:#fdeeec;border:1px solid #f6cfc9;color:#7a1d14}.md-ans.b{background:#f2f8fc;border:1px solid #d3e6f3;color:#1d3b53}
+.md-tw{overflow:visible;background:#fff}table.md-t{display:table!important;width:100%!important;border-collapse:collapse;font-size:14px;background:#fff!important;table-layout:auto}
+table.md-t th{background:#f4f1fb;color:#5d5675;font-weight:600;padding:8px;text-align:right;font-size:12.5px;white-space:nowrap;position:static}
+table.md-t td{padding:8px;border-bottom:1px solid #f0edf6;vertical-align:top;background:#fff}
+table.md-t td.n{direction:ltr;text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap}table.md-t td.n small{display:block;color:#8c86a0;font-size:11px;direction:rtl;text-align:left}
+table.md-t td.src{font-weight:800;font-size:15px}table.md-t td.tot{font-weight:700}table.md-t td.mo{font-weight:700;white-space:nowrap}
+table.md-t tr.rb td:first-child{box-shadow:inset -3px 0 0 #b42318}table.md-t tr.cur td{background:#fbfaff}
+.md-s{font-weight:700;white-space:nowrap;font-size:13px}.md-s.ok{color:#15803d}.md-s.bad{color:#b42318}.md-s.na{color:#8c86a0;font-weight:500}.md-s.d{color:#5d5675}
+.md-dd summary{cursor:pointer;color:#6d28d9;white-space:nowrap}.md-dd .au2-inv{font-size:12.5px;white-space:nowrap}
+.md-ln{margin-top:8px;color:#455b6b;font-size:13px}
+.md-act{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}.md-act .md-ni{flex:1;min-width:180px;border:1px solid #e3ddf3;border-radius:8px;padding:7px 10px;font:inherit}
+</style>`);
   function selPath(B) {
     const ok = p => p && B.U.all.some(x => x.path === p);
     if (!ok(ui.au2P)) { ui.au2P = null; ui.au2M = null; }
@@ -822,7 +939,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     const st = B.st, opt = (v, l, cur) => `<option value="${esc(v)}"${cur === v ? ' selected' : ''}>${esc(l)}</option>`;
     const hidN = typeof ukHidden === 'function' ? ukHidden().length : 0;
     const selN = Object.keys(ui.au2Sel || {}).filter(p => ui.au2Sel[p]).length;
-    let h = `<div class="au2"><div class="au2-top"><div><h1>בדיקת שורה-שורה</h1><div class="au2-sub">רווח והפסד מול שונטל, קונפורטי, אשראי ובקרת השכר — לפי חודשים${EXT.shontal && EXT.shontal.asOf ? ' · שונטל נכון ל-' + esc(EXT.shontal.asOf) : ''}</div></div><div class="au2-tools">${monthPicker()}<button class="au2-b sm" data-act="bdView" data-v="table" title="התצוגה הקודמת — כל המקורות בעמודות לחודש אחד">☰ התצוגה הקודמת</button></div></div>`;
+    let h = `<div class="au2"><div class="au2-top"><div><h1>בדיקת שורה-שורה</h1><div class="au2-sub">רווח והפסד מול שונטל, קונפורטי, אשראי ובקרת השכר — לפי חודשים${EXT.shontal && EXT.shontal.asOf ? ' · שונטל נכון ל-' + esc(EXT.shontal.asOf) : ''}</div></div><div class="au2-tools">${monthPicker()}<button class="au2-b sm" data-mdmode="${MD() ? 'grid' : 'md'}" title="${MD() ? 'כל החודשים בעמודות' : 'רשימה קבועה + הספק שנבחר'}">${MD() ? '▦ לפי חודשים' : '📋 רשימה + ספק'}</button><button class="au2-b sm" data-act="bdView" data-v="table" title="התצוגה הקודמת — כל המקורות בעמודות לחודש אחד">☰ התצוגה הקודמת</button></div></div>`;
     h += `<div class="au2-kpis"><div class="au2-k t"><span>סה"כ בבדיקה · ${M[curM]}</span><b>${tot}</b><small title="«שורות בדוח» = מה שנספר עד היום ב«נבדקו X מתוך…». ספק לא משויך = מופיע בשונטל/קונפורטי/אשראי ואין לו שורה">${tot - B.nUk} שורות בדוח + ${B.nUk} ספקים לא משויכים · סומנו ${n.d}</small><i class="au2-bar"><i style="width:${Pc(n.d)}%"></i></i></div>
       <button class="au2-k r${st === 'r' ? ' on' : ''}" data-au2st="r"><span>⚠ דורשות טיפול</span><b>${n.r}</b><small>${Pc(n.r)}% · הפרש, אזהרה או ספק לא משויך</small></button>
       <button class="au2-k o${st === 'o' ? ' on' : ''}" data-au2st="o"><span>⏱ ממתינות להתאמה</span><b>${n.o}</b><small>${Pc(n.o)}% · אין מקור להשוואה או סכום 0</small></button>
@@ -839,6 +956,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
       <select class="au2-sel sm" id="aF" title="סינון נוסף">${opt('', 'הצגה: הכל', ui.aF || '')}${opt('ncl', '🤖 הערות לבדיקת קלוד', ui.aF || '')}${opt('nme', '🙋 הערות לעצמי', ui.aF || '')}${opt('note', 'רק עם הערה', ui.aF || '')}${opt('anydiff', 'רק עם הפרש (מכל מקור)', ui.aF || '')}${opt('exp', 'רק הוצאות', ui.aF || '')}${opt('nosrc', 'הוצאות בלי מקור שנבחר', ui.aF || '')}${CC ? opt('kk', 'רק עם אשראי', ui.aF || '') : ''}</select>
       ${hidN ? `<button class="au2-b sm" data-act="ukHidList" title="ספקים שסימנת «לא נכנס — תמיד»">🙈 ${hidN} מוסתרים</button>` : ''}</div></div>`;
     if (selN) h += `<div class="au2-bulk"><b>${selN} נבחרו</b><button class="au2-b pri sm" data-au2bulk>✓ לסמן תקין את כל ${selN}</button><button class="au2-b sm" data-au2clr>ניקוי בחירה</button></div>`;
+    if (MD()) { h += mdHtml(B, sp) + `</div>`; setTimeout(mdRestore, 0); return h; }   /* 📋 רשימה + ספק (איילת 24.11) */
     const head = all => `<thead><tr><th class="au2-ck">${all ? '<input type="checkbox" data-au2all title="בחירת כל השורות בטבלה" aria-label="בחירת הכל">' : ''}</th><th class="au2-nmh">ספק / שורה</th><th class="au2-okh">אישור</th><th class="au2-cmph" title="החודש שנבדק — מה רשום ברווח והפסד ומה אומר כל מקור">${M[curM]} <small>(נבדק)</small></th>${MS.map(mm => `<th class="au2-mh${mm === curM ? ' cur' : ''}">${M[mm]}</th>`).join('')}<th class="au2-mh cum" title="מתחילת השנה עד ${esc(M[curM])}">מצטבר</th><th>סימנים</th><th>סיבה</th><th class="au2-nth">הערה</th><th></th></tr></thead>`;
     const nc = (MS.length + 7) + 2;
     const RW = it => L2() ? l2Row(it, B.U.cat[it.path]) : rowHtml(it, B.U.cat[it.path], sp, MS), HD = all => L2() ? l2Head(false) : head(all);
