@@ -919,8 +919,13 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
       const g = IDX.shontal[it.path], e = g && g.m[String(mm)], nd = (e ? e[1].length : 0) + (CC ? CC.lines.filter(l => ccPath(l) === it.path && ccMon(l) === mm).length : 0);
       /* ספק מפוצל: מתחת לכל צד — האחוז בפועל מהסה״כ; אדום אם לא כמו האחוז בשם השורה (איילת 24.11: «איך אני יודעת אם זה 10%») */
       const pTot = multi ? plTot(mm) : 0;
-      const pctOf = p => { const x = /\((\d+(?:\.\d+)?)%/.exec((au2Line(p) || {}).name || ''); return x ? +x[1] : null; };
-      const vals = multi ? PS.map(p => { const v = (mctx(mm).byP[p] || {}).val, want = pctOf(p), got = Math.abs(pTot) >= 0.5 && v != null ? v / pTot * 100 : null, bad = want != null && got != null && Math.abs(got - want) > 0.5;
+      /* האחוז לפי שם השורה — גם «(80% עד יוני; מיולי 100%)». תא שהחישוב שלו מכפיל באחוז אחר (למשל הכרם ‎*0.8 עד יוני) — זה האחוז שנקבע לחודש */
+      const MHE = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+      const pctOf = p => { const nm = (au2Line(p) || {}).name || '', t = /\((\d+(?:\.\d+)?)%\s*עד\s*([א-ת]+);\s*מ([א-ת]+)\s*(\d+(?:\.\d+)?)%?/.exec(nm);
+        if (t) { const a = MHE.indexOf(t[2]), b = MHE.indexOf(t[3]); if (a >= 0 && mm <= a) return +t[1]; if (b >= 0 && mm >= b) return +t[4]; return null; }
+        const x = /\((\d+(?:\.\d+)?)%/.exec(nm); return x ? +x[1] : null; };
+      const mulOf = p => { const c = (cellsOf(p) || [])[mm], x = typeof c === 'string' ? /\*\s*(0?\.\d+|1)\s*$/.exec(c) : null; return x ? r2(+x[1] * 100) : null; };
+      const vals = multi ? PS.map(p => { const v = (mctx(mm).byP[p] || {}).val, want = pctOf(p), got = Math.abs(pTot) >= 0.5 && v != null ? v / pTot * 100 : null, mul = mulOf(p), bad = want != null && got != null && Math.abs(got - want) > 0.5 && !(mul != null && Math.abs(got - mul) <= 0.5);
         return `<td class="n ed${estOn(p, mm) ? ' est' : ''}" data-p="${esc(p)}" data-m="${mm}">${MDF(v)}${got != null ? `<small class="${bad ? 'pbad' : 'pok'}">${bad ? '⚠ ' : ''}${Math.round(got * 10) / 10}%${bad ? ` (צריך ${want}%)` : ''}</small>` : ''}</td>`; }).join('') + `<td class="n tot">${MDF(pTot)}</td>` : `<td class="n tot ed${estOn(it.path, mm) ? ' est' : ''}" data-p="${esc(it.path)}" data-m="${mm}">${MDF(ci.v)}</td>`;
       const tv = multi ? plTot(mm) : ci.v;
       const sc = SK.length ? SK.map(([k, l]) => { const o = SR[mm][k]; if (!o) return '<td class="n sx na">—</td>'; const eq = Math.abs((tv || 0) - o.v) <= 1, main = sr && Math.abs(sr.v - o.v) < 0.005 && sr.l.indexOf(l.replace('🔒 ', '')) >= 0;
