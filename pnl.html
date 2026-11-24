@@ -909,7 +909,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     const SR = {}; for (let mm = curM; mm >= ST0(); mm--) if (!MDIGN(mm)) SR[mm] = mdSrcs(it, mm, cellInfo(it, mm), KSH);
     const SK = MD_SK.filter(([k]) => Object.values(SR).some(o => o[k]));
     const nS = Math.max(SK.length, 1);
-    const head = `<tr><th rowspan="2">חודש</th><th colspan="${nS}" class="hsrc">מקורות<small>לחיצה על «← לרשום» כותבת את הסכום ברווח והפסד</small></th><th colspan="${multi ? PS.length + 1 : 1}" class="hpl">רשום ברווח והפסד</th><th rowspan="2">מצב</th><th rowspan="2">מסמכים</th></tr>`
+    const head = `<tr><th rowspan="2">חודש</th><th colspan="${nS}" class="hsrc">מקורות</th><th colspan="${multi ? PS.length + 1 : 1}" class="hpl">רשום ברווח והפסד</th><th rowspan="2">מצב</th><th rowspan="2">מסמכים</th></tr>`
       + `<tr>${SK.length ? SK.map(([k, l]) => `<th class="hsrc2">${l}${k === 'k' && KSH ? '<small>נגבה בחודש שאחרי</small>' : ''}</th>`).join('') : '<th class="hsrc2">—</th>'}${multi ? PS.map(p => `<th class="hpl2">${esc(mdLbl(p, mdBase(it)))}</th>`).join('') + '<th class="hpl2 tot">סה״כ</th>' : '<th class="hpl2 tot">סה״כ</th>'}</tr>`;
     const R = [];
     for (let mm = curM; mm >= ST0(); mm--) {
@@ -919,7 +919,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
       const vals = multi ? PS.map(p => `<td class="n">${MDF((mctx(mm).byP[p] || {}).val)}</td>`).join('') + `<td class="n tot">${MDF(plTot(mm))}</td>` : `<td class="n tot">${MDF(ci.v)}</td>`;
       const tv = multi ? plTot(mm) : ci.v;
       const sc = SK.length ? SK.map(([k, l]) => { const o = SR[mm][k]; if (!o) return '<td class="n sx na">—</td>'; const eq = Math.abs((tv || 0) - o.v) <= 1, main = sr && Math.abs(sr.v - o.v) < 0.005 && sr.l.indexOf(l.replace('🔒 ', '')) >= 0;
-        const pl = eq || RO ? null : mdPlan(it, PS, k, o.v, mm);
+        const pl = null;   /* «← לרשום» מוסתר (איילת 24.11: דרס צפי בביימי וחלוקה בטורנדו) — עד שיכבד את הכללים */
         return `<td class="n sx${eq ? ' eq' : ''}${main ? ' main' : ''}">${MDF(o.v)}${k === 'l' && o.ok ? '<small>אושר</small>' : ''}${o.nx != null ? `<small>חיוב ${esc(M[o.nx])}</small>` : ''}${eq ? '<small class="g">✓ זהה</small>' : pl ? `<button class="md-pk" data-mdpick='${esc(JSON.stringify(pl))}' data-m="${mm}" data-l="${esc(l.replace('🔒 ', ''))}" data-v="${o.v}" title="לרשום ${MDF(o.v)} ברווח והפסד ב${esc(M[mm])}${pl.length > 1 ? ' — ' + pl.map(x => esc(mdLbl(x[0], mdBase(it))) + ' ' + esc(String(x[1]))).join(' · ') : ''}">← לרשום</button>` : `<small>הפרש ${MDF(r2((tv || 0) - o.v))}</small>`}</td>`; }).join('') : '<td class="n sx na">—</td>';
       R.push(`<tr class="${mdCmp(it, mm).st === 'diff' ? 'rb' : ''}${mm === curM ? ' cur' : ''}"><td class="mo">${M[mm]}</td>${sc}${vals}<td>${mdSt2(mdCmp(it, mm))}</td><td>${nd ? `<details class="md-dd"><summary>📄 ${nd}</summary>${invCell(it, mm)}</details>` : '<span class="na">—</span>'}</td></tr>`);
     }
