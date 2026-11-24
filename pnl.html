@@ -852,6 +852,25 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     const d = tot - sr.v; return { st: Math.abs(d) <= 1 ? 'ok' : 'diff', d, ci, tot, sr };
   }
   function mdSt2(r) { return r.st === 'marked' ? '<span class="md-s d">✓ אושר</span>' : r.st === 'ok' ? '<span class="md-s ok">✓ תואם</span>' : r.st === 'diff' ? `<span class="md-s bad">פער ${nf2.format(Math.abs(r.d || 0))}</span>` : r.st === 'miss' ? '<span class="md-s bad">חסר החודש</span>' : '<span class="md-s na">אין מקור</span>'; }
+  /* כל מקור בעמודה משלו (איילת 24.11: «מה רשום ברווח והפסד? מה החשבוניות? קיבוע? קונפורטי? אפשרות לבחור את מה שאני רוצה») */
+  const MD_SK = [['l', '🔒 קיבוע'], ['s', 'שונטל'], ['c', 'קונפורטי'], ['k', 'אשראי']];
+  function mdSrcs(it, mm, ci) {
+    const o = {}; let L = null; try { L = has(ci.s) ? lockOf(it, mm) : null; } catch (x) { }
+    if (L && L.amt != null && Math.abs(L.amt) >= 0.005) o.l = { v: L.amt, ok: L.ok };
+    ['s', 'c', 'k'].forEach(k => { const c = ci[k]; if (has(c) && Math.abs(c.raw || 0) >= 0.005) o[k] = { v: c.raw, n: c.n }; });
+    return o;
+  }
+  /* מה נכתב בכל שורה כשבוחרים סכום: שורה אחת = הסכום; ספק מפוצל = לפי האחוזים בשם השורה, אחרת לפי היחס שרשום היום */
+  function mdPlan(it, PS, k, v, mm) {
+    if (!/^p:/.test(it.path)) { if (k === 'l') return null; let w = null; try { w = srcVal(it, k, mm); } catch (x) { } return w == null || !cellsOf(it.path) ? null : [[it.path, r2(w)]]; }
+    if (PS.length === 1) return cellsOf(PS[0]) ? [[PS[0], v]] : null;
+    const g = IDX.shontal && IDX.shontal[it.path], gp = g && Array.isArray(g.paths) ? g.paths : [];
+    if (PS.some(p => !gp.includes(p)) || PS.some(p => !cellsOf(p))) return null;
+    const pc = PS.map(p => { const x = /\((\d+(?:\.\d+)?)%\)/.exec((au2Line(p) || {}).name || ''); return x ? +x[1] : null; });
+    if (pc.every(x => x != null) && Math.abs(pc.reduce((a, b) => a + b, 0) - 100) < 0.01) return PS.map((p, i) => [p, `=${v}*${r2(pc[i] / 100)}`]);
+    for (let m2 = mm; m2 >= 0; m2--) { const xs = PS.map(p => (mctx(m2).byP[p] || {}).val || 0), t = xs.reduce((a, b) => a + b, 0); if (Math.abs(t) >= 1 && xs.every(x => x * t >= 0)) { let acc = 0; return PS.map((p, i) => { const val = i === PS.length - 1 ? r2(v - acc) : r2(v * xs[i] / t); acc += val; return [p, val]; }); } }
+    return null;
+  }
   function mdDetail(it, c) {
     if (!it) return '<div class="md-det md-empty">בוחרים ספק מהרשימה</div>';
     const P = esc(it.path), a = it.a || {};
@@ -871,18 +890,24 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     let ans;
     const r0 = mdCmp(it, curM);
     if (a.reply && !a.handled) ans = `<div class="md-ans b">🤖 ${esc(a.reply)}</div>`;
-    else if (c === 'g' || c === 'd' || r0.st === 'ok' || r0.st === 'marked') ans = `<div class="md-ans g">${M[curM]}: ${multi ? PS.map(p => `${esc(mdLbl(p, mdBase(it)))} <b>${MDF((mctx(curM).byP[p] || {}).val)}</b>`).join(' + ') + ` = <b>${MDF(plTot(curM))}</b>` : `ברווח והפסד <b>${MDF(ci0.v)}</b>`}${src0 ? ` · ${esc(src0.l)} <b>${MDF(src0.v)}</b>` : ''} — ${c === 'd' || r0.st === 'marked' ? 'אושר' : 'תואם — אפשר לאשר'} ✓${it.k && it.k.st === 'diff' && /^p:/.test(it.path) ? '<div class="md-note">חיוב האשראי של הספק הוא תשלום על החשבוניות — לא משווים אליו.</div>' : ''}</div>`;
-    else ans = `<div class="md-ans r"><b>${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</b>${(si.bad || []).length ? ' · ' + esc(si.bad.join(' · ')) : rs.length > 1 ? ' · ' + esc(rs.slice(1).map(r => r[1]).join(' · ')) : ''}</div>`;
-    const head = multi
-      ? `<tr><th rowspan="2">חודש</th><th rowspan="2" class="hsrc">מה צריך להיות<small>קיבוע / שונטל / קונפורטי</small></th><th colspan="${PS.length + 1}" class="hpl">רשום ברווח והפסד</th><th rowspan="2">מצב</th><th rowspan="2">מסמכים</th></tr><tr>${PS.map(p => `<th class="hpl2">${esc(mdLbl(p, mdBase(it)))}</th>`).join('')}<th class="hpl2 tot">סה״כ</th></tr>`
-      : `<tr><th>חודש</th><th class="hsrc">מה צריך להיות<small>קיבוע / שונטל / קונפורטי</small></th><th class="hpl">רשום ברווח והפסד</th><th>מצב</th><th>מסמכים</th></tr>`;
+    else if (c === 'g' || c === 'd' || r0.st === 'ok' || r0.st === 'marked') ans = `<div class="md-ans g">✓ ${M[curM]} <b>${MDF(multi ? plTot(curM) : ci0.v)}</b>${src0 ? ' = ' + esc(src0.l.replace(/^🔒\s*/, '').replace(/\s*\(.*\)$/, '')) : ''}${c === 'd' || r0.st === 'marked' ? ' · אושר' : ''}</div>`;
+    else ans = `<div class="md-ans r" title="${esc(((si.bad || []).length ? si.bad : rs.slice(1).map(r => r[1])).join(' · '))}"><b>${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</b></div>`;
+    const SR = {}; for (let mm = curM; mm >= ST0(); mm--) if (!MDIGN(mm)) SR[mm] = mdSrcs(it, mm, cellInfo(it, mm));
+    const SK = MD_SK.filter(([k]) => Object.values(SR).some(o => o[k]));
+    const nS = Math.max(SK.length, 1);
+    const head = `<tr><th rowspan="2">חודש</th><th colspan="${nS}" class="hsrc">מקורות<small>לחיצה על «← לרשום» כותבת את הסכום ברווח והפסד</small></th><th colspan="${multi ? PS.length + 1 : 1}" class="hpl">רשום ברווח והפסד</th><th rowspan="2">מצב</th><th rowspan="2">מסמכים</th></tr>`
+      + `<tr>${SK.length ? SK.map(([k, l]) => `<th class="hsrc2">${l}</th>`).join('') : '<th class="hsrc2">—</th>'}${multi ? PS.map(p => `<th class="hpl2">${esc(mdLbl(p, mdBase(it)))}</th>`).join('') + '<th class="hpl2 tot">סה״כ</th>' : '<th class="hpl2 tot">סה״כ</th>'}</tr>`;
     const R = [];
     for (let mm = curM; mm >= ST0(); mm--) {
       if (MDIGN(mm)) continue;
       const ci = cellInfo(it, mm), sr = mdSrc(it, mm, ci);
       const g = IDX.shontal[it.path], e = g && g.m[String(mm)], nd = (e ? e[1].length : 0) + (CC ? CC.lines.filter(l => ccPath(l) === it.path && ccMon(l) === mm).length : 0);
       const vals = multi ? PS.map(p => `<td class="n">${MDF((mctx(mm).byP[p] || {}).val)}</td>`).join('') + `<td class="n tot">${MDF(plTot(mm))}</td>` : `<td class="n tot">${MDF(ci.v)}</td>`;
-      R.push(`<tr class="${mdCmp(it, mm).st === 'diff' ? 'rb' : ''}${mm === curM ? ' cur' : ''}"><td class="mo">${M[mm]}</td><td class="n src">${sr ? MDF(sr.v) + `<small>${esc(sr.l)}</small>` : '—'}</td>${vals}<td>${mdSt2(mdCmp(it, mm))}</td><td>${nd ? `<details class="md-dd"><summary>📄 ${nd}</summary>${invCell(it, mm)}</details>` : '<span class="na">—</span>'}</td></tr>`);
+      const tv = multi ? plTot(mm) : ci.v;
+      const sc = SK.length ? SK.map(([k, l]) => { const o = SR[mm][k]; if (!o) return '<td class="n sx na">—</td>'; const eq = Math.abs((tv || 0) - o.v) <= 1, main = sr && Math.abs(sr.v - o.v) < 0.005 && sr.l.indexOf(l.replace('🔒 ', '')) >= 0;
+        const pl = eq || RO ? null : mdPlan(it, PS, k, o.v, mm);
+        return `<td class="n sx${eq ? ' eq' : ''}${main ? ' main' : ''}">${MDF(o.v)}${k === 'l' && o.ok ? '<small>אושר</small>' : ''}${eq ? '<small class="g">✓ זהה</small>' : pl ? `<button class="md-pk" data-mdpick='${esc(JSON.stringify(pl))}' data-m="${mm}" data-l="${esc(l.replace('🔒 ', ''))}" data-v="${o.v}" title="לרשום ${MDF(o.v)} ברווח והפסד ב${esc(M[mm])}${pl.length > 1 ? ' — ' + pl.map(x => esc(mdLbl(x[0], mdBase(it))) + ' ' + esc(String(x[1]))).join(' · ') : ''}">← לרשום</button>` : `<small>הפרש ${MDF(r2((tv || 0) - o.v))}</small>`}</td>`; }).join('') : '<td class="n sx na">—</td>';
+      R.push(`<tr class="${mdCmp(it, mm).st === 'diff' ? 'rb' : ''}${mm === curM ? ' cur' : ''}"><td class="mo">${M[mm]}</td>${sc}${vals}<td>${mdSt2(mdCmp(it, mm))}</td><td>${nd ? `<details class="md-dd"><summary>📄 ${nd}</summary>${invCell(it, mm)}</details>` : '<span class="na">—</span>'}</td></tr>`);
     }
     const ln = lineNote(it.path);
     const acts = c === 'd' ? `<button class="au2-b" data-act="audUn" data-p="${P}">↩ החזרה לבדיקה</button>`
@@ -916,6 +941,16 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     const l = document.getElementById('mdList'); ui.mdSc = l ? l.scrollTop : 0;
     const nx = nextAfter(ui.au2P); if (nx) { ui.au2P = nx; ui.au2M = curM; }
   }, true);
+  window.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.md-det [data-mdpick]'); if (!b || RO) return;
+    e.stopPropagation(); e.preventDefault();
+    let pl; try { pl = JSON.parse(b.dataset.mdpick); } catch (x) { return; }
+    const mm = +b.dataset.m, v = +b.dataset.v, src = b.dataset.l;
+    const lines = pl.map(([p, val]) => { const cs = cellsOf(p); return `${labelOf(p)}: ${rawShow(cs[mm]) || 'ריק'} ← ${val}`; });
+    if (!confirm(`לרשום ${nf2.format(v)} (לפי ${src}) ב${M[mm]}?\n` + lines.join('\n'))) return;
+    const l = document.getElementById('mdList'); ui.mdSc = l ? l.scrollTop : 0;
+    commit(`${labelOf(pl[0][0])} › ${M[mm]}: ${nf2.format(v)} לפי ${src}${pl.length > 1 ? ' (מחולק ל-' + pl.length + ' שורות)' : ''}`, () => { pl.forEach(([p, val]) => { cellsOf(p)[mm] = val; }); });
+  }, true);
   function mdRestore() { const l = document.getElementById('mdList'); if (!l) return; if (ui.mdSc != null) l.scrollTop = ui.mdSc; const on = l.querySelector('.md-it.on'); if (on) { const a = on.getBoundingClientRect(), b = l.getBoundingClientRect(); if (a.top < b.top || a.bottom > b.bottom) on.scrollIntoView({ block: 'nearest' }); } }
   document.head.insertAdjacentHTML('beforeend', `<style id="au2MdCss">
 .md{display:grid;grid-template-columns:270px minmax(0,1fr);gap:14px;align-items:start}
@@ -938,6 +973,8 @@ table.md-t tr.rb td:first-child{box-shadow:inset -3px 0 0 #b42318}table.md-t tr.
 .md-s{font-weight:700;white-space:nowrap;font-size:13px}.md-s.ok{color:#15803d}.md-s.bad{color:#b42318}.md-s.na{color:#8c86a0;font-weight:500}.md-s.d{color:#5d5675}
 .md-dd summary{cursor:pointer;color:#6d28d9;white-space:nowrap}.md-dd .au2-inv{font-size:12.5px;white-space:nowrap}
 .md-ln{margin-top:8px;color:#455b6b;font-size:13px}.md-note{font-size:12.5px;color:#455b6b;margin-top:4px}.md-it small.g{color:#15803d}.md-it small.o{color:#b45309}
+table.md-t th.hsrc2{background:#ececf1;font-size:12px}table.md-t td.sx{background:#f7f7f9;font-weight:600}table.md-t td.sx.main{font-weight:800}table.md-t td.sx.eq{background:#eef8f1}table.md-t td.sx.na{color:#b8b3c6;font-weight:400}
+table.md-t td.sx small.g{color:#15803d;font-weight:700}.md-pk{display:block;margin-top:3px;font:inherit;font-size:11.5px;padding:1px 8px;border:1px solid #6d28d9;background:#fff;color:#6d28d9;border-radius:6px;cursor:pointer;direction:rtl}.md-pk:hover{background:#6d28d9;color:#fff}
 .md-act{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}.md-act .md-ni{flex:1;min-width:180px;border:1px solid #e3ddf3;border-radius:8px;padding:7px 10px;font:inherit}
 </style>`);
   function selPath(B) {
