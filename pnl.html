@@ -384,6 +384,31 @@ function fBreak(path, m) {
 .pdfDoc .plend{border-top-color:#4a3d99!important;border-bottom-color:#4a3d99!important;color:#2f2566!important}
 .pdfDoc .sumbox{background:#faf9fe!important;border-color:#dcd6f2!important;color:#2f2566!important}
 .pdfDoc .sumbox b{color:#2f2566!important}
+/* 📊 PDF «כמו אקסל» (איילת 24.11.2026): Arial, קווי רשת אפורים, כותרות עמודות כחולות, שורות סעיף תכלת — כמו הייצוא לאקסל */
+body.xlLook .pdfDoc,body.xlLook .pdfDoc *{font-family:Arial,"Segoe UI",sans-serif!important}
+body.xlLook .pdfDoc{background:#fff!important;color:#000!important}
+body.xlLook .pdfDoc .ph{border-bottom:0!important}
+body.xlLook .pdfDoc .ph h1,body.xlLook .pdfDoc .own .ph h1{color:#1f4e79!important;font-weight:700!important}
+body.xlLook .pdfDoc .ph h1 span,body.xlLook .pdfDoc .ph .s,body.xlLook .pdfDoc .ph .m{color:#595959!important}
+body.xlLook .pdfDoc h2,body.xlLook .pdfDoc h3,body.xlLook .pdfDoc h3.more,body.xlLook .pdfDoc h3.sep{color:#1f4e79!important;border-color:#bdd7ee!important}
+body.xlLook .pdfDoc table,body.xlLook .pdfDoc .own table{background:#fff!important;border:1px solid #bfbfbf!important;border-collapse:collapse!important}
+body.xlLook .pdfDoc th,body.xlLook .pdfDoc td,body.xlLook .pdfDoc .own th,body.xlLook .pdfDoc .own td{color:#000!important;border:1px solid #d9d9d9!important}
+body.xlLook .pdfDoc th,body.xlLook .pdfDoc .own th{background:#2e86c1!important;color:#fff!important;font-weight:700!important;border-color:#2e86c1!important}
+body.xlLook .pdfDoc tr.sec td,body.xlLook .pdfDoc .own tr.sec td{background:#ddebf7!important;color:#1f4e79!important;font-weight:700!important}
+body.xlLook .pdfDoc tr.grp td,body.xlLook .pdfDoc .own tr.grp td{background:#f2f8fd!important;color:#1f4e79!important}
+body.xlLook .pdfDoc tr.tot td,body.xlLook .pdfDoc .own tr.tot td{background:#ddebf7!important;color:#000!important;font-weight:700!important}
+body.xlLook .pdfDoc tr.key td,body.xlLook .pdfDoc .own tr.key td,body.xlLook .pdfDoc tr.big td,body.xlLook .pdfDoc .own tr.big td{background:#ddebf7!important;color:#000!important;font-weight:700!important;border-top:1px solid #9bc2e6!important;border-bottom:1px solid #9bc2e6!important}
+body.xlLook .pdfDoc tr.pct td,body.xlLook .pdfDoc .own tr.pct td,body.xlLook .pdfDoc tr.info td{color:#7f7f7f!important}
+body.xlLook .pdfDoc td.yr,body.xlLook .pdfDoc .own td.yr{background:#fff!important;font-weight:700!important}
+body.xlLook .pdfDoc td.neg{color:#c00000!important}
+body.xlLook .pdfDoc .kpi,body.xlLook .pdfDoc .own .kpi,body.xlLook .pdfDoc .kp div{background:#fff!important;border:1px solid #bfbfbf!important;border-radius:0!important;color:#000!important}
+body.xlLook .pdfDoc .kpi .l,body.xlLook .pdfDoc .kpi .p,body.xlLook .pdfDoc .kpi .m,body.xlLook .pdfDoc .own .kpi .l,body.xlLook .pdfDoc .own .kpi .p{color:#595959!important}
+body.xlLook .pdfDoc .kpi .v,body.xlLook .pdfDoc .own .kpi .v,body.xlLook .pdfDoc .kp b{color:#000!important}
+body.xlLook .pdfDoc .kpi.net,body.xlLook .pdfDoc .own .kpi.net{background:#ddebf7!important;border:1px solid #9bc2e6!important}
+body.xlLook .pdfDoc .plend{border-color:#1f4e79!important;color:#1f4e79!important}
+body.xlLook .pdfDoc .sumbox{background:#fff!important;border:1px solid #bfbfbf!important;border-radius:0!important;color:#000!important}
+body.xlLook .pdfDoc .sumbox b{color:#1f4e79!important}
+body.xlLook .pdfDoc .foot,body.xlLook .pdfDoc .kp span{color:#595959!important}
 </script>
 <script type="text/plain" id="au2Js">
 /* ================= בדיקה שורה-שורה — מסך עבודה (איילת 22.11.2026, לפי ההדמיה שאושרה) =================
@@ -1324,7 +1349,7 @@ var PATCHES=[
   ["const CT0 = D.settings.closedThrough;",
    "const CT0 = (c => (c === null || c === undefined || c === '') ? c : Math.max(+c, (d => +D.year === d.getFullYear() ? d.getMonth() - 1 : (+D.year < d.getFullYear() ? 11 : -1))(new Date())))(D.settings.closedThrough);"]
 ];
-var SOFT=[["💾 שמירה לקובץ","💾 שמירה"],["🔄 הקובץ עודכן מבחוץ","🔄 הענן עודכן מבחוץ"],["'נשמר בקובץ · '","'נשמר בענן · '"],["toast('✅ נשמר לקובץ · שמירה אוטומטית פעילה')","toast('✅ נשמר בענן')"],["🟢 שמירה אוטומטית פעילה","🟢 נשמר בענן אוטומטית"],["const SC = 3, W = doc.offsetWidth;","const SC = 4, W = doc.offsetWidth;"],["cv.toDataURL('image/jpeg', 0.97), 'JPEG'","cv.toDataURL('image/png'), 'PNG'"],["backgroundColor: '#fbf6ef'","backgroundColor: '#ffffff'"],["pdf.setFillColor(251, 246, 239)","pdf.setFillColor(255, 255, 255)"],["pdf.setTextColor(120, 100, 86)","pdf.setTextColor(94, 88, 128)"]]; /* 📄 PDF חד יותר: צילום ×4 ו-PNG במקום JPEG, רקע לבן (איילת 24.11.2026) */
+var SOFT=[["💾 שמירה לקובץ","💾 שמירה"],["🔄 הקובץ עודכן מבחוץ","🔄 הענן עודכן מבחוץ"],["'נשמר בקובץ · '","'נשמר בענן · '"],["toast('✅ נשמר לקובץ · שמירה אוטומטית פעילה')","toast('✅ נשמר בענן')"],["🟢 שמירה אוטומטית פעילה","🟢 נשמר בענן אוטומטית"],["const SC = 3, W = doc.offsetWidth;","const SC = 4, W = doc.offsetWidth;"],["cv.toDataURL('image/jpeg', 0.97), 'JPEG'","cv.toDataURL('image/png'), 'PNG'"],["backgroundColor: '#fbf6ef'","backgroundColor: '#ffffff'"],["pdf.setFillColor(251, 246, 239)","pdf.setFillColor(255, 255, 255)"],["pdf.setTextColor(120, 100, 86)","pdf.setTextColor(94, 88, 128)"],["<button class=\"btn\" id=\"pdfGo\" style=\"width:100%\">⬇ הורדת PDF</button>", "<div class=\"row small\" style=\"gap:14px;margin-bottom:8px\">מראה: <label><input type=\"radio\" name=\"pdfLook\" value=\"n\"${(() => { try { return localStorage.getItem('pl_pdf_look') === 'x' ? '' : ' checked'; } catch (x) { return ' checked'; } })()}> רגיל</label><label><input type=\"radio\" name=\"pdfLook\" value=\"x\"${(() => { try { return localStorage.getItem('pl_pdf_look') === 'x' ? ' checked' : ''; } catch (x) { return ''; } })()}> כמו אקסל</label></div>\n    <button class=\"btn\" id=\"pdfGo\" style=\"width:100%\">⬇ הורדת PDF</button>"],["closePop(); downloadPdf(ms, land, new Set(sh)); return true; };", "const xl = !!popEl.querySelector('input[name=\"pdfLook\"][value=\"x\"]:checked'); document.body.classList.toggle('xlLook', xl); try { localStorage.setItem('pl_pdf_look', xl ? 'x' : 'n'); } catch (x) { } closePop(); downloadPdf(ms, land, new Set(sh)); return true; };"]]; /* 📄 PDF חד יותר: צילום ×4 ו-PNG במקום JPEG, רקע לבן (איילת 24.11.2026) */
 /* «🎨» — מעבר בין «פחות עומס» למראה הקודם (נשמר בדפדפן) */
 function useLook(){ try{ return localStorage.getItem('pnl-look')!=='plain'; }catch(_){ return true; } }
 (function(){ var b=$('lookBtn'); if(!b) return; b.title=useLook()?'עכשיו: פחות עומס · לחיצה = המראה הקודם':'עכשיו: המראה הקודם · לחיצה = פחות עומס';
