@@ -352,6 +352,39 @@ function fBreak(path, m) {
   if (forHover) return r.rows.map(o => o.hit ? `<div>${nf2.format(o.n)} = ${o.hit.doc ? docLink(o.hit.doc) + ' ' : ''}${esc(o.hit.t)} · ${esc(o.hit.n)}${o.hit.s ? ' · ' + esc(o.hit.s) : ''}</div>` : `<div style="color:#b3261e">${nf2.format(o.n)} = לא נמצא מקור (שונטל / אשראי / קונפורטי)</div>`).join('');
 </script>
 <!-- 🟨 «צפוי / לא בטוח» (איילת 10.11.2026): לחיצה ימנית על תא = סימון צהוב, שוב = ביטול. נשמר בנתונים (D.cmark[path][חודש]). נכנס לקוד המערכת דרך PATCHES. -->
+<script type="text/plain" id="pdfShontelCss">
+/* 📄 PDF בצבעי שונטל — בהיר, לבן וסגול (איילת 24.11.2026: «יותר בהיר… כמו שונטל») */
+.pdfDoc{background:#fff!important;color:#1f1b3a!important}
+.pdfDoc .pg,.pdfDoc .own{background:#fff!important}
+.pdfDoc .ph{border-bottom-color:#7461c8!important}
+.pdfDoc .ph h1,.pdfDoc .own .ph h1{color:#2f2566!important}
+.pdfDoc .ph h1 span,.pdfDoc .ph .s,.pdfDoc .ph .m{color:#6f6a8c!important}
+.pdfDoc h2{color:#2f2566!important;border-right-color:#7461c8!important}
+.pdfDoc h3{color:#2f2566!important}
+.pdfDoc h3.more,.pdfDoc h3.sep{color:#6f6a8c!important;border-top-color:#d8d0f0!important}
+.pdfDoc table,.pdfDoc .own table{background:#fff!important;border-color:#e2dcf4!important}
+.pdfDoc th,.pdfDoc td,.pdfDoc .own th,.pdfDoc .own td{color:#1f1b3a!important;border-bottom-color:#eeeaf8!important}
+.pdfDoc th,.pdfDoc .own th{background:#f3f0fc!important;color:#2f2566!important;border-bottom-color:#b9aee8!important}
+.pdfDoc tr.sec td,.pdfDoc .own tr.sec td{background:#f7f5fd!important;color:#2f2566!important;border-top-color:#e2dcf4!important}
+.pdfDoc tr.grp td,.pdfDoc .own tr.grp td{background:#fbfaff!important;color:#2f2566!important}
+.pdfDoc tr.tot td,.pdfDoc .own tr.tot td{background:#f7f5fd!important}
+.pdfDoc tr.key td,.pdfDoc .own tr.key td{background:#f1eefb!important;color:#2f2566!important;border-top-color:#b9aee8!important;border-bottom-color:#b9aee8!important}
+.pdfDoc tr.big td,.pdfDoc .own tr.big td{background:#ebe6fa!important;color:#2f2566!important;border-top-color:#7461c8!important;border-bottom-color:#7461c8!important}
+.pdfDoc tr.pct td,.pdfDoc .own tr.pct td,.pdfDoc tr.info td{color:#6f6a8c!important}
+.pdfDoc td.yr,.pdfDoc .own td.yr{background:#f9f8fe!important}
+.pdfDoc td.neg{color:#c04a42!important}
+.pdfDoc .kp div{background:#fff!important;border-color:#e2dcf4!important;border-top-color:#7461c8!important}
+.pdfDoc .kp b{color:#2f2566!important}
+.pdfDoc .kp span,.pdfDoc .foot{color:#6f6a8c!important}
+.pdfDoc .kpi,.pdfDoc .own .kpi{background:#fff!important;border-color:#e2dcf4!important;color:#2f2566!important}
+.pdfDoc .kpi .l,.pdfDoc .kpi .p,.pdfDoc .kpi .m,.pdfDoc .own .kpi .l,.pdfDoc .own .kpi .p{color:#6f6a8c!important}
+.pdfDoc .kpi .v,.pdfDoc .own .kpi .v{color:#2f2566!important}
+.pdfDoc .kpi .v.neg{color:#c04a42!important}
+.pdfDoc .kpi.net,.pdfDoc .own .kpi.net{background:#f3f0fc!important;border:1px solid #7461c8!important}
+.pdfDoc .plend{border-top-color:#5b4aa8!important;border-bottom-color:#5b4aa8!important;color:#2f2566!important}
+.pdfDoc .sumbox{background:#fbfaff!important;border-color:#e2dcf4!important;color:#2f2566!important}
+.pdfDoc .sumbox b{color:#2f2566!important}
+</script>
 <script type="text/plain" id="au2Js">
 /* ================= בדיקה שורה-שורה — מסך עבודה (איילת 22.11.2026, לפי ההדמיה שאושרה) =================
    שכבת תצוגה בלבד, מעל כל השכבות הקיימות: אותו חישוב, אותם סטטוסים, אותן פעולות (data-act קיימים) — בלי שינוי בנתונים.
@@ -1302,6 +1335,8 @@ function patch(html){
   /* ✨ בדיקה שורה-שורה — מסך עבודה (איילת 22.11.2026): נכנס לסוף הבלוק הראשי של המערכת (אותו מקום בכל 5 המערכות).
      לא נמצא בדיוק פעם אחת — מדלגים, והלשונית נשארת כמו קודם (לא חוסם את הפתיחה) */
   (function(){ var A='\n})();\n\n<\/script>', i=html.indexOf(A); if(i>=0 && html.indexOf(A,i+1)<0) html=html.slice(0,i)+'\n'+$('au2Js').textContent+html.slice(i); })();
+  /* 📄 PDF בצבעי שונטל (איילת 24.11.2026): סגנון אחרון לפני </body>, גובר על הצבעים החומים. לא נמצא בדיוק פעם אחת — מדלגים */
+  (function(){ var B='</body>', i=html.indexOf(B); if(i>=0 && html.indexOf(B,i+1)<0) html=html.slice(0,i)+'<style id="pdfShontel">'+$('pdfShontelCss').textContent+'</style>'+html.slice(i); })();
   var pre='<script>/* ענן */ try{ if(parent!==window && parent.__PLC_BRIDGE){ window.__PLC=parent.__PLC_BRIDGE;'+
     ' if(!window.showSaveFilePicker){ window.showSaveFilePicker=async function(){ return window.__PLC.handle; }; window.showOpenFilePicker=async function(){ return [window.__PLC.handle]; }; } } }catch(e){}<\/script>';
   var h=html.indexOf('<head>'); if(h<0) throw new Error('הקוד בענן לא תקין (head)');
