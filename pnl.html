@@ -916,12 +916,19 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
       if (MDIGN(mm)) continue;
       const ci = cellInfo(it, mm), sr = mdSrc(it, mm, ci);
       const g = IDX.shontal[it.path], e = g && g.m[String(mm)], nd = (e ? e[1].length : 0) + (CC ? CC.lines.filter(l => ccPath(l) === it.path && ccMon(l) === mm).length : 0);
-      const vals = multi ? PS.map(p => `<td class="n">${MDF((mctx(mm).byP[p] || {}).val)}</td>`).join('') + `<td class="n tot">${MDF(plTot(mm))}</td>` : `<td class="n tot">${MDF(ci.v)}</td>`;
+      /* ספק מפוצל: מתחת לכל צד — האחוז בפועל מהסה״כ; אדום אם לא כמו האחוז בשם השורה (איילת 24.11: «איך אני יודעת אם זה 10%») */
+      const pTot = multi ? plTot(mm) : 0;
+      const pctOf = p => { const x = /\((\d+(?:\.\d+)?)%/.exec((au2Line(p) || {}).name || ''); return x ? +x[1] : null; };
+      const vals = multi ? PS.map(p => { const v = (mctx(mm).byP[p] || {}).val, want = pctOf(p), got = Math.abs(pTot) >= 0.5 && v != null ? v / pTot * 100 : null, bad = want != null && got != null && Math.abs(got - want) > 0.5;
+        return `<td class="n">${MDF(v)}${got != null ? `<small class="${bad ? 'pbad' : 'pok'}">${bad ? '⚠ ' : ''}${Math.round(got * 10) / 10}%${bad ? ` (צריך ${want}%)` : ''}</small>` : ''}</td>`; }).join('') + `<td class="n tot">${MDF(pTot)}</td>` : `<td class="n tot">${MDF(ci.v)}</td>`;
       const tv = multi ? plTot(mm) : ci.v;
       const sc = SK.length ? SK.map(([k, l]) => { const o = SR[mm][k]; if (!o) return '<td class="n sx na">—</td>'; const eq = Math.abs((tv || 0) - o.v) <= 1, main = sr && Math.abs(sr.v - o.v) < 0.005 && sr.l.indexOf(l.replace('🔒 ', '')) >= 0;
         const pl = eq || RO ? null : mdPlan(it, PS, k, o.v, mm);
         return `<td class="n sx${eq ? ' eq' : ''}${main ? ' main' : ''}">${MDF(o.v)}${k === 'l' && o.ok ? '<small>אושר</small>' : ''}${o.nx != null ? `<small>חיוב ${esc(M[o.nx])}</small>` : ''}${eq ? '<small class="g">✓ זהה</small>' : pl ? `<button class="md-pk" data-mdpick='${esc(JSON.stringify(pl))}' data-m="${mm}" data-l="${esc(l.replace('🔒 ', ''))}" data-v="${o.v}" title="לרשום ${MDF(o.v)} ברווח והפסד ב${esc(M[mm])}${pl.length > 1 ? ' — ' + pl.map(x => esc(mdLbl(x[0], mdBase(it))) + ' ' + esc(String(x[1]))).join(' · ') : ''}">← לרשום</button>` : `<small>הפרש ${MDF(r2((tv || 0) - o.v))}</small>`}</td>`; }).join('') : '<td class="n sx na">—</td>';
-      R.push(`<tr class="${mdCmp(it, mm).st === 'diff' ? 'rb' : ''}${mm === curM ? ' cur' : ''}"><td class="mo">${M[mm]}</td>${sc}${vals}<td>${mdSt2(mdCmp(it, mm))}</td><td>${nd ? `<details class="md-dd"><summary>📄 ${nd}</summary>${invCell(it, mm)}</details>` : '<span class="na">—</span>'}</td></tr>`);
+      const nt0 = PS.map(p => [p, ((D.cnote || {})[p] || {})[String(mm)]]).filter(x => x[1]), one = new Set(nt0.map(x => x[1])).size === 1, nts = one ? [nt0[0][1]] : nt0.map(([p, t]) => mdLbl(p, mdBase(it)) + ': ' + t), cst = mdCmp(it, mm);
+      R.push(`<tr class="${cst.st === 'diff' ? 'rb' : ''}${mm === curM ? ' cur' : ''}${nts.length && nts.join(' · ') !== R._pn ? ' hn' : ''}"><td class="mo">${M[mm]}</td>${sc}${vals}<td>${mdSt2(cst)}${nts.length && cst.st === 'diff' ? '<small class="md-sn">ראי הערה</small>' : ''}</td><td>${nd ? `<details class="md-dd"><summary>📄 ${nd}</summary>${invCell(it, mm)}</details>` : '<span class="na">—</span>'}</td></tr>`);
+      const ntx = nts.join(' · '), same = ntx && ntx === R._pn; R._pn = ntx;   /* אותה הערה כמו בחודש שמעל — לא חוזרים עליה */
+      if (ntx && !same) R.push(`<tr class="md-nr${mm === curM ? ' cur' : ''}"><td></td><td colspan="${nS + (multi ? PS.length + 1 : 1) + 2}"><div class="md-nt" title="${esc(ntx)}">💬 ${esc(ntx)}</div></td></tr>`);
     }
     const ln = lineNote(it.path);
     const acts = c === 'd' ? `<button class="au2-b" data-act="audUn" data-p="${P}">↩ החזרה לבדיקה</button>`
@@ -1018,6 +1025,8 @@ table.md-t tr.rb td:first-child{box-shadow:inset -3px 0 0 #b42318}table.md-t tr.
 .md-ln{margin-top:8px;color:#455b6b;font-size:13px}.md-note{font-size:12.5px;color:#455b6b;margin-top:4px}.md-it small.g{color:#15803d}.md-it small.o{color:#b45309}
 table.md-t th.hsrc2{background:#ececf1;font-size:12px}table.md-t td.sx{background:#f7f7f9;font-weight:600}table.md-t td.sx.main{font-weight:800}table.md-t td.sx.eq{background:#eef8f1}table.md-t td.sx.na{color:#b8b3c6;font-weight:400}
 table.md-t td.sx small.g{color:#15803d;font-weight:700}.md-pk{display:block;margin-top:3px;font:inherit;font-size:11.5px;padding:1px 8px;border:1px solid #6d28d9;background:#fff;color:#6d28d9;border-radius:6px;cursor:pointer;direction:rtl}.md-pk:hover{background:#6d28d9;color:#fff}
+table.md-t tr.hn td{border-bottom:none}table.md-t tr.md-nr td{font-size:12.5px;color:#5b4a14;background:#fffbea!important;padding:3px 8px 8px;line-height:1.5}.md-nr td:last-child{max-width:0}.md-nt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:help}.md-sn{display:block;color:#8a6d00;font-size:11.5px;font-weight:600}
+table.md-t td.n small.pok{color:#15803d}table.md-t td.n small.pbad{color:#b42318;font-weight:700}
 .md-act{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}.md-act .md-ni{flex:1;min-width:180px;border:1px solid #e3ddf3;border-radius:8px;padding:7px 10px;font:inherit}
 </style>`);
   function selPath(B) {
