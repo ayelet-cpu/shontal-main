@@ -885,6 +885,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     for (let m2 = mm; m2 >= 0; m2--) { const xs = PS.map(p => (mctx(m2).byP[p] || {}).val || 0), t = xs.reduce((a, b) => a + b, 0); if (Math.abs(t) >= 1 && xs.every(x => x * t >= 0)) { let acc = 0; return PS.map((p, i) => { const val = i === PS.length - 1 ? r2(v - acc) : r2(v * xs[i] / t); acc += val; return [p, val]; }); } }
     return null;
   }
+  const mdName = it => it.uk ? it.name : (mdPaths(it).length > 1 ? String(it.name || '').replace(/\s*\([^)]*\d+%[^)]*\)\s*/g, ' ').replace(/\s*\((מסעדה|קיוסק|משותף)\)\s*/g, ' ').replace(/\s+/g, ' ').trim() || it.name : it.name);   /* ספק מפוצל — שם הספק בלי האחוז (איילת 24.11) */
   function mdDetail(it, c) {
     if (!it) return '<div class="md-det md-empty">בוחרים ספק מהרשימה</div>';
     const P = esc(it.path), a = it.a || {};
@@ -939,16 +940,19 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     const ln = lineNote(it.path);
     const acts = c === 'd' ? `<button class="au2-b" data-act="audUn" data-p="${P}">↩ החזרה לבדיקה</button>`
       : `<button class="au2-b pri" data-act="audOkRow" data-p="${P}" data-md="1">✓ אישור ${M[curM]}</button>`;
-    return `<div class="md-det"><h2>${esc(it.name)}</h2><div class="md-sub">${esc(topic(it))}${catTxt(it) ? ' · ' + esc(catTxt(it)) : ''}${multi ? ' · רשום ב: ' + PS.map(p => esc(mdLbl(p, mdBase(it)))).join(' / ') : ''}</div>${ans}
+    return `<div class="md-det"><h2>${esc(mdName(it))}</h2><div class="md-sub">${esc(topic(it))}${catTxt(it) ? ' · ' + esc(catTxt(it)) : ''}${multi ? ' · רשום ב: ' + PS.map(p => esc(mdLbl(p, mdBase(it)))).join(' / ') : ''}</div>${ans}
       <div class="md-tw"><table class="md-t"><thead>${head}</thead><tbody>${R.join('')}</tbody></table></div>
       ${ln ? `<div class="md-ln">💬 ${esc(ln)}</div>` : ''}
       <div class="md-act">${acts}<input class="au2-note md-ni" data-p="${P}" data-m="${curM}" value="${esc(a.note || '')}" placeholder="הערה ל${M[curM]}…"><button class="au2-b dots" data-act="audOpen" data-p="${P}" title="החלון המלא: בחירת סכום ממקור, עריכה, פירוט החישוב">⋯ החלון המלא</button></div></div>`;
   }
   function mdHtml(B, sp) {
-    const L = B.main.concat(B.U.all.filter(x => !B.main.includes(x) && x.path === sp));
+    const L0 = B.main.concat(B.U.all.filter(x => !B.main.includes(x) && x.path === sp)), seenK = new Set();
+    /* ספק מפוצל — פריט אחד ברשימה (איילת 24.11: «טמפו 100% עם החלוקה») */
+    const L = L0.filter(it => { if (it.uk) return true; const k = mdPaths(it).slice().sort().join('|'); if (seenK.has(k)) return false; seenK.add(k); return true; });
+    if (sp && !L.some(x => x.path === sp)) { const rep = L.find(x => !x.uk && mdPaths(x).includes(sp)); if (rep) sp = rep.path; }
     const sel = L.find(x => x.path === sp) || L[0] || null; if (sel) ui.au2P = sel.path;
     const dot = c => `<i class="md-dot ${c}"></i>`;
-    const li = L.map(it => { const c = B.U.cat[it.path], r = it.uk ? null : mdCmp(it, curM), dc = it.uk ? 'r' : r.st === 'ok' || r.st === 'marked' ? 'g' : r.st === 'diff' || r.st === 'miss' ? 'r' : 'o'; return `<div class="md-it${sel && it.path === sel.path ? ' on' : ''}" data-mdp="${esc(it.path)}">${dot(dc)}<b>${esc(it.name)}</b><small class="${dc}">${it.uk ? 'לא משויך' : r.st === 'diff' ? 'פער ' + nf2.format(Math.abs(r.d || 0)) : r.st === 'ok' ? '✓ תואם — לאשר' : r.st === 'miss' ? 'חסר החודש' : r.st === 'none' ? 'אין מקור' : ''}</small></div>`; }).join('') || '<div class="md-none">אין כאן ספקים 🎉</div>';
+    const li = L.map(it => { const c = B.U.cat[it.path], r = it.uk ? null : mdCmp(it, curM), dc = it.uk ? 'r' : r.st === 'ok' || r.st === 'marked' ? 'g' : r.st === 'diff' || r.st === 'miss' ? 'r' : 'o'; return `<div class="md-it${sel && it.path === sel.path ? ' on' : ''}" data-mdp="${esc(it.path)}">${dot(dc)}<b>${esc(mdName(it))}</b><small class="${dc}">${it.uk ? 'לא משויך' : r.st === 'diff' ? 'פער ' + nf2.format(Math.abs(r.d || 0)) : r.st === 'ok' ? '✓ תואם — לאשר' : r.st === 'miss' ? 'חסר החודש' : r.st === 'none' ? 'אין מקור' : ''}</small></div>`; }).join('') || '<div class="md-none">אין כאן ספקים 🎉</div>';
     return `<div class="md"><div class="md-list" id="mdList"><div class="md-lh">${L.length} ספקים · ${M[curM]}</div>${li}</div>${mdDetail(sel, sel ? B.U.cat[sel.path] : '')}</div>`;
   }
   window.addEventListener('click', e => {
@@ -1006,6 +1010,13 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     const cur = (mctx(mm).byP[p] || {}).val;
     if (cur != null && Math.abs(cur - v) <= 0.005) return;
     if (!mdGuardOk([p], mm, v, src)) { e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true);
+  /* אישור ספק מפוצל = אישור כל השורות שלו (מסעדה + קיוסק) */
+  window.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.md-det [data-act="audOkRow"]'); if (!b || RO) return;
+    const p = b.dataset.p, items = auditItems(curM), it = items.find(x => x.path === p); if (!it) return;
+    mdPaths(it).filter(p2 => p2 !== p).forEach(p2 => { const x = items.find(y => y.path === p2); if (!x) return; const a = audGet(curM, p2); if (a && a.ok && Math.abs((a.val || 0) - x.val) <= 0.5) return;
+      audSet(curM, p2, { ok: 1, at: new Date().toISOString(), val: x.val }, `בדיקה › ${M[curM]} › ${x.name}: סומן תקין (יחד עם ${it.name})`); });
   }, true);
   function mdRestore() { const l = document.getElementById('mdList'); if (!l) return; if (ui.mdSc != null) l.scrollTop = ui.mdSc; const on = l.querySelector('.md-it.on'); if (on) { const a = on.getBoundingClientRect(), b = l.getBoundingClientRect(); if (a.top < b.top || a.bottom > b.bottom) on.scrollIntoView({ block: 'nearest' }); } }
   document.head.insertAdjacentHTML('beforeend', `<style id="au2MdCss">
