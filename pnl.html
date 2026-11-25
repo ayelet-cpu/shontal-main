@@ -927,6 +927,83 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     return null;
   }
   const mdName = it => it.uk ? it.name : (mdPaths(it).length > 1 ? String(it.name || '').replace(/\s*\([^)]*\d+%[^)]*\)\s*/g, ' ').replace(/\s*\((מסעדה|קיוסק|משותף)\)\s*/g, ' ').replace(/\s+/g, ' ').trim() || it.name : it.name);   /* ספק מפוצל — שם הספק בלי האחוז (איילת 24.11) */
+  /* מלל קצר תמיד (איילת 25.11: «צמצם תמיד מלל ארוך כזה») — שורה אחת; הכל בלחיצה / במעבר עכבר */
+  const mdShort = t => { t = String(t || '').trim(); let c = t.split(/\s+[—–]\s+|\s+·\s+|;\s+/)[0]; if (c.length > 60) c = c.slice(0, 58).replace(/\s+\S*$/, ''); return c.length < t.length ? c + '…' : c; };
+  function mdNoteHtml(ic, t, ed) {
+    const sh = mdShort(t), more = sh !== t;
+    return `<div class="md-nt${more ? ' more' : ''}" title="${esc(t)}"><span class="md-nts">${ic} ${esc(sh)}</span>${more ? `<span class="md-ntf">${ic} ${esc(t)}</span>` : ''}${ed ? `<button class="md-nb" data-mdne='${esc(JSON.stringify(ed))}' title="עריכת ההערה">✎</button><button class="md-nb" data-mdnd='${esc(JSON.stringify(ed))}' title="מחיקת ההערה">🗑</button>` : ''}</div>`;
+  }
+  /* 📄 החשבוניות של החודש עם תיבות סימון — מסמנים מה נכנס לשורה, והסכום נרשם בלחיצה (איילת 25.11) */
+  function mdDocs(it, mm, PS) {
+    const g = IDX.shontal && IDX.shontal[it.path], e = g && g.m[String(mm)], inv = e ? e[1] : [];
+    const cc = CC ? CC.lines.filter(l => ccPath(l) === it.path && ccMon(l) === mm) : [];
+    const can = !RO && /^p:/.test(it.path);
+    const rows = inv.map(d => `<div class="md-iv">${can ? `<input type="checkbox" class="md-cb" data-a="${d[3]}" checked>` : ''}${d[8] ? docLink(d) : d[9] ? '<span title="הקובץ בענן של שונטל">☁️</span>' : ''} <b>${esc(d[1] || '')}</b> · ${dmy(d[2])} · ₪${nf2.format(d[3])}${RO ? '' : `<button class="md-mvb" data-mdmv='${esc(JSON.stringify({ p: it.path, ps: PS, m: mm, a: d[3], n: d[1] || '', d: d[2] || '' }))}' title="להעביר את החשבונית לשורה אחרת">↪</button>`}</div>`)
+      .concat(cc.map(l => `<div class="md-iv cc">${can ? `<input type="checkbox" class="md-cb" data-a="${l.v}"${inv.length ? '' : ' checked'}>` : ''}💳 ${dmy(l.d)} · ${esc(l.n)} · ₪${nf2.format(l.v)}</div>`));
+    if (!rows.length) return invCell(it, mm);
+    let sel = '';
+    if (can) {
+      let pl = null; try { pl = mdPlan(it, PS, 's', 1, mm); } catch (x) { }
+      const o = pl ? { m: mm, pl: pl.map(([p, x]) => [p, typeof x === 'number' ? 1 : +((/\*\s*([\d.]+)\s*$/.exec(String(x)) || [])[1] || 1)]) } : { m: mm, ps: PS };
+      sel = `<div class="md-sel" data-mdsel='${esc(JSON.stringify(o))}'>מסומן <b class="md-selv"></b><button class="md-pk md-selb">← לרשום</button></div>`;
+    }
+    return `<div class="md-ivs">${rows.join('')}</div>${sel}`;
+  }
+  function mdSelUpd(box) {
+    if (!box) return; let o; try { o = JSON.parse(box.dataset.mdsel); } catch (x) { return; }
+    const td = box.closest('details') || box.parentNode, v = r2([...td.querySelectorAll('.md-cb')].reduce((t, c) => t + (c.checked ? +c.dataset.a || 0 : 0), 0));
+    const b = box.querySelector('.md-selb'), sv = box.querySelector('.md-selv'); if (sv) sv.textContent = MDF(v);
+    if (!b) return; delete b.dataset.mdpick; delete b.dataset.mdpickrow;
+    if (o.pl) { b.dataset.mdpick = JSON.stringify(o.pl.map(([p, f]) => [p, o.pl.length === 1 && f === 1 ? v : `=${v}*${f}`])); b.dataset.m = o.m; b.dataset.l = 'חשבוניות שסומנו'; b.dataset.v = v; }
+    else b.dataset.mdpickrow = JSON.stringify({ ps: o.ps, m: o.m, v, l: 'חשבוניות שסומנו' });
+  }
+  window.addEventListener('change', e => { const c = e.target.closest && e.target.closest('.md-cb'); if (c) mdSelUpd((c.closest('details') || document).querySelector('.md-sel')); }, true);
+  /* פתיחת הערה מקוצרת בלחיצה */
+  window.addEventListener('click', e => { const x = e.target.closest && e.target.closest('.md-nt.more .md-nts,.md-nt.more .md-ntf'); if (!x) return; e.stopPropagation(); x.closest('.md-nt').classList.toggle('open'); }, true);
+  /* ✓ נכון / ↩ ביטול — לחודש אחד, כל השורות של הספק */
+  window.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.md-det [data-mdok]'); if (!b || RO) return;
+    e.stopPropagation(); e.preventDefault();
+    let o; try { o = JSON.parse(b.dataset.mdok); } catch (x) { return; }
+    const mm = +o.m, at = new Date().toISOString(), l = document.getElementById('mdList'); ui.mdSc = l ? l.scrollTop : 0;
+    commit(`בדיקה › ${M[mm]} › ${labelOf(o.ps[0]).split(' › ').pop()}: ${o.un ? 'הוחזר לבדיקה' : 'סומן נכון'}`, () => {
+      D.audit = D.audit || {}; D.audit[mm] = D.audit[mm] || {};
+      o.ps.forEach(p => { const v = (mctx(mm).byP[p] || {}).val; D.audit[mm][p] = Object.assign({}, D.audit[mm][p] || {}, o.un ? { ok: 0 } : { ok: 1, at, val: r2(v || 0) }, { u: at }); });
+    });
+    if (typeof audSave === 'function') audSave();
+  }, true);
+  /* ✗ לא נכון — ההערה שלי לחודש (נשאר אדום) */
+  window.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.md-det [data-mdbad]'); if (!b || RO) return;
+    e.stopPropagation(); e.preventDefault();
+    let o; try { o = JSON.parse(b.dataset.mdbad); } catch (x) { return; }
+    if (typeof cnEdit === 'function') cnEdit(o.p, +o.m);
+  }, true);
+  window.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.md-det [data-mdnp]'); if (!b) return;
+    e.stopPropagation(); e.preventDefault();
+    let L; try { L = JSON.parse(b.dataset.mdnp); } catch (x) { return; }
+    pop(b, L.map(x => { const ed = esc(JSON.stringify({ k: x.k, ps: x.ps, m: x.m })); return `<div class="md-pn">${x.ic} ${esc(x.t)}${RO ? '' : `<span class="md-pnb"><button class="md-nb" data-mdne='${ed}' title="עריכה">✎</button><button class="md-nb" data-mdnd='${ed}' title="מחיקה">🗑</button></span>`}</div>`; }).join(''), () => { });
+  }, true);
+  /* ✎ / 🗑 הערה (גם של קלוד) */
+  window.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.md-det [data-mdne],.md-det [data-mdnd],.pop [data-mdne],.pop [data-mdnd]'); if (!b || RO) return;
+    if (b.closest('.pop') && typeof closePop === 'function') closePop();
+    e.stopPropagation(); e.preventDefault();
+    let o; try { o = JSON.parse(b.dataset.mdne || b.dataset.mdnd); } catch (x) { return; }
+    const mm = String(o.m), cur = ((D[o.k] || {})[o.ps[0]] || {})[mm] || '', nm = labelOf(o.ps[0]).split(' › ').pop();
+    const l = document.getElementById('mdList');
+    const put = v => { ui.mdSc = l ? l.scrollTop : 0; commit(`${nm} › ${M[+mm]}: הערה ${v ? 'עודכנה' : 'נמחקה'}`, () => { D[o.k] = D[o.k] || {}; o.ps.forEach(p => { const c = D[o.k][p] = D[o.k][p] || {}; if (v) c[mm] = v; else delete c[mm]; if (!Object.keys(c).length) delete D[o.k][p]; }); }); };
+    if (b.dataset.mdnd) { if (confirm(`למחוק את ההערה?\n\n${cur}`)) put(''); return; }
+    const old = document.getElementById('cnModal'); if (old) old.remove();
+    const ov = document.createElement('div'); ov.id = 'cnModal';
+    ov.innerHTML = `<div class="cnm-box"><div class="cnm-t">✎ הערה — ${esc(nm)} · ${M[+mm]}</div><textarea>${esc(cur)}</textarea><div class="cnm-b"><button data-cnm="save" class="btn primary">שמירה</button><button data-cnm="x" class="btn">ביטול</button><span class="small muted">שורה אחת קצרה</span></div></div>`;
+    document.body.appendChild(ov);
+    const ta = ov.querySelector('textarea'); ta.focus();
+    const close = () => ov.remove();
+    ov.addEventListener('click', ev => { const x = ev.target.closest('[data-cnm]'); if (ev.target === ov) return close(); if (!x) return; if (x.dataset.cnm === 'save') { const v = ta.value.trim(); if (v !== cur) put(v); } close(); });
+    ta.addEventListener('keydown', ev => { if (ev.key === 'Escape') { ev.preventDefault(); close(); } if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); const v = ta.value.trim(); if (v !== cur) put(v); close(); } });
+  }, true);
   function mdDetail(it, c) {
     if (!it) return '<div class="md-det md-empty">בוחרים ספק מהרשימה</div>';
     const P = esc(it.path), a = it.a || {};
@@ -934,7 +1011,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
       const o = it.uk, R = [];
       ['s', 'c', 'k'].forEach(k => { if (o.src[k].length) { const v = ukAmtK(o, curM, k); if (Math.abs(v) >= 0.5) R.push(`<tr><td>${{ s: 'שונטל', c: 'קונפורטי', k: 'אשראי' }[k]}</td><td class="n">${MDF(v)}</td></tr>`); } });
       return `<div class="md-det"><h2>${esc(it.name)}</h2><div class="md-sub">לא משויך לשום שורה ברווח והפסד · ${esc(M[curM])}</div>
-        <div class="md-ans r">הספק מופיע במקורות ואין לו שורה ברווח והפסד. לשייך לשורה קיימת, לפתוח ספק חדש, או לסמן «לא שייך».</div>
+        <div class="md-ans r">אין לו שורה ברווח והפסד</div>
         <table class="md-t"><tbody>${R.join('')}</tbody></table>
         <details class="md-dd"><summary>📄 המסמכים</summary>${(o.docs || []).map(x => `<div class="au2-inv">${docLink(x)} <b>${esc(x[1] || '')}</b> · ${dmy(x[2])} · ₪${nf2.format(x[3])}</div>`).join('') || '—'}</details>
         <div class="md-act"><button class="au2-b pri" data-act="ukMap" data-k="${esc(o.key)}">🔗 שיוך לשורה</button><button class="au2-b" data-act="ukNew" data-k="${esc(o.key)}">➕ ספק חדש</button><button class="au2-b rej" data-au2no="${P}">✕ לא שייך</button></div></div>`;
@@ -949,13 +1026,13 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
     if (a.reply && !a.handled) ans = `<div class="md-ans b">🤖 ${esc(a.reply)}</div>`;
     else if (c === 'g' || c === 'd' || r0.st === 'ok' || r0.st === 'marked') ans = `<div class="md-ans g">✓ ${M[curM]} <b>${MDF(multi ? plTot(curM) : ci0.v)}</b>${(r0.sr || src0) && /^p:/.test(it.path) ? ' = ' + esc((r0.sr || src0).l.replace(/^🔒\s*/, '').replace(/\s*\(.*\)$/, '')) : ''}${c === 'd' || r0.st === 'marked' ? ' · אושר' : ''}</div>`;
     else if (r0.st === 'none' && PS.some(p => estOn(p, curM))) ans = `<div class="md-ans b">⚠️ ${M[curM]} — צפי, עוד אין חשבונית</div>`;
-    else if (r0.st === 'none') { const t0 = plTot(curM); let same = 0; for (let m2 = 0; m2 <= 11; m2++) if (Math.abs(plTot(m2) - t0) <= 1 && Math.abs(t0) >= 1) same++; ans = `<div class="md-ans b">${same >= 3 ? `${M[curM]} ${MDF(t0)} — חלק חודשי קבוע (חשבונית שמחולקת לתשלומים). אין חשבונית חדשה החודש` : `${M[curM]} — אין מקור להשוואה`}</div>`; }
+    else if (r0.st === 'none') { const t0 = plTot(curM); let same = 0; for (let m2 = 0; m2 <= 11; m2++) if (Math.abs(plTot(m2) - t0) <= 1 && Math.abs(t0) >= 1) same++; ans = `<div class="md-ans b">${same >= 3 ? `${M[curM]} ${MDF(t0)} — חלק חודשי קבוע` : `${M[curM]} — אין מקור להשוואה`}</div>`; }
     else ans = `<div class="md-ans r" title="${esc(((si.bad || []).length ? si.bad : rs.slice(1).map(r => r[1])).join(' · '))}"><b>${esc(rs[0] ? rs[0][1] : 'לבדיקה')}</b></div>`;
     const KSH = mdShift(it, mm => multi ? plTot(mm) : cellInfo(it, mm).v), SLSH = mdShiftSL(it);
     const SR = {}; for (let mm = curM; mm >= ST0(); mm--) if (!MDIGN(mm)) SR[mm] = mdSrcs(it, mm, cellInfo(it, mm), KSH);
     const SK = MD_SK.filter(([k]) => Object.values(SR).some(o => o[k]));
     const nS = Math.max(SK.length, 1);
-    const head = `<tr><th rowspan="2">חודש</th><th colspan="${nS}" class="hsrc">מקורות${/^rep:/.test(it.path) ? ' — בלי מע״מ' : ''}<small>«← לרשום» כותב את הסכום · תא עם צפי / חישוב / הערה — קודם מראה מה רשום ושואל</small></th><th colspan="${multi ? PS.length + 1 : 1}" class="hpl">רשום ברווח והפסד</th><th rowspan="2">מצב</th><th rowspan="2">מסמכים</th></tr>`
+    const head = `<tr><th rowspan="2">חודש</th><th colspan="${nS}" class="hsrc">מקורות${/^rep:/.test(it.path) ? ' — בלי מע״מ' : ''}<small>«← לרשום» כותב את הסכום</small></th><th colspan="${multi ? PS.length + 1 : 1}" class="hpl">רשום ברווח והפסד<small>לחיצה על סכום = עריכה</small></th><th rowspan="2">מצב</th><th rowspan="2">מסמכים</th></tr>`
       + `<tr>${SK.length ? SK.map(([k, l]) => `<th class="hsrc2">${l}${k === 'k' && KSH ? '<small>נגבה בחודש שאחרי</small>' : (k === 's' || k === 'l') && SLSH[k] ? '<small>חשבונית החודש הבא = פעילות החודש</small>' : ''}</th>`).join('') : '<th class="hsrc2">—</th>'}${multi ? PS.map(p => `<th class="hpl2">${esc(LB(p))}</th>`).join('') + '<th class="hpl2 tot">סה״כ</th>' : '<th class="hpl2 tot">סה״כ</th>'}</tr>`;
     const R = [];
     for (let mm = curM; mm >= ST0(); mm--) {
@@ -977,17 +1054,20 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
         const spr = !eq && Math.abs(tv || 0) >= 1 ? [12, 6, 4, 3, 2].find(n => Math.abs(o.v / n - tv) <= 1) : null, spp = !eq && !spr ? mdSpread(PS, mm) : 0, eqs = Math.abs(spp) >= 1 && Math.abs((tv || 0) - spp - o.v) <= 1;
         const pl = eq || spr || eqs || RO ? null : mdPlan(it, PS, k, o.v, mm);
         return `<td class="n sx${eq ? ' eq' : ''}${main ? ' main' : ''}">${MDF(o.v)}${k === 'l' && o.ok ? '<small>אושר</small>' : ''}${o.nx != null ? `<small>${o.inv ? 'חשבונית' : 'חיוב'} ${esc(M[o.nx])}</small>` : ''}${eq ? '<small class="g">✓ זהה</small>' : spr ? `<small class="g">÷${spr} = ${MDF(r2(o.v / spr))} בחודש</small>` : eqs ? `<small class="g">✓ + ${MDF(r2(spp))} חלק שנתי</small>` : !pl && multi && !RO && /^p:/.test(it.path) ? `<button class="md-pk" data-mdpickrow='${esc(JSON.stringify({ ps: PS, m: mm, v: o.v, l: l.replace('🔒 ', '') }))}' title="לבחור לאיזו שורה של הספק לרשום את ${MDF(o.v)}">← לרשום…</button>` : pl ? `<button class="md-pk" data-mdpick='${esc(JSON.stringify(pl))}' data-m="${mm}" data-l="${esc(l.replace('🔒 ', ''))}" data-v="${o.v}" title="לרשום ${MDF(o.v)} ברווח והפסד ב${esc(M[mm])}${pl.length > 1 ? ' — ' + pl.map(x => esc(mdLbl(x[0], mdBase(it))) + ' ' + esc(String(x[1]))).join(' · ') : ''}">← לרשום</button>` : `<small>הפרש ${MDF(r2((tv || 0) - o.v))}</small>`}</td>`; }).join('') : '<td class="n sx na">—</td>';
-      const nt0 = PS.map(p => [p, ((D.cnote || {})[p] || {})[String(mm)]]).filter(x => x[1]), one = new Set(nt0.map(x => x[1])).size === 1, nts = one ? [nt0[0][1]] : nt0.map(([p, t]) => LB(p) + ': ' + t), cst = mdCmp(it, mm);
-      R.push(`<tr class="${cst.st === 'diff' ? 'rb' : ''}${mm === curM ? ' cur' : ''}${nts.length && nts.join(' · ') !== R._pn ? ' hn' : ''}"><td class="mo">${M[mm]}</td>${sc}${vals}<td>${cst.st === 'none' && PS.some(p => estOn(p, mm)) ? '<span class="md-s na">צפי — עוד אין חשבונית</span>' : mdSt2(cst)}${nts.length && cst.st === 'diff' ? '<small class="md-sn">ראי הערה</small>' : ''}</td><td>${nd ? `<details class="md-dd"><summary>📄 ${nd}</summary>${invCell(it, mm)}${mdMvList(it, mm, PS)}</details>` : '<span class="na">—</span>'}</td></tr>`);
-      const ntx = nts.join(' · '), same = ntx && ntx === R._pn; R._pn = ntx;   /* אותה הערה כמו בחודש שמעל — לא חוזרים עליה */
-      if (ntx && !same) R.push(`<tr class="md-nr${mm === curM ? ' cur' : ''}"><td></td><td colspan="${nS + (multi ? PS.length + 1 : 1) + 2}"><div class="md-nt" title="${esc(ntx)}">💬 ${esc(ntx)}</div></td></tr>`);
+      const nE = []; for (const [k, ic] of [['cnote', '💬'], ['cnoteU', '✍️']]) { const by = {}; PS.forEach(p => { const t = ((D[k] || {})[p] || {})[String(mm)]; if (t) (by[t] = by[t] || []).push(p); }); const ks = Object.keys(by); ks.forEach(t => nE.push({ k, ic, t, ps: by[t], lb: multi && (ks.length > 1 || by[t].length < PS.length) ? by[t].map(LB).join(' / ') : '' })); }
+      const nts = nE.map(x => x.t), cst = mdCmp(it, mm);
+      /* ✓ / ✗ לכל חודש (איילת 25.11: «אפשרויות לשינוי שלי ולא הכל דרכך») */
+      const okJ = st => esc(JSON.stringify({ ps: PS, m: mm, un: st }));
+      const okB = RO ? '' : cst.st === 'marked' ? `<button class="md-okb un" data-mdok='${okJ(1)}' title="ביטול האישור">↩ ביטול</button>` : cst.st === 'diff' || cst.st === 'miss' || (cst.st === 'none' && Math.abs(tv || 0) >= 0.5) ? `<span class="md-okw"><button class="md-okb" data-mdok='${okJ(0)}' title="הסכום ברווח והפסד נכון">✓ נכון</button><button class="md-okb bad" data-mdbad='${esc(JSON.stringify({ p: PS[0], m: mm }))}' title="לא נכון — לכתוב למה">✗</button></span>` : '';
+      R.push(`<tr class="${cst.st === 'diff' ? 'rb' : ''}${mm === curM ? ' cur' : ''}"><td class="mo">${M[mm]}${nE.length ? `<button class="md-nic" data-mdnp='${esc(JSON.stringify(nE.map(x => ({ k: x.k, ps: x.ps, m: mm, ic: x.ic, t: (x.lb ? x.lb + ': ' : '') + x.t }))))}' title="${esc(nts.join(' · '))}">${nE.some(x => x.k === 'cnoteU') ? '✍️' : '💬'}</button>` : ''}</td>${sc}${vals}<td>${cst.st === 'none' && PS.some(p => estOn(p, mm)) ? '<span class="md-s na">צפי — עוד אין חשבונית</span>' : mdSt2(cst)}${okB}</td><td>${nd ? `<details class="md-dd"><summary>📄 ${nd}</summary>${mdDocs(it, mm, PS)}</details>` : '<span class="na">—</span>'}</td></tr>`);
+      /* ההערה — אייקון 💬 ליד החודש, בלי שורה צהובה נפרדת (איילת 25.11: «זה ממש מעמיס על החלון») */
     }
     const ln = lineNote(it.path);
     const acts = c === 'd' ? `<button class="au2-b" data-act="audUn" data-p="${P}">↩ החזרה לבדיקה</button>`
       : `<button class="au2-b pri" data-act="audOkRow" data-p="${P}" data-md="1">✓ אישור ${M[curM]}</button>`;
     return `<div class="md-det"><h2>${esc(mdName(it))}</h2><div class="md-sub">${esc(topic(it))}${catTxt(it) ? ' · ' + esc(catTxt(it)) : ''}${multi ? ' · רשום ב: ' + PS.map(p => esc(LB(p))).join(' / ') : ''}</div>${ans}
       <div class="md-tw"><table class="md-t"><thead>${head}</thead><tbody>${R.join('')}</tbody></table></div>
-      ${ln ? `<div class="md-ln">💬 ${esc(ln)}</div>` : ''}
+      ${ln ? `<div class="md-ln">${mdNoteHtml('💬', ln, null)}</div>` : ''}
       <div class="md-act">${acts}<input class="au2-note md-ni" data-p="${P}" data-m="${curM}" value="${esc(a.note || '')}" placeholder="הערה ל${M[curM]}…"><button class="au2-b dots" data-act="audOpen" data-p="${P}" title="החלון המלא: בחירת סכום ממקור, עריכה, פירוט החישוב">⋯ החלון המלא</button></div></div>`;
   }
   function mdHtml(B, sp) {
@@ -1109,7 +1189,7 @@ table.l2-in td{padding:5px 8px;border-bottom:1px solid #f0edf6;background:#fff}t
       commit(`${labelOf(to)} › ${M[mm]}: ${add ? 'נוסף' : 'נרשם'} ${nf2.format(o.v)} לפי ${o.l}`, () => { cs[mm] = add ? mdAdd(cs[mm], o.v) : o.v; });
     });
   }, true);
-  function mdRestore() { const l = document.getElementById('mdList'); if (!l) return; if (ui.mdSc != null) l.scrollTop = ui.mdSc; const on = l.querySelector('.md-it.on'); if (on) { const a = on.getBoundingClientRect(), b = l.getBoundingClientRect(); if (a.top < b.top || a.bottom > b.bottom) on.scrollIntoView({ block: 'nearest' }); } }
+  function mdRestore() { document.querySelectorAll('.md-sel').forEach(mdSelUpd); const l = document.getElementById('mdList'); if (!l) return; if (ui.mdSc != null) l.scrollTop = ui.mdSc; const on = l.querySelector('.md-it.on'); if (on) { const a = on.getBoundingClientRect(), b = l.getBoundingClientRect(); if (a.top < b.top || a.bottom > b.bottom) on.scrollIntoView({ block: 'nearest' }); } }
   document.head.insertAdjacentHTML('beforeend', `<style id="au2MdCss">
 .md{display:grid;grid-template-columns:270px minmax(0,1fr);gap:14px;align-items:start}
 .md-list{background:#fff;border:1px solid #e7e0f7;border-radius:12px;overflow:auto;position:sticky;top:calc(var(--audTop,0px) + 8px);max-height:calc(100vh - var(--audTop,0px) - 24px)}
@@ -1136,6 +1216,12 @@ table.md-t td.sx small.g{color:#15803d;font-weight:700}.md-pk{display:block;marg
 table.md-t tr.hn td{border-bottom:none}table.md-t tr.md-nr td{font-size:12.5px;color:#5b4a14;background:#fffbea!important;padding:3px 8px 8px;line-height:1.5}.md-nr td:last-child{max-width:0}.md-nt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:help}.md-sn{display:block;color:#8a6d00;font-size:11.5px;font-weight:600}
 table.md-t td.n small.pok{color:#15803d}table.md-t td.n small.pbad{color:#b42318;font-weight:700}
 .md-mvl{margin-top:6px;border-top:1px dashed #e3ddf3;padding-top:4px}.md-mv{display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:12px;white-space:nowrap;padding:2px 0}.md-mvb{font:inherit;font-size:11px;border:1px solid #d9d1ef;background:#fff;color:#6d28d9;border-radius:6px;padding:1px 7px;cursor:pointer}.md-mvb:hover{background:#f4f1fb}
+table.md-t td.ed{cursor:pointer}table.md-t td.ed:hover{box-shadow:inset 0 0 0 2px #c4b5fd}
+.md-nt{display:flex;align-items:center;gap:4px}.md-nt .md-nts{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.md-nt.more .md-nts{cursor:pointer}.md-ntf{display:none;white-space:normal}.md-nt.open .md-nts{display:none}.md-nt.open .md-ntf{display:inline;cursor:pointer}
+.md-nic{font:inherit;font-size:12px;border:none;background:transparent;cursor:pointer;padding:0 4px;opacity:.75}.md-nic:hover{opacity:1}.md-pn{max-width:420px;line-height:1.55;padding:4px 0;border-bottom:1px solid #eee;white-space:normal}.md-pnb{margin-right:6px;white-space:nowrap}
+.md-nb{flex:none;font:inherit;font-size:11px;border:none;background:transparent;cursor:pointer;opacity:.55;padding:0 3px}.md-nb:hover{opacity:1}
+.md-okw{display:flex;gap:4px;margin-top:4px}.md-okb{font:inherit;font-size:11.5px;border:1px solid #15803d;color:#15803d;background:#fff;border-radius:6px;padding:1px 7px;cursor:pointer;margin-top:4px}.md-okw .md-okb{margin-top:0}.md-okb:hover{background:#15803d;color:#fff}.md-okb.bad{border-color:#b42318;color:#b42318}.md-okb.bad:hover{background:#b42318;color:#fff}.md-okb.un{border-color:#8c86a0;color:#5d5675;display:block}table.md-t tr .md-okb.un{visibility:hidden}table.md-t tr:hover .md-okb.un{visibility:visible}
+.md-ivs{margin-top:4px}.md-iv{display:flex;flex-wrap:wrap;gap:2px 6px;align-items:center;font-size:12.5px;padding:2px 0;max-width:230px;border-bottom:1px solid #f4f1fb}.md-iv .md-mvb{margin-right:auto}.md-sel{display:flex;gap:6px;align-items:center;margin-top:5px;border-top:1px dashed #e3ddf3;padding-top:4px;font-size:12.5px}.md-sel .md-pk{display:inline-block;margin:0}
 .md-act{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}.md-act .md-ni{flex:1;min-width:180px;border:1px solid #e3ddf3;border-radius:8px;padding:7px 10px;font:inherit}
 </style>`);
   function selPath(B) {
