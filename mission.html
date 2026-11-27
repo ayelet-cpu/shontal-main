@@ -617,7 +617,10 @@ var FIXED_LINKS=[
   {nm:'שונטל',em:'🧾',target:'https://ayelet-cpu.github.io/shontal-main/'},
   {nm:'תזרים',em:'📈',target:'https://ayelet-cpu.github.io/shontal-main/tazrim.html'},
   {nm:'פנקס עובדים',em:'👥',target:'https://ayelet-cpu.github.io/'},
-  {nm:'התקזזויות',em:'🤝',target:'pay.html?s=hz'}
+  {nm:'התקזזויות',em:'🤝',target:'pay.html?s=hz'},
+  // 27.11.2026 (Ayelet: «תכניס כניסה לזה בדף הבית שלנו») — opens the bank collector on her PC
+  // (Windows link «shontal-collector:» registered for her user only; on another device it does nothing)
+  {nm:'איסוף בנקים',em:'🏦',target:'shontal-collector://open'}
 ];
 var $=function(i){return document.getElementById(i);};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
